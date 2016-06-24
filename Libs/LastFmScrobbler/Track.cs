@@ -1,4 +1,4 @@
-﻿namespace Lpfm.LastFmScrobbler
+﻿namespace Elpis.Lpfm.LastFmScrobbler
 {
     /// <summary>
     ///     A DTO for Last.fm Track details

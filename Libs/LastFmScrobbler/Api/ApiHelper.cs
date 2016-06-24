@@ -1,6 +1,6 @@
 ﻿using Enumerable = System.Linq.Enumerable;
 
-namespace Lpfm.LastFmScrobbler.Api
+namespace Elpis.Lpfm.LastFmScrobbler.Api
 {
     internal class ApiHelper
     {

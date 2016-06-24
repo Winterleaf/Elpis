@@ -1,4 +1,6 @@
-﻿namespace PlayerControlQuery
+﻿using Elpis.PandoraSharp;
+
+namespace Elpis.PlayerControlQuery
 {
     //Use this as a template for classes that inherit IPlayerControlQuery
     public class Template : IPlayerControlQuery
@@ -17,7 +19,7 @@
 
         public void StatusUpdateReceiver(QueryStatus status) {}
 
-        public void RatingUpdateReceiver(QuerySong song, PandoraSharp.SongRating oldRating,
-            PandoraSharp.SongRating newRating) {}
+        public void RatingUpdateReceiver(QuerySong song, SongRating oldRating,
+            SongRating newRating) {}
     }
 }

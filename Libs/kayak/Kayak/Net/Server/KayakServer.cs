@@ -1,4 +1,6 @@
-﻿namespace Kayak.Net.Server
+﻿using Elpis.Kayak.Net.Socket;
+
+namespace Elpis.Kayak.Net.Server
 {
     internal class DefaultKayakServer : IServer
     {
@@ -63,7 +65,7 @@
                 RaiseOnClose();
         }
 
-        internal void SocketClosed(Socket.DefaultKayakSocket socket)
+        internal void SocketClosed(DefaultKayakSocket socket)
         {
             //Debug.WriteLine("Connection " + socket.id + ": closed (" + connections + " active connections)");
             if (_state.DecrementConnections())
@@ -105,7 +107,7 @@
                         if (error != null)
                             HandleAcceptError(error);
 
-                        Socket.DefaultKayakSocket s = new Socket.DefaultKayakSocket(new SocketWrapper(socket), _scheduler);
+                        DefaultKayakSocket s = new DefaultKayakSocket(new SocketWrapper(socket), _scheduler);
                         _state.IncrementConnections();
 
                         ISocketDelegate socketDelegate = _del.OnConnection(this, s);

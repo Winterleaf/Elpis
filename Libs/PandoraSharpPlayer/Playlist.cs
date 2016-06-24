@@ -17,7 +17,9 @@
  * along with PandoraSharpPlayer. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace PandoraSharpPlayer
+using Elpis.PandoraSharp;
+
+namespace Elpis.PandoraSharpPlayer
 {
     public class Playlist
     {
@@ -25,14 +27,14 @@ namespace PandoraSharpPlayer
         {
             MaxPlayed = maxPlayed;
             LowPlaylistCount = lowCount;
-            _nextSongs = new System.Collections.Concurrent.ConcurrentQueue<PandoraSharp.Song>();
-            _playedSongs = new System.Collections.Concurrent.ConcurrentQueue<PandoraSharp.Song>();
+            _nextSongs = new System.Collections.Concurrent.ConcurrentQueue<Song>();
+            _playedSongs = new System.Collections.Concurrent.ConcurrentQueue<Song>();
         }
 
         public int MaxPlayed { get; set; }
         public int LowPlaylistCount { get; set; }
 
-        public PandoraSharp.Song Current
+        public Song Current
         {
             get
             {
@@ -53,9 +55,9 @@ namespace PandoraSharpPlayer
 
         private readonly object _currentLock = new object();
 
-        private readonly System.Collections.Concurrent.ConcurrentQueue<PandoraSharp.Song> _nextSongs;
-        private readonly System.Collections.Concurrent.ConcurrentQueue<PandoraSharp.Song> _playedSongs;
-        private PandoraSharp.Song _currentSong;
+        private readonly System.Collections.Concurrent.ConcurrentQueue<Song> _nextSongs;
+        private readonly System.Collections.Concurrent.ConcurrentQueue<Song> _playedSongs;
+        private Song _currentSong;
 
         private bool _emptyPlaylist;
 
@@ -66,17 +68,17 @@ namespace PandoraSharpPlayer
 
         public void ClearSongs()
         {
-            PandoraSharp.Song trash;
+            Song trash;
             while (_nextSongs.TryDequeue(out trash)) {}
         }
 
         public void ClearHistory()
         {
-            PandoraSharp.Song trash;
+            Song trash;
             while (_playedSongs.TryDequeue(out trash)) {}
         }
 
-        public int AddSongs(System.Collections.Generic.List<PandoraSharp.Song> songs)
+        public int AddSongs(System.Collections.Generic.List<Song> songs)
         {
             if (songs.Count == 0)
             {
@@ -84,7 +86,7 @@ namespace PandoraSharpPlayer
                 return 0;
             }
 
-            foreach (PandoraSharp.Song s in songs)
+            foreach (Song s in songs)
             {
                 Util.Log.O("Adding: " + s);
                 _nextSongs.Enqueue(s);
@@ -102,7 +104,7 @@ namespace PandoraSharpPlayer
                 if ((System.DateTime.Now - start).TotalSeconds >= 60)
                 {
                     Util.Log.O("Playlist did not reload within 60 seconds, ");
-                    throw new PandoraSharp.Exceptions.PandoraException(Util.ErrorCodes.EndOfPlaylist);
+                    throw new PandoraException(Util.ErrorCodes.EndOfPlaylist);
                 }
 
                 System.Threading.Thread.Sleep(25);
@@ -111,17 +113,17 @@ namespace PandoraSharpPlayer
             if (_emptyPlaylist)
             {
                 Util.Log.O("WaitForPlaylist: Still Empty");
-                throw new PandoraSharp.Exceptions.PandoraException(Util.ErrorCodes.EndOfPlaylist);
+                throw new PandoraException(Util.ErrorCodes.EndOfPlaylist);
             }
 
             Util.Log.O("WaitForPlaylist: Complete");
         }
 
-        private PandoraSharp.Song DequeueSong()
+        private Song DequeueSong()
         {
-            PandoraSharp.Song result;
+            Song result;
             if (!_nextSongs.TryDequeue(out result))
-                throw new PandoraSharp.Exceptions.PandoraException(Util.ErrorCodes.EndOfPlaylist);
+                throw new PandoraException(Util.ErrorCodes.EndOfPlaylist);
 
             return result;
         }
@@ -148,7 +150,7 @@ namespace PandoraSharpPlayer
             }
         }
 
-        public PandoraSharp.Song NextSong()
+        public Song NextSong()
         {
             if (_nextSongs.IsEmpty)
             {
@@ -157,7 +159,7 @@ namespace PandoraSharpPlayer
                 DoReload();
             }
 
-            PandoraSharp.Song next = DequeueSong();
+            Song next = DequeueSong();
 
             if (!next.IsStillValid)
             {
@@ -167,7 +169,7 @@ namespace PandoraSharpPlayer
             }
 
             Util.Log.O("NextSong: " + next);
-            PandoraSharp.Song oldSong = Current;
+            Song oldSong = Current;
 
             Current = next;
 
@@ -187,7 +189,7 @@ namespace PandoraSharpPlayer
             }
 
             if (_playedSongs.Count <= MaxPlayed) return Current;
-            PandoraSharp.Song trash;
+            Song trash;
             if (!_playedSongs.TryDequeue(out trash)) return Current;
             Util.Log.O("OldSongDequeued");
             PlayedSongDequeued?.Invoke(this, trash);
@@ -203,11 +205,11 @@ namespace PandoraSharpPlayer
 
         #region Delegates
 
-        public delegate void CurrentSongChangedHandler(object sender, PandoraSharp.Song newSong);
+        public delegate void CurrentSongChangedHandler(object sender, Song newSong);
 
-        public delegate void PlayedSongDequeuedHandler(object sender, PandoraSharp.Song oldSong);
+        public delegate void PlayedSongDequeuedHandler(object sender, Song oldSong);
 
-        public delegate void PlayedSongQueuedHandler(object sender, PandoraSharp.Song newSong);
+        public delegate void PlayedSongQueuedHandler(object sender, Song newSong);
 
         public delegate void PlaylistLowHandler(object sender, int count);
 

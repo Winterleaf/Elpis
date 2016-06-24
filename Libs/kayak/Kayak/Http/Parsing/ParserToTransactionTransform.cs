@@ -1,4 +1,4 @@
-﻿namespace Kayak.Http.Parsing
+﻿namespace Elpis.Kayak.Http.Parsing
 {
     // adapts synchronous parser events to asynchronous "socket-like" events.
     // 
@@ -15,21 +15,21 @@
     // the first request has an entity body, the user cannot expect to "delay" 
     // the processing of the next request by returning true from the OnData 
     // handler, since that request is already in memory.
-    internal class ParserToTransactionTransform : Parsing.IHighLevelParserDelegate
+    internal class ParserToTransactionTransform : IHighLevelParserDelegate
     {
         public ParserToTransactionTransform(IHttpServerTransaction transaction,
             IHttpServerTransactionDelegate transactionDelegate)
         {
             _transaction = transaction;
             _transactionDelegate = transactionDelegate;
-            _queue = new Parsing.ParserEventQueue();
+            _queue = new ParserEventQueue();
         }
 
-        private readonly Parsing.ParserEventQueue _queue;
+        private readonly ParserEventQueue _queue;
         private readonly IHttpServerTransaction _transaction;
         private readonly IHttpServerTransactionDelegate _transactionDelegate;
 
-        public void OnRequestBegan(Parsing.HttpRequestHeaders head, bool shouldKeepAlive)
+        public void OnRequestBegan(HttpRequestHeaders head, bool shouldKeepAlive)
         {
             _queue.OnRequestBegan(head, shouldKeepAlive);
         }
@@ -48,11 +48,11 @@
         {
             while (_queue.HasEvents)
             {
-                Parsing.ParserEvent e = _queue.Dequeue();
+                ParserEvent e = _queue.Dequeue();
 
                 switch (e.Type)
                 {
-                    case Parsing.ParserEventType.RequestHeaders:
+                    case ParserEventType.RequestHeaders:
                         _transactionDelegate.OnRequest(_transaction,
                             new HttpRequestHead
                             {
@@ -65,13 +65,13 @@
                                 Headers = e.Request.Headers
                             }, e.KeepAlive);
                         break;
-                    case Parsing.ParserEventType.RequestBody:
+                    case ParserEventType.RequestBody:
                         if (!_queue.HasEvents)
                             return _transactionDelegate.OnRequestData(_transaction, e.Data, continuation);
 
                         _transactionDelegate.OnRequestData(_transaction, e.Data, null);
                         break;
-                    case Parsing.ParserEventType.RequestEnded:
+                    case ParserEventType.RequestEnded:
                         _transactionDelegate.OnRequestEnd(_transaction);
                         break;
                 }

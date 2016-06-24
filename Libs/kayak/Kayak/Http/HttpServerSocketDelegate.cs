@@ -1,30 +1,34 @@
-﻿namespace Kayak.Http
+﻿using Elpis.Kayak.Extensions;
+using Elpis.Kayak.Http.Parsing;
+using Elpis.Kayak.Net;
+
+namespace Elpis.Kayak.Http
 {
     // transforms socket events into http server transaction events.
-    internal class HttpServerSocketDelegate : Net.ISocketDelegate
+    internal class HttpServerSocketDelegate : ISocketDelegate
     {
         public HttpServerSocketDelegate(IHttpServerTransaction transaction,
             IHttpServerTransactionDelegate transactionDelegate)
         {
             _transaction = transaction;
             _transactionDelegate = transactionDelegate;
-            _transactionTransform = new Parsing.ParserToTransactionTransform(transaction, transactionDelegate);
-            _parser = new HttpMachine.HttpParser(new Parsing.ParserDelegate(_transactionTransform));
+            _transactionTransform = new ParserToTransactionTransform(transaction, transactionDelegate);
+            _parser = new HttpMachine.HttpParser(new ParserDelegate(_transactionTransform));
         }
 
         private readonly HttpMachine.HttpParser _parser;
         private readonly IHttpServerTransaction _transaction;
         private readonly IHttpServerTransactionDelegate _transactionDelegate;
-        private readonly Parsing.ParserToTransactionTransform _transactionTransform;
+        private readonly ParserToTransactionTransform _transactionTransform;
 
-        public bool OnData(Net.ISocket socket, System.ArraySegment<byte> data, System.Action continuation)
+        public bool OnData(ISocket socket, System.ArraySegment<byte> data, System.Action continuation)
         {
             try
             {
                 int parsed = _parser.Execute(data);
 
                 if (parsed == data.Count) return _transactionTransform.Commit(continuation);
-                Kayak.Extensions.Trace.Write("Error while parsing request.");
+                Trace.Write("Error while parsing request.");
                 throw new System.Exception("Error while parsing request.");
 
                 // raises request events on transaction delegate
@@ -38,7 +42,7 @@
             }
         }
 
-        public void OnEnd(Net.ISocket socket)
+        public void OnEnd(ISocket socket)
         {
             System.Diagnostics.Debug.WriteLine("Socket OnEnd.");
 
@@ -48,19 +52,19 @@
             _transactionDelegate.OnEnd(_transaction);
         }
 
-        public void OnError(Net.ISocket socket, System.Exception e)
+        public void OnError(ISocket socket, System.Exception e)
         {
             System.Diagnostics.Debug.WriteLine("Socket OnError.");
-            Kayak.Extensions.Extensions.DebugStackTrace(e);
+            Elpis.Kayak.Extensions.Extensions.DebugStackTrace(e);
             _transactionDelegate.OnError(_transaction, e);
         }
 
-        public void OnClose(Net.ISocket socket)
+        public void OnClose(ISocket socket)
         {
             _transactionDelegate.OnClose(_transaction);
         }
 
-        public void OnConnected(Net.ISocket socket)
+        public void OnConnected(ISocket socket)
         {
             throw new System.NotImplementedException();
         }

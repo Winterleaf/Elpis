@@ -17,9 +17,7 @@
  * along with BassPlayer. If not, see http://www.gnu.org/licenses/.
 */
 
-using SD = System.Diagnostics;
-
-namespace BassPlayer
+namespace Elpis.BassPlayer
 {
     public enum LogType
     {

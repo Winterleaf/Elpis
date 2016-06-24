@@ -19,7 +19,7 @@
 
 using System.Linq;
 
-namespace Util
+namespace Elpis.Util
 {
     public class MapConfigEntry
     {

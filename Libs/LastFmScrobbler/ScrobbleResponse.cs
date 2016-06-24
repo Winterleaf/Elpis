@@ -1,4 +1,4 @@
-﻿namespace Lpfm.LastFmScrobbler
+﻿namespace Elpis.Lpfm.LastFmScrobbler
 {
     /// <summary>
     ///     A list of <see cref="ScrobbleResponse" />

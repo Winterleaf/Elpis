@@ -1,4 +1,4 @@
-﻿namespace Kayak.Extensions
+﻿namespace Elpis.Kayak.Extensions
 {
     public static class Extensions
     {

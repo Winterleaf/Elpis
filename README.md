@@ -1,3 +1,16 @@
+IMPORTANT
+This is a branch of the Elpis Client from https://github.com/adammhaile/Elpis
+I do not claim to have written the base code.  I have just done my best to improve on there work.  All of there
+licensing and such stays in place and they are welcome to pull this code back into the master if they so choose.
+
+Beyond taking a pass at all the source code and cleaning it up, I added the abiltiy to record the songs it plays to the hard drive.
+The new option is in settings.
+
+Enjoy!
+
+Vince Gee
+
+
 
 Elpis is native Windows client for the Pandora Radio music service, implemented in C# and WPF.  
 

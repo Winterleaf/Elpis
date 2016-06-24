@@ -1,4 +1,4 @@
-﻿namespace Kayak
+﻿namespace Elpis.Kayak.Net.Socket
 {
     // need to be able to get underneath the KayakSocket class for testing purposes.
     // kinda hanky, but should be able to swap it for a raw socket in the release build

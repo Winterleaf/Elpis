@@ -1,4 +1,6 @@
-﻿namespace Lpfm.LastFmScrobbler
+﻿using Elpis.Lpfm.LastFmScrobbler.Api;
+
+namespace Elpis.Lpfm.LastFmScrobbler
 {
     /// <summary>
     /// 
@@ -98,7 +100,7 @@
         /// <param name="proxy"></param>
         public static void SetWebProxy(System.Net.WebProxy proxy)
         {
-            Api.WebRequestRestApi.SetWebProxy(proxy);
+            WebRequestRestApi.SetWebProxy(proxy);
         }
 
         /// <summary>

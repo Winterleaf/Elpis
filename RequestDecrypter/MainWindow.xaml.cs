@@ -1,4 +1,6 @@
-﻿namespace RequestDecrypter
+﻿using Elpis.PandoraSharp;
+
+namespace Elpis.RequestDecrypter
 {
     /// <summary>
     ///     Interaction logic for MainWindow.xaml
@@ -8,14 +10,14 @@
         public MainWindow()
         {
             InitializeComponent();
-            int unix = PandoraSharp.Time.Unix();
+            int unix = Time.Unix();
             System.Console.WriteLine(unix);
         }
 
         private void btnDecrypt_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             //txtDecrypted.Text =
-            string text = PandoraSharp.Crypto.OutKey.Decrypt(txtEncrypted.Text);
+            string text = Crypto.OutKey.Decrypt(txtEncrypted.Text);
         }
     }
 }

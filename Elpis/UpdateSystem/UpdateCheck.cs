@@ -17,7 +17,7 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace Elpis.UpdateSystem
+namespace Elpis.Wpf.UpdateSystem
 {
     public class UpdateCheck
     {

@@ -1,4 +1,4 @@
-﻿namespace Lpfm.LastFmScrobbler.Api
+﻿namespace Elpis.Lpfm.LastFmScrobbler.Api
 {
     /// <summary>
     ///     Defines an API for the Scrobbling methods of the

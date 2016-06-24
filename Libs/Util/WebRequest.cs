@@ -17,7 +17,7 @@
  * along with PandoraSharp. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace Util
+namespace Elpis.Util
 {
     public class PRequest
     {

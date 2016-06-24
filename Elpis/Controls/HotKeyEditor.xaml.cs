@@ -1,7 +1,7 @@
-﻿namespace Elpis.Controls
+﻿namespace Elpis.Wpf.Controls
 {
     /// <summary>
     ///     Interaction logic for HotKeyEditor.xaml
     /// </summary>
-    public class HotKeyEditor : System.Windows.Controls.UserControl {}
+    public partial class HotKeyEditor : System.Windows.Controls.UserControl {}
 }

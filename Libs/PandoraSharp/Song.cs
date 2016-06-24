@@ -17,7 +17,7 @@
  * along with PandoraSharp. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace PandoraSharp
+namespace Elpis.PandoraSharp
 {
     public class Song
     {
@@ -48,7 +48,7 @@ namespace PandoraSharp
             if (_pandora.AudioFormat == PAudioFormat.AacPlus)
             {
                 if (aacUrl == string.Empty)
-                    throw new Exceptions.PandoraException(Util.ErrorCodes.NoAudioUrls);
+                    throw new PandoraException(Util.ErrorCodes.NoAudioUrls);
 
                 AudioUrl = aacUrl;
             }
@@ -67,7 +67,7 @@ namespace PandoraSharp
                 if (songUrls == null || songUrls.Length == 0)
                 {
                     if (aacUrl != string.Empty) AudioUrl = aacUrl;
-                    else throw new Exceptions.PandoraException(Util.ErrorCodes.NoAudioUrls);
+                    else throw new PandoraException(Util.ErrorCodes.NoAudioUrls);
                 }
                 else if (songUrls.Length == 1)
                 {

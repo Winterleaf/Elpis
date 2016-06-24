@@ -1,4 +1,7 @@
-﻿namespace Kayak.Net
+﻿using Elpis.Kayak.Net.Server;
+using Elpis.Kayak.Net.Socket;
+
+namespace Elpis.Kayak.Net
 {
     public interface ISchedulerFactory
     {
@@ -27,7 +30,7 @@
     {
         public IScheduler Create(ISchedulerDelegate del)
         {
-            return new Net.DefaultKayakScheduler(del);
+            return new DefaultKayakScheduler(del);
         }
     }
 
@@ -58,7 +61,7 @@
     {
         public IServer Create(IServerDelegate del, IScheduler scheduler)
         {
-            return new Net.Server.DefaultKayakServer(del, scheduler);
+            return new DefaultKayakServer(del, scheduler);
         }
     }
 
@@ -93,7 +96,7 @@
     {
         public ISocket Create(ISocketDelegate del, IScheduler scheduler)
         {
-            return new Net.Socket.DefaultKayakSocket(del, scheduler);
+            return new DefaultKayakSocket(del, scheduler);
         }
     }
 

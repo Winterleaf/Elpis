@@ -17,7 +17,7 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace Elpis
+namespace Elpis.Wpf
 {
     public static class DependencyObjectExtensions
     {

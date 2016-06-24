@@ -1,6 +1,7 @@
-﻿using Enumerable = System.Linq.Enumerable;
+﻿using Elpis.Kayak.Net;
+using Enumerable = System.Linq.Enumerable;
 
-namespace Kayak.Http
+namespace Elpis.Kayak.Http
 {
     public struct HttpRequestHead
     {
@@ -31,17 +32,17 @@ namespace Kayak.Http
 
     public interface IHttpServerFactory
     {
-        Net.IServer Create(IHttpRequestDelegate del, Net.IScheduler scheduler);
+        IServer Create(IHttpRequestDelegate del, IScheduler scheduler);
     }
 
     public interface IHttpRequestDelegate
     {
-        void OnRequest(HttpRequestHead head, Net.IDataProducer body, IHttpResponseDelegate response);
+        void OnRequest(HttpRequestHead head, IDataProducer body, IHttpResponseDelegate response);
     }
 
     public interface IHttpResponseDelegate
     {
-        void OnResponse(HttpResponseHead head, Net.IDataProducer body);
+        void OnResponse(HttpResponseHead head, IDataProducer body);
     }
 
     internal interface IHttpServerTransaction : System.IDisposable

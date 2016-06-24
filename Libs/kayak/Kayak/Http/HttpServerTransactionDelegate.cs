@@ -1,6 +1,7 @@
-﻿using Kayak.Http.Extensions;
+﻿using Elpis.Kayak.Http.Extensions;
+using Elpis.Kayak.Net;
 
-namespace Kayak.Http
+namespace Elpis.Kayak.Http
 {
     internal class HttpServerTransactionDelegate : IHttpServerTransactionDelegate
     {
@@ -100,7 +101,7 @@ namespace Kayak.Http
             public readonly DataSubject RequestBody;
             public readonly ResponseSegment Segment;
 
-            public void OnResponse(HttpResponseHead head, Net.IDataProducer body)
+            public void OnResponse(HttpResponseHead head, IDataProducer body)
             {
                 // XXX still need to better account for Connection: close.
                 // this should cause the queue to drop pending responses

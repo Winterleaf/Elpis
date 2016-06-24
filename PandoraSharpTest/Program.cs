@@ -1,10 +1,12 @@
-﻿namespace PandoraSharpTest
+﻿using Elpis.PandoraSharp;
+
+namespace Elpis.PandoraSharpTest
 {
     internal class Program
     {
         private static void Main(string[] args)
         {
-            PandoraSharp.Pandora p = new PandoraSharp.Pandora();
+            Pandora p = new Pandora();
 
             try
             {

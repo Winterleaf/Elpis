@@ -20,10 +20,10 @@
  * http://sources.team-mediaportal.com/websvn/filedetails.php?repname=MediaPortal&path=%2Ftrunk%2Fmediaportal%2FCore%2FMusicPlayer%2FBASS%2FBassAudio.cs
 */
 
+using System;
 using System.Linq;
-using static System.String;
 
-namespace BassPlayer
+namespace Elpis.BassPlayer
 {
     /// <summary>
     ///     This singleton class is responsible for managing the BASS audio Engine object.
@@ -321,7 +321,7 @@ namespace BassPlayer
 
         private int _streamVolume = 100;
 
-        private string _downloadFile = Empty;
+        private string _downloadFile = String.Empty;
         private bool _downloadFileComplete;
         private System.IO.FileStream _downloadStream;
         private Un4seen.Bass.Misc.DSP_Gain _gain;
@@ -431,7 +431,7 @@ namespace BassPlayer
         /// <summary>
         ///     Returns the File, currently played
         /// </summary>
-        public string CurrentFile { get; private set; } = Empty;
+        public string CurrentFile { get; private set; } = String.Empty;
 
         /// <summary>
         ///     Gets/Sets the Playback Volume
@@ -593,7 +593,7 @@ namespace BassPlayer
                 LoadSettings();
 
                 //TODO: Make this configurable
-                if (_regEmail != Empty)
+                if (_regEmail != String.Empty)
                     Un4seen.Bass.BassNet.Registration(_regEmail, _regKey);
 
                 // Set the Global Volume. 0 = silent, 10000 = Full
@@ -1029,7 +1029,7 @@ namespace BassPlayer
                 _downloadStream.Close();
                 _downloadStream = null;
 
-                _downloadFile = Empty;
+                _downloadFile = String.Empty;
                 _downloadFileComplete = false;
             }
         }
@@ -1089,7 +1089,7 @@ namespace BassPlayer
 
             try
             {
-                if (Paused || (Compare(filePath.ToLower(), CurrentFile.ToLower(), System.StringComparison.Ordinal) == 0 && stream != 0))
+                if (Paused || (String.Compare(filePath.ToLower(), CurrentFile.ToLower(), System.StringComparison.Ordinal) == 0 && stream != 0))
                 {
                     bool doReturn = !Paused;
                     // Selected file is equal to current stream
@@ -1161,7 +1161,7 @@ namespace BassPlayer
                 // Make sure Bass is ready to begin playing again
                 Un4seen.Bass.Bass.BASS_Start();
 
-                if (filePath != Empty)
+                if (filePath != String.Empty)
                 {
                     // Turn on parsing of ASX files
                     Un4seen.Bass.Bass.BASS_SetConfig(Un4seen.Bass.BASSConfig.BASS_CONFIG_NET_PLAYLIST, 2);

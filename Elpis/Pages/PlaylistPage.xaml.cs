@@ -17,9 +17,10 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
+using Elpis.Wpf.Controls;
 using Enumerable = System.Linq.Enumerable;
 
-namespace Elpis.Pages
+namespace Elpis.Wpf.Pages
 {
     /// <summary>
     ///     Interaction logic for PlaylistPage.xaml
@@ -42,7 +43,7 @@ namespace Elpis.Pages
             _player.LogoutEvent += _player_LogoutEvent;
             InitializeComponent();
 
-            _feedbackMap = new System.Collections.Generic.Dictionary<PandoraSharp.Song, Controls.ImageButton[]>();
+            _feedbackMap = new System.Collections.Generic.Dictionary<PandoraSharp.Song, ImageButton[]>();
 
             _songMenu = Resources["SongMenu"] as System.Windows.Controls.ContextMenu;
             //This would need to be changed if the menu order is ever changed
@@ -54,7 +55,7 @@ namespace Elpis.Pages
         }
 
         private readonly object _currSongLock = new object();
-        private readonly System.Collections.Generic.Dictionary<PandoraSharp.Song, Controls.ImageButton[]> _feedbackMap;
+        private readonly System.Collections.Generic.Dictionary<PandoraSharp.Song, ImageButton[]> _feedbackMap;
         private readonly PandoraSharpPlayer.Player _player;
         private PandoraSharp.Song _currMenuSong;
         private PandoraSharp.Song _currSong;
@@ -133,11 +134,11 @@ namespace Elpis.Pages
             {
                 if (!_feedbackMap.ContainsKey(song)) return;
                 //bit of a hack, but avoids putting INotify in lower level classes or making wrappers
-                foreach (Controls.ImageButton button in _feedbackMap[song])
+                foreach (ImageButton button in _feedbackMap[song])
                 {
-                    Controls.ContentSpinner spinner = button.FindParent<Controls.ContentSpinner>();
+                    ContentSpinner spinner = button.FindParent<ContentSpinner>();
                     System.Windows.Data.BindingExpression bind =
-                        button.GetBindingExpression(Controls.ImageButton.IsActiveProperty);
+                        button.GetBindingExpression(ImageButton.IsActiveProperty);
                     bind?.UpdateTarget();
                     spinner.StopAnimation();
                 }
@@ -255,20 +256,20 @@ namespace Elpis.Pages
 
         public void ThumbDownCurrent()
         {
-            Controls.ImageButton thumbDown = CurrentSong.FindChildByName<Controls.ImageButton>("btnThumbDown");
+            ImageButton thumbDown = CurrentSong.FindChildByName<ImageButton>("btnThumbDown");
             ThumbDownHandle(thumbDown);
         }
 
-        private void ThumbDownHandle(Controls.ImageButton button)
+        private void ThumbDownHandle(ImageButton button)
         {
             PandoraSharp.Song song =
                 (PandoraSharp.Song) button.FindParentByName<System.Windows.Controls.Grid>("SongItem").DataContext;
-            Controls.ContentSpinner spinner = button.FindParent<Controls.ContentSpinner>();
+            ContentSpinner spinner = button.FindParent<ContentSpinner>();
             if (_feedbackMap.ContainsKey(song)) return;
 
-            Controls.ImageButton otherButton =
-                spinner.FindSiblingByName<Controls.ContentSpinner>("SpinUp")
-                    .FindChildByName<Controls.ImageButton>("btnThumbUp");
+            ImageButton otherButton =
+                spinner.FindSiblingByName<ContentSpinner>("SpinUp")
+                    .FindChildByName<ImageButton>("btnThumbUp");
             _feedbackMap.Add(song, new[] {button, otherButton});
 
             if (song.Banned)
@@ -281,25 +282,25 @@ namespace Elpis.Pages
 
         private void btnThumbDown_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            ThumbDownHandle((Controls.ImageButton) sender);
+            ThumbDownHandle((ImageButton) sender);
         }
 
         public void ThumbUpCurrent()
         {
-            Controls.ImageButton thumbUp = CurrentSong.FindChildByName<Controls.ImageButton>("btnThumbUp");
+            ImageButton thumbUp = CurrentSong.FindChildByName<ImageButton>("btnThumbUp");
             ThumbUpHandle(thumbUp);
         }
 
-        private void ThumbUpHandle(Controls.ImageButton button)
+        private void ThumbUpHandle(ImageButton button)
         {
             PandoraSharp.Song song =
                 (PandoraSharp.Song) button.FindParentByName<System.Windows.Controls.Grid>("SongItem").DataContext;
-            Controls.ContentSpinner spinner = button.FindParent<Controls.ContentSpinner>();
+            ContentSpinner spinner = button.FindParent<ContentSpinner>();
             if (_feedbackMap.ContainsKey(song)) return;
 
-            Controls.ImageButton otherButton =
-                spinner.FindSiblingByName<Controls.ContentSpinner>("SpinDown")
-                    .FindChildByName<Controls.ImageButton>("btnThumbDown");
+            ImageButton otherButton =
+                spinner.FindSiblingByName<ContentSpinner>("SpinDown")
+                    .FindChildByName<ImageButton>("btnThumbDown");
             _feedbackMap.Add(song, new[] {button, otherButton});
             if (song.Loved)
                 _player.SongDeleteFeedback(song);
@@ -311,14 +312,14 @@ namespace Elpis.Pages
 
         private void btnThumbUp_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            ThumbUpHandle((Controls.ImageButton) sender);
+            ThumbUpHandle((ImageButton) sender);
         }
 
         private PandoraSharp.Song GetItemSong(object sender)
         {
             return
                 (PandoraSharp.Song)
-                    ((Controls.ImageButton) sender).FindParentByName<System.Windows.Controls.Grid>("SongItem")
+                    ((ImageButton) sender).FindParentByName<System.Windows.Controls.Grid>("SongItem")
                         .DataContext;
         }
 

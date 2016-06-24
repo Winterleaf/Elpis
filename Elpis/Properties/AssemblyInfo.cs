@@ -1,11 +1,12 @@
-﻿ // General Information about an assembly is controlled through the following 
+﻿using System.Reflection;
+// General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 
 [assembly: System.Reflection.AssemblyTitle("Elpis")]
 [assembly: System.Reflection.AssemblyDescription("")]
 [assembly: System.Reflection.AssemblyConfiguration("")]
-[assembly: System.Reflection.AssemblyCompany("Adam Haile, Alexey Seliverstov")]
+[assembly: System.Reflection.AssemblyCompany("Adam Haile, Alexey Seliverstov, Vince Gee")]
 [assembly: System.Reflection.AssemblyProduct("Elpis")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright © Adam Haile, Alexey Seliverstov 2015")]
 [assembly: System.Reflection.AssemblyTrademark("")]
@@ -47,5 +48,7 @@
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 
-[assembly: System.Reflection.AssemblyVersion("1.5.2")]
+[assembly: System.Reflection.AssemblyVersion("2.0.0")]
+[assembly: AssemblyFileVersion("2.0.0")]
+
 //[assembly: AssemblyFileVersion("0.0.0.0")]

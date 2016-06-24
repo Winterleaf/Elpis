@@ -1,7 +1,6 @@
-﻿
-using System.Web;
+﻿using HttpUtility = Elpis.Lpfm.LastFmScrobbler.HttpUtility;
 
-namespace Lpfm.LastFmScrobbler.Api
+namespace Elpis.Lpfm.LastFmScrobbler.Api
 
 {
     /// <summary>

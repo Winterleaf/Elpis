@@ -1,4 +1,4 @@
-﻿namespace RequestDecrypter
+﻿namespace Elpis.RequestDecrypter
 {
     /// <summary>
     ///     Interaction logic for App.xaml

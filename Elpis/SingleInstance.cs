@@ -8,7 +8,7 @@
 // </summary>
 //-----------------------------------------------------------------------
 
-namespace Microsoft.Shell
+namespace Elpis.Wpf
 {
     internal enum WM
     {

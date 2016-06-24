@@ -1,4 +1,4 @@
-﻿namespace Kayak
+﻿namespace Elpis.Kayak
 {
     internal class Disposable : System.IDisposable
     {

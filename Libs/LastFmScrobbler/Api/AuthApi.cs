@@ -1,4 +1,4 @@
-﻿namespace Lpfm.LastFmScrobbler.Api
+﻿namespace Elpis.Lpfm.LastFmScrobbler.Api
 {
     /// <summary>
     ///     An API for some of the methods of the Last.fm Auth (Authentication) API

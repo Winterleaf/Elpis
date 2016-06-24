@@ -1,4 +1,6 @@
-﻿namespace PlayerControlQuery
+﻿using Elpis.PandoraSharp;
+
+namespace Elpis.PlayerControlQuery
 {
     public class ControlQueryManager
     {
@@ -9,7 +11,7 @@
             _pcqList = new System.Collections.Generic.List<IPlayerControlQuery>();
         }
 
-        public PandoraSharp.Song LastSong
+        public Song LastSong
         {
             get
             {
@@ -31,7 +33,7 @@
             }
         }
 
-        private PandoraSharp.Song _lastQuerySong;
+        private Song _lastQuerySong;
 
         private readonly object _lastQuerySongLock = new object();
         private QueryStatusValue _lastQueryStatus = QueryStatusValue.Waiting;
@@ -91,7 +93,7 @@
             return QueryStatusValue.Invalid;
         }
 
-        public void SendSongUpdate(PandoraSharp.Song song)
+        public void SendSongUpdate(Song song)
         {
             lock (_lastQuerySongLock)
             {
@@ -136,7 +138,7 @@
             SendStatusUpdate(_lastQueryStatus, current);
         }
 
-        public void SendProgressUpdate(PandoraSharp.Song song, QueryTrackProgress progress)
+        public void SendProgressUpdate(Song song, QueryTrackProgress progress)
         {
             foreach (IPlayerControlQuery obj in _pcqList)
             {
@@ -157,12 +159,12 @@
             }
         }
 
-        public void SendProgressUpdate(PandoraSharp.Song song, System.TimeSpan totalTime, System.TimeSpan elapsedTime)
+        public void SendProgressUpdate(Song song, System.TimeSpan totalTime, System.TimeSpan elapsedTime)
         {
             SendProgressUpdate(song, new QueryTrackProgress {TotalTime = totalTime, ElapsedTime = elapsedTime});
         }
 
-        public void SendRatingUpdate(QuerySong song, PandoraSharp.SongRating oldRating, PandoraSharp.SongRating newRating)
+        public void SendRatingUpdate(QuerySong song, SongRating oldRating, SongRating newRating)
         {
             foreach (IPlayerControlQuery obj in _pcqList)
             {
@@ -170,8 +172,8 @@
             }
         }
 
-        public void SendRatingUpdate(string artist, string album, string song, PandoraSharp.SongRating oldRating,
-            PandoraSharp.SongRating newRating)
+        public void SendRatingUpdate(string artist, string album, string song, SongRating oldRating,
+            SongRating newRating)
         {
             SendRatingUpdate(new QuerySong {Artist = artist, Album = album, Title = song}, oldRating, newRating);
         }

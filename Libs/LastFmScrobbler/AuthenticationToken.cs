@@ -1,4 +1,4 @@
-﻿namespace Lpfm.LastFmScrobbler
+﻿namespace Elpis.Lpfm.LastFmScrobbler
 {
     /// <summary>
     ///     A Last.fm Authentication Token DTO

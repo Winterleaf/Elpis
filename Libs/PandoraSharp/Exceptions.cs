@@ -17,7 +17,7 @@
  * along with PandoraSharp. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace PandoraSharp.Exceptions
+namespace Elpis.PandoraSharp
 {
     public class PandoraException : System.Exception
     {

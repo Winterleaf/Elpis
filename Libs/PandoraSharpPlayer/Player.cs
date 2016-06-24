@@ -17,10 +17,12 @@
  * along with PandoraSharpPlayer. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Linq;
 using System.IO;
+using System.Linq;
+using Elpis.BassPlayer;
+using Elpis.PandoraSharp;
 
-namespace PandoraSharpPlayer
+namespace Elpis.PandoraSharpPlayer
 {
     public class Player : System.ComponentModel.INotifyPropertyChanged
     {
@@ -42,10 +44,10 @@ namespace PandoraSharpPlayer
             set { _playlist.MaxPlayed = value; }
         }
 
-        private BassPlayer.BassAudioEngine _bass;
+        private BassAudioEngine _bass;
 
         private PlayerControlQuery.ControlQueryManager _cqman;
-        private PandoraSharp.Pandora _pandora;
+        private Pandora _pandora;
         private Playlist _playlist;
 
         private bool _playNext;
@@ -65,7 +67,7 @@ namespace PandoraSharpPlayer
             _sessionWatcher = new SessionWatcher();
             RegisterPlayerControlQuery(_sessionWatcher);
 
-            _pandora = new PandoraSharp.Pandora();
+            _pandora = new Pandora();
             _pandora.ConnectionEvent += _pandora_ConnectionEvent;
             _pandora.StationUpdateEvent += _pandora_StationUpdateEvent;
             _pandora.FeedbackUpdateEvent += _pandora_FeedbackUpdateEvent;
@@ -73,7 +75,7 @@ namespace PandoraSharpPlayer
             _pandora.StationsUpdatingEvent += _pandora_StationsUpdatingEvent;
             _pandora.QuickMixSavedEvent += _pandora_QuickMixSavedEvent;
 
-            _bass = new BassPlayer.BassAudioEngine(bassRegEmail, bassRegKey);
+            _bass = new BassAudioEngine(bassRegEmail, bassRegKey);
             _bass.PlaybackProgress += bass_PlaybackProgress;
             _bass.PlaybackStateChanged += bass_PlaybackStateChanged;
             _bass.PlaybackStart += bass_PlaybackStart;
@@ -162,7 +164,7 @@ namespace PandoraSharpPlayer
             
         }
         
-        private static PandoraSharp.Song LastSong { get; set; }
+        private static Song LastSong { get; set; }
 
         public bool Rip { get; set; }
         public string RipPath { get; set; }
@@ -179,29 +181,29 @@ namespace PandoraSharpPlayer
 
         public delegate void ExceptionEventHandler(object sender, Util.ErrorCodes code, System.Exception ex);
 
-        public delegate void FeedbackUpdateEventHandler(object sender, PandoraSharp.Song song, bool success);
+        public delegate void FeedbackUpdateEventHandler(object sender, Song song, bool success);
 
         public delegate void LoadingNextSongHandler(object sender);
 
         public delegate void LoginStatusEventHandler(object sender, string status);
 
-        public delegate void PlaybackProgressHandler(object sender, BassPlayer.BassAudioEngine.Progress prog);
+        public delegate void PlaybackProgressHandler(object sender, BassAudioEngine.Progress prog);
 
         public delegate void PlaybackStartHandler(object sender, double duration);
 
-        public delegate void PlaybackStateChangedHandler(object sender, BassPlayer.BassAudioEngine.PlayState oldState, BassPlayer.BassAudioEngine.PlayState newState);
+        public delegate void PlaybackStateChangedHandler(object sender, BassAudioEngine.PlayState oldState, BassAudioEngine.PlayState newState);
 
         public delegate void PlaybackStopHandler(object sender);
 
-        public delegate void PlaylistSongHandler(object sender, PandoraSharp.Song song);
+        public delegate void PlaylistSongHandler(object sender, Song song);
 
-        public delegate void SearchResultHandler(object sender, System.Collections.Generic.List<PandoraSharp.SearchResult> result);
+        public delegate void SearchResultHandler(object sender, System.Collections.Generic.List<SearchResult> result);
 
-        public delegate void StationCreatedHandler(object sender, PandoraSharp.Station station);
+        public delegate void StationCreatedHandler(object sender, Station station);
 
-        public delegate void StationLoadedHandler(object sender, PandoraSharp.Station station);
+        public delegate void StationLoadedHandler(object sender, Station station);
 
-        public delegate void StationLoadingHandler(object sender, PandoraSharp.Station station);
+        public delegate void StationLoadingHandler(object sender, Station station);
 
         public delegate void StationsRefreshedHandler(object sender);
 
@@ -263,7 +265,7 @@ namespace PandoraSharpPlayer
         public string Email { get; set; }
         public string Password { get; set; }
 
-        public System.Collections.Generic.List<PandoraSharp.Station> Stations => _pandora.Stations;
+        public System.Collections.Generic.List<Station> Stations => _pandora.Stations;
 
         public string ImageCachePath
         {
@@ -294,11 +296,11 @@ namespace PandoraSharpPlayer
         public bool LoggedIn { get; set; }
 
         [System.ComponentModel.DefaultValue(null)]
-        public PandoraSharp.Station CurrentStation { get; private set; }
+        public Station CurrentStation { get; private set; }
 
         public bool IsStationLoaded => CurrentStation != null;
 
-        public PandoraSharp.Song CurrentSong => _playlist.Current;
+        public Song CurrentSong => _playlist.Current;
 
         public string AudioFormat
         {
@@ -329,11 +331,11 @@ namespace PandoraSharpPlayer
             }
         }
 
-        public PandoraSharp.Pandora.SortOrder StationSortOrder
+        public Pandora.SortOrder StationSortOrder
         {
             get
             {
-                return _pandora?.StationSortOrder ?? PandoraSharp.Pandora.SortOrder.DateDesc;
+                return _pandora?.StationSortOrder ?? Pandora.SortOrder.DateDesc;
             }
 
             set
@@ -405,7 +407,7 @@ namespace PandoraSharpPlayer
         {
             if (_playNext && retry >= 2) return;
             _playNext = true;
-            PandoraSharp.Song song;
+            Song song;
             if (LoadingNextSong != null)
             {
                 Util.Log.O("Loading next song.");
@@ -416,7 +418,7 @@ namespace PandoraSharpPlayer
             {
                 song = _playlist.NextSong();
             }
-            catch (PandoraSharp.Exceptions.PandoraException pex)
+            catch (PandoraException pex)
             {
                 _playNext = false;
                 if (pex.Fault != Util.ErrorCodes.EndOfPlaylist) throw;
@@ -503,7 +505,7 @@ namespace PandoraSharpPlayer
                 _cqman.SendSongUpdate(song);
                 //_cqman.SendStatusUpdate(QueryStatusValue.Playing);
             }
-            catch (BassPlayer.BassStreamException ex)
+            catch (BassStreamException ex)
             {
                 if (ex.ErrorCode == Un4seen.Bass.BASSError.BASS_ERROR_FILEOPEN)
                 {
@@ -515,7 +517,7 @@ namespace PandoraSharpPlayer
                 {
                     Stop();
                     _cqman.SendStatusUpdate(PlayerControlQuery.QueryStatusValue.Error);
-                    throw new PandoraSharp.Exceptions.PandoraException(Util.ErrorCodes.StreamError, ex);
+                    throw new PandoraException(Util.ErrorCodes.StreamError, ex);
                 }
             }
             finally
@@ -528,12 +530,12 @@ namespace PandoraSharpPlayer
 
         private int UpdatePlaylist()
         {
-            System.Collections.Generic.List<PandoraSharp.Song> result = new System.Collections.Generic.List<PandoraSharp.Song>();
+            System.Collections.Generic.List<Song> result = new System.Collections.Generic.List<Song>();
             try
             {
                 result = CurrentStation.GetPlaylist();
             }
-            catch (PandoraSharp.Exceptions.PandoraException ex)
+            catch (PandoraException ex)
             {
                 if (ex.Message == "DAILY_SKIP_LIMIT_REACHED")
                 {
@@ -556,7 +558,7 @@ namespace PandoraSharpPlayer
             _playlist.ClearSongs();
 
             if (UpdatePlaylist() == 0)
-                throw new PandoraSharp.Exceptions.PandoraException(Util.ErrorCodes.EndOfPlaylist);
+                throw new PandoraException(Util.ErrorCodes.EndOfPlaylist);
 
             StationLoaded?.Invoke(this, CurrentStation);
             _cqman.SendStatusUpdate(PlayerControlQuery.QueryStatusValue.StationLoaded);
@@ -568,7 +570,7 @@ namespace PandoraSharpPlayer
             catch (Playlist.PlaylistEmptyException)
             {
                 if (UpdatePlaylist() == 0)
-                    throw new PandoraSharp.Exceptions.PandoraException(Util.ErrorCodes.EndOfPlaylist);
+                    throw new PandoraException(Util.ErrorCodes.EndOfPlaylist);
 
                 PlayNextSong();
             }
@@ -586,7 +588,7 @@ namespace PandoraSharpPlayer
                 {
                     method();
                 }
-                catch (PandoraSharp.Exceptions.PandoraException pex)
+                catch (PandoraException pex)
                 {
                     Util.Log.O(pex.Fault + ": " + pex);
                     SendPandoraError(pex.Fault, pex);
@@ -625,25 +627,25 @@ namespace PandoraSharpPlayer
             _cqman.SendStatusUpdate(PlayerControlQuery.QueryStatusValue.Connecting);
         }
 
-        public PandoraSharp.Station GetStationFromString(string nameOrId)
+        public Station GetStationFromString(string nameOrId)
         {
             if (nameOrId == null) return null;
-            PandoraSharp.Station s = System.Text.RegularExpressions.Regex.IsMatch(nameOrId, @"^[0-9]+$") ? GetStationFromId(nameOrId) : GetStationFromName(nameOrId);
+            Station s = System.Text.RegularExpressions.Regex.IsMatch(nameOrId, @"^[0-9]+$") ? GetStationFromId(nameOrId) : GetStationFromName(nameOrId);
 
             return s;
         }
 
-        public PandoraSharp.Station GetStationFromId(string stationId)
+        public Station GetStationFromId(string stationId)
         {
             return Stations.FirstOrDefault(s => stationId == s.Id);
         }
 
-        public PandoraSharp.Station GetStationFromName(string stationName)
+        public Station GetStationFromName(string stationName)
         {
             return Stations.FirstOrDefault(s => stationName == s.Name);
         }
 
-        public void PlayStation(PandoraSharp.Station station)
+        public void PlayStation(Station station)
         {
             CurrentStation = station;
             //JumpList.AddToRecentCategory(station.asJumpTask());
@@ -653,7 +655,7 @@ namespace PandoraSharpPlayer
 
         public bool PlayStation(string stationId)
         {
-            PandoraSharp.Station s = GetStationFromId(stationId);
+            Station s = GetStationFromId(stationId);
             if (s == null) return false;
             PlayStation(s);
             return true;
@@ -661,65 +663,65 @@ namespace PandoraSharpPlayer
 
         private bool _isRating;
 
-        private void RateSong(PandoraSharp.Song song, PandoraSharp.SongRating rating)
+        private void RateSong(Song song, SongRating rating)
         {
             if (_isRating) return;
             _isRating = true;
-            PandoraSharp.SongRating oldRating = song.Rating;
+            SongRating oldRating = song.Rating;
             song.Rate(rating);
             _cqman.SendRatingUpdate(song.Artist, song.Album, song.SongTitle, oldRating, rating);
             _isRating = false;
         }
 
-        public void SongThumbUp(PandoraSharp.Song song)
+        public void SongThumbUp(Song song)
         {
             if (!IsStationLoaded) return;
-            RunTask(() => RateSong(song, PandoraSharp.SongRating.Love));
+            RunTask(() => RateSong(song, SongRating.Love));
         }
 
-        public void SongThumbDown(PandoraSharp.Song song)
+        public void SongThumbDown(Song song)
         {
             if (!IsStationLoaded) return;
-            RunTask(() => RateSong(song, PandoraSharp.SongRating.Ban));
+            RunTask(() => RateSong(song, SongRating.Ban));
         }
 
-        public void SongDeleteFeedback(PandoraSharp.Song song)
+        public void SongDeleteFeedback(Song song)
         {
             if (!IsStationLoaded) return;
-            RunTask(() => RateSong(song, PandoraSharp.SongRating.None));
+            RunTask(() => RateSong(song, SongRating.None));
         }
 
-        public void SongTired(PandoraSharp.Song song)
+        public void SongTired(Song song)
         {
             if (!IsStationLoaded) return;
             RunTask(song.SetTired);
         }
 
-        public void SongBookmarkArtist(PandoraSharp.Song song)
+        public void SongBookmarkArtist(Song song)
         {
             if (!IsStationLoaded) return;
             RunTask(song.BookmarkArtist);
         }
 
-        public void SongBookmark(PandoraSharp.Song song)
+        public void SongBookmark(Song song)
         {
             if (!IsStationLoaded) return;
             RunTask(song.Bookmark);
         }
 
-        public void StationRename(PandoraSharp.Station station, string name)
+        public void StationRename(Station station, string name)
         {
             RunTask(() => station.Rename(name));
         }
 
-        public void SetStationSortOrder(PandoraSharp.Pandora.SortOrder order)
+        public void SetStationSortOrder(Pandora.SortOrder order)
         {
             _pandora.StationSortOrder = order;
         }
 
         public void SetStationSortOrder(string order)
         {
-            PandoraSharp.Pandora.SortOrder sort;
+            Pandora.SortOrder sort;
             System.Enum.TryParse(order, true, out sort);
             SetStationSortOrder(sort);
         }
@@ -729,7 +731,7 @@ namespace PandoraSharpPlayer
             RunTask(() => _pandora.RefreshStations());
         }
 
-        public void StationDelete(PandoraSharp.Station station)
+        public void StationDelete(Station station)
         {
             RunTask(() =>
             {
@@ -746,34 +748,34 @@ namespace PandoraSharpPlayer
         {
             RunTask(() =>
             {
-                System.Collections.Generic.List<PandoraSharp.SearchResult> result = _pandora.Search(query);
+                System.Collections.Generic.List<SearchResult> result = _pandora.Search(query);
                 SearchResult?.Invoke(this, result);
             });
         }
 
-        public void CreateStationFromSong(PandoraSharp.Song song)
+        public void CreateStationFromSong(Song song)
         {
             RunTask(() =>
             {
-                PandoraSharp.Station station = _pandora.CreateStationFromSong(song);
+                Station station = _pandora.CreateStationFromSong(song);
                 StationCreated?.Invoke(this, station);
             });
         }
 
-        public void CreateStationFromArtist(PandoraSharp.Song song)
+        public void CreateStationFromArtist(Song song)
         {
             RunTask(() =>
             {
-                PandoraSharp.Station station = _pandora.CreateStationFromArtist(song);
+                Station station = _pandora.CreateStationFromArtist(song);
                 StationCreated?.Invoke(this, station);
             });
         }
 
-        public void CreateStation(PandoraSharp.SearchResult result)
+        public void CreateStation(SearchResult result)
         {
             RunTask(() =>
             {
-                PandoraSharp.Station station = _pandora.CreateStationFromSearch(result.MusicToken);
+                Station station = _pandora.CreateStationFromSearch(result.MusicToken);
                 StationCreated?.Invoke(this, station);
             });
         }
@@ -852,7 +854,7 @@ namespace PandoraSharpPlayer
             LoginStatusEvent?.Invoke(this, status);
         }
 
-        private void _pandora_FeedbackUpdateEvent(object sender, PandoraSharp.Song song, bool success)
+        private void _pandora_FeedbackUpdateEvent(object sender, Song song, bool success)
         {
             FeedbackUpdateEvent?.Invoke(this, song, success);
         }
@@ -862,12 +864,12 @@ namespace PandoraSharpPlayer
             StationsRefreshed?.Invoke(this);
         }
 
-        private void _playlist_PlayedSongDequeued(object sender, PandoraSharp.Song oldSong)
+        private void _playlist_PlayedSongDequeued(object sender, Song oldSong)
         {
             PlayedSongRemoved?.Invoke(this, oldSong);
         }
 
-        private void _playlist_PlayedSongQueued(object sender, PandoraSharp.Song newSong)
+        private void _playlist_PlayedSongQueued(object sender, Song newSong)
         {
             PlayedSongAdded?.Invoke(this, newSong);
         }
@@ -885,27 +887,27 @@ namespace PandoraSharpPlayer
 
         #region BassPlayer Event Handlers
 
-        private void bass_PlaybackProgress(object sender, BassPlayer.BassAudioEngine.Progress prog)
+        private void bass_PlaybackProgress(object sender, BassAudioEngine.Progress prog)
         {
             PlaybackProgress?.Invoke(this, prog);
             _cqman.SendProgressUpdate(_cqman.LastSong, prog.TotalTime, prog.ElapsedTime);
         }
 
-        private void bass_PlaybackStateChanged(object sender, BassPlayer.BassAudioEngine.PlayState oldState, BassPlayer.BassAudioEngine.PlayState newState)
+        private void bass_PlaybackStateChanged(object sender, BassAudioEngine.PlayState oldState, BassAudioEngine.PlayState newState)
         {
             PlaybackStateChanged?.Invoke(this, oldState, newState);
 
             Util.Log.O("Playstate: " + newState);
 
-            Paused = newState == BassPlayer.BassAudioEngine.PlayState.Paused;
-            Playing = newState == BassPlayer.BassAudioEngine.PlayState.Playing;
-            Stopped = newState == BassPlayer.BassAudioEngine.PlayState.Ended || newState == BassPlayer.BassAudioEngine.PlayState.Stopped;
+            Paused = newState == BassAudioEngine.PlayState.Paused;
+            Playing = newState == BassAudioEngine.PlayState.Playing;
+            Stopped = newState == BassAudioEngine.PlayState.Ended || newState == BassAudioEngine.PlayState.Stopped;
 
             if (Playing) _cqman.SendStatusUpdate(PlayerControlQuery.QueryStatusValue.Playing);
             else if (Paused) _cqman.SendStatusUpdate(PlayerControlQuery.QueryStatusValue.Paused);
             else if (Stopped) _cqman.SendStatusUpdate(PlayerControlQuery.QueryStatusValue.Stopped);
 
-            if (newState != BassPlayer.BassAudioEngine.PlayState.Ended || CurrentStation == null) return;
+            if (newState != BassAudioEngine.PlayState.Ended || CurrentStation == null) return;
             Util.Log.O("Song ended, playing next song.");
             RunTask(() => PlayNextSong());
         }

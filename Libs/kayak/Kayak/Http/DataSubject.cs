@@ -1,8 +1,9 @@
-﻿using Enumerable = System.Linq.Enumerable;
+﻿using Elpis.Kayak.Net;
+using Enumerable = System.Linq.Enumerable;
 
-namespace Kayak.Http
+namespace Elpis.Kayak.Http
 {
-    internal class DataSubject : Net.IDataProducer, Net.IDataConsumer
+    internal class DataSubject : IDataProducer, IDataConsumer
     {
         public DataSubject(System.Func<System.IDisposable> disposable)
         {
@@ -11,7 +12,7 @@ namespace Kayak.Http
 
         private readonly System.Func<System.IDisposable> _disposable;
         private DataBuffer _buffer;
-        private Net.IDataConsumer _channel;
+        private IDataConsumer _channel;
 
         private System.Action _continuation;
         private System.Exception _error;
@@ -47,7 +48,7 @@ namespace Kayak.Http
                 _channel.OnEnd();
         }
 
-        public System.IDisposable Connect(Net.IDataConsumer channel)
+        public System.IDisposable Connect(IDataConsumer channel)
         {
             _channel = channel;
 

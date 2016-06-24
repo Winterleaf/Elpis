@@ -17,7 +17,7 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace Util
+namespace Elpis.Util
 {
     //from http://http://stackoverflow.com/questions/202011/encrypt-decrypt-string-in-net
     public class StringCrypt

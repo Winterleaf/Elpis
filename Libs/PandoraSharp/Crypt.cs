@@ -1,6 +1,6 @@
 ﻿using Enumerable = System.Linq.Enumerable;
 
-namespace PandoraSharp
+namespace Elpis.PandoraSharp
 {
     public class Crypto
     {

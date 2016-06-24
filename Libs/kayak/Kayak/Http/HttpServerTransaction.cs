@@ -1,4 +1,6 @@
-﻿namespace Kayak.Http
+﻿using Elpis.Kayak.Net;
+
+namespace Elpis.Kayak.Http
 {
     internal static class TransactionExtensions
     {
@@ -12,14 +14,14 @@
 
     internal class HttpServerTransaction : IHttpServerTransaction
     {
-        public HttpServerTransaction(Net.ISocket socket)
+        public HttpServerTransaction(ISocket socket)
         {
             _socket = socket;
         }
 
         private static readonly IHeaderRenderer DefaultRenderer = new HttpResponseHeaderRenderer();
         private readonly IHeaderRenderer _renderer = DefaultRenderer;
-        private readonly Net.ISocket _socket;
+        private readonly ISocket _socket;
 
         public System.Net.IPEndPoint RemoteEndPoint => _socket.RemoteEndPoint;
 

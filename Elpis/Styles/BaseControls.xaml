@@ -1,7 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:Elpis="clr-namespace:Elpis"
-                    xmlns:pages="clr-namespace:Elpis.Pages">
+                    xmlns:pages1="clr-namespace:Elpis.Wpf.Pages">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/Elpis;component/Styles/Brushes.xaml" />
     </ResourceDictionary.MergedDictionaries>
@@ -870,7 +870,7 @@
 
     <Style x:Key="HotKeyBoxFocusStyle" />
 
-    <Style x:Key="{x:Type pages:HotKeyBox}" TargetType="{x:Type TextBoxBase}">
+    <Style x:Key="{x:Type pages1:HotKeyBox}" TargetType="{x:Type TextBoxBase}">
         <Setter Property="ContextMenu" Value="{x:Null}" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="OverridesDefaultStyle" Value="True" />

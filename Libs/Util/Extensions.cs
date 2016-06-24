@@ -19,7 +19,7 @@
 
 using Enumerable = System.Linq.Enumerable;
 
-namespace Util
+namespace Elpis.Util
 {
     public static class DateTimeExtensions
     {

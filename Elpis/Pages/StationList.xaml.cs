@@ -17,7 +17,9 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace Elpis.Pages
+using Elpis.Wpf.Controls;
+
+namespace Elpis.Wpf.Pages
 {
     /// <summary>
     ///     Interaction logic for StationList.xaml
@@ -206,7 +208,7 @@ namespace Elpis.Pages
         private System.Windows.Controls.Control GetStationItem(object sender)
         {
             return
-                ((Controls.ImageButton) sender).FindParentByName<System.Windows.Controls.ContentControl>("StationItem");
+                ((ImageButton) sender).FindParentByName<System.Windows.Controls.ContentControl>("StationItem");
         }
 
         private PandoraSharp.Station GetItemStation(object sender)

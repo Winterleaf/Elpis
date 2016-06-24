@@ -1,4 +1,4 @@
-﻿namespace Kayak.Net.Server
+﻿namespace Elpis.Kayak.Net.Server
 {
     internal class KayakServerState
     {

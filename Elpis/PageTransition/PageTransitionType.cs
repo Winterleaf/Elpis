@@ -1,4 +1,4 @@
-﻿namespace Elpis.PageTransition
+﻿namespace Elpis.Wpf.PageTransition
 {
     public enum PageTransitionType
     {

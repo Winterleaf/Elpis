@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace Elpis.Pages
+namespace Elpis.Wpf.Pages
 {
     /// <summary>
     ///     Interaction logic for QuickMixPage.xaml

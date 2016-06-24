@@ -17,7 +17,7 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace Elpis.BorderlessWindow
+namespace Elpis.Wpf.BorderlessWindow
 {
 
     #region structs

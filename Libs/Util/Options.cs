@@ -132,7 +132,7 @@ using System.Linq;
 using NDesk.Options;
 #endif
 
-namespace Util
+namespace Elpis.Util
 {
     public class OptionValueCollection : System.Collections.IList, System.Collections.Generic.IList<string>
     {

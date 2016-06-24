@@ -1,4 +1,4 @@
-﻿namespace PandoraSharp
+﻿namespace Elpis.PandoraSharp
 {
     public struct JsonFault
     {

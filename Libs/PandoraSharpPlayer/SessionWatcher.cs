@@ -1,4 +1,6 @@
-﻿namespace PandoraSharpPlayer
+﻿using Elpis.PandoraSharp;
+
+namespace Elpis.PandoraSharpPlayer
 {
     public class SessionWatcher : PlayerControlQuery.IPlayerControlQuery
     {
@@ -28,8 +30,8 @@
 
         public void StatusUpdateReceiver(PlayerControlQuery.QueryStatus status) {}
 
-        public void RatingUpdateReceiver(PlayerControlQuery.QuerySong song, PandoraSharp.SongRating oldRating,
-            PandoraSharp.SongRating newRating) {}
+        public void RatingUpdateReceiver(PlayerControlQuery.QuerySong song, SongRating oldRating,
+            SongRating newRating) {}
 
         private void _sessionState_SystemUnlocked()
         {

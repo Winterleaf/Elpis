@@ -26,7 +26,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Util
+namespace Elpis.Util
 {
     [System.Serializable]
     public class ObservableDictionary<TKey, TValue> : System.Collections.Generic.IDictionary<TKey, TValue>,

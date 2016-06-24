@@ -1,4 +1,4 @@
-﻿namespace Lpfm.LastFmScrobbler.Api
+﻿namespace Elpis.Lpfm.LastFmScrobbler.Api
 {
     /// <summary>
     ///     Defines a simple Rest API

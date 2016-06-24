@@ -1,4 +1,4 @@
-﻿namespace Kayak.Net.Socket
+﻿namespace Elpis.Kayak.Net.Socket
 {
     internal class DefaultKayakSocket : ISocket
     {

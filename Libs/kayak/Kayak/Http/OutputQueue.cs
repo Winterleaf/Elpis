@@ -1,4 +1,6 @@
-﻿namespace Kayak.Http
+﻿using Elpis.Kayak.Net;
+
+namespace Elpis.Kayak.Http
 {
     internal interface ITransactionSegment
     {
@@ -6,9 +8,9 @@
         void AttachTransaction(IHttpServerTransaction transaction);
     }
 
-    internal class ResponseSegment : ITransactionSegment, /*private*/ Net.IDataConsumer
+    internal class ResponseSegment : ITransactionSegment, /*private*/ IDataConsumer
     {
-        private Net.IDataProducer _body;
+        private IDataProducer _body;
         private bool _gotContinue;
         private bool _gotResponse;
         private bool _bodyFinished;
@@ -67,7 +69,7 @@
             _transaction?.OnContinue();
         }
 
-        public void WriteResponse(HttpResponseHead head, Net.IDataProducer body)
+        public void WriteResponse(HttpResponseHead head, IDataProducer body)
         {
             if (_gotResponse) throw new System.InvalidOperationException("WriteResponse was previously called.");
             _gotResponse = true;

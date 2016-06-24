@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
@@ -8,9 +8,9 @@
     <ProjectGuid>{F19D43F0-5E7A-4B5C-A5D8-1B683218730B}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Elpis</RootNamespace>
+    <RootNamespace>Elpis.Wpf</RootNamespace>
     <AssemblyName>Elpis</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -26,6 +26,7 @@
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -35,6 +36,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>.\Resources\main_icon.ico</ApplicationIcon>
@@ -54,6 +56,7 @@
     <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
     <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
     <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <Win32Resource>
@@ -69,6 +72,7 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
     <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -341,33 +345,33 @@
     <Resource Include="Images\settings_hover.png" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Libs\BassPlayer\BassPlayer.csproj">
+    <ProjectReference Include="..\Libs\BassPlayer\Elpis.BassPlayer.csproj">
       <Project>{D054F1ED-6A9C-4C4D-B500-7C1AF01F16C9}</Project>
-      <Name>BassPlayer</Name>
+      <Name>Elpis.BassPlayer</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Libs\kayak\Kayak\Kayak.csproj">
+    <ProjectReference Include="..\Libs\kayak\Kayak\Elpis.Kayak.csproj">
       <Project>{79ddd0ce-6f79-4212-a972-8618ad6e405f}</Project>
-      <Name>Kayak</Name>
+      <Name>Elpis.Kayak</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Libs\PandoraSharpPlayer\PandoraSharpPlayer.csproj">
+    <ProjectReference Include="..\Libs\PandoraSharpPlayer\Elpis.PandoraSharpPlayer.csproj">
       <Project>{D49B479D-3D9A-4F03-A859-9E0C3A615326}</Project>
-      <Name>PandoraSharpPlayer</Name>
+      <Name>Elpis.PandoraSharpPlayer</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Libs\PandoraSharpScrobbler\PandoraSharpScrobbler.csproj">
+    <ProjectReference Include="..\Libs\PandoraSharpScrobbler\Elpis.PandoraSharpScrobbler.csproj">
       <Project>{19FB9DF6-5C82-439D-94C7-521E6EAF3FF3}</Project>
-      <Name>PandoraSharpScrobbler</Name>
+      <Name>Elpis.PandoraSharpScrobbler</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Libs\PandoraSharp\PandoraSharp.csproj">
+    <ProjectReference Include="..\Libs\PandoraSharp\Elpis.PandoraSharp.csproj">
       <Project>{64DD2B7D-9069-41FF-A4E4-732F6DF82F09}</Project>
-      <Name>PandoraSharp</Name>
+      <Name>Elpis.PandoraSharp</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Libs\PlayerControlQuery\PlayerControlQuery.csproj">
+    <ProjectReference Include="..\Libs\PlayerControlQuery\Elpis.PlayerControlQuery.csproj">
       <Project>{E252FF08-F527-4A42-9A69-D28F4AE6052D}</Project>
-      <Name>PlayerControlQuery</Name>
+      <Name>Elpis.PlayerControlQuery</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Libs\Util\Util.csproj">
+    <ProjectReference Include="..\Libs\Util\Elpis.Util.csproj">
       <Project>{A79647D6-4A05-4382-8B6E-4FEC154C3222}</Project>
-      <Name>Util</Name>
+      <Name>Elpis.Util</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

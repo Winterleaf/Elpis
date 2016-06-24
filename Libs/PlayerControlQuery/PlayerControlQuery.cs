@@ -1,4 +1,6 @@
-﻿namespace PlayerControlQuery
+﻿using Elpis.PandoraSharp;
+
+namespace Elpis.PlayerControlQuery
 {
     public class QuerySong
     {
@@ -60,7 +62,7 @@
 
     public delegate void StatusUpdate(QueryStatus status);
 
-    public delegate void RatingUpdate(QuerySong song, PandoraSharp.SongRating rating);
+    public delegate void RatingUpdate(QuerySong song, SongRating rating);
 
     public delegate QueryStatusValue PlayStateRequestEvent(object sender);
 
@@ -82,7 +84,7 @@
 
         void StatusUpdateReceiver(QueryStatus status);
 
-        void RatingUpdateReceiver(QuerySong song, PandoraSharp.SongRating oldRating, PandoraSharp.SongRating newRating);
+        void RatingUpdateReceiver(QuerySong song, SongRating oldRating, SongRating newRating);
 
         event PlayStateRequestEvent PlayStateRequest;
         event PlayRequestEvent PlayRequest;

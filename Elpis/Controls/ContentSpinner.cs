@@ -17,7 +17,7 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace Elpis.Controls
+namespace Elpis.Wpf.Controls
 {
     /// <summary>
     ///     Simple control providing content spinning capability

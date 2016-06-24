@@ -1,4 +1,4 @@
-﻿namespace Kayak.Net
+﻿namespace Elpis.Kayak.Net
 {
     internal class DefaultKayakScheduler : System.Threading.Tasks.TaskScheduler, IScheduler
     {

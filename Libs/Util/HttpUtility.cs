@@ -1,4 +1,4 @@
-﻿namespace Util
+﻿namespace Elpis.Util
 {
     public sealed class HttpUtility
     {

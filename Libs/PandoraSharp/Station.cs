@@ -19,7 +19,7 @@
 
 using Enumerable = System.Linq.Enumerable;
 
-namespace PandoraSharp
+namespace Elpis.PandoraSharp
 {
     public class Station : System.ComponentModel.INotifyPropertyChanged
     {
@@ -181,7 +181,7 @@ namespace PandoraSharp
                     {
                         results.Add(new Song(_pandora, song));
                     }
-                    catch (Exceptions.PandoraException ex)
+                    catch (PandoraException ex)
                     {
                         Util.Log.O("Song Add Error: " + ex.FaultMessage);
                     }
@@ -190,7 +190,7 @@ namespace PandoraSharp
                 _gettingPlaylist = false;
                 return results;
             }
-            catch (Exceptions.PandoraException ex)
+            catch (PandoraException ex)
             {
                 _gettingPlaylist = false;
                 if (ex.Message == "PLAYLIST_END" || ex.Message == "DAILY_SKIP_LIMIT_REACHED")

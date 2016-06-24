@@ -19,7 +19,7 @@
 
 using System.Linq;
 
-namespace PandoraSharp
+namespace Elpis.PandoraSharp
 {
     public class Pandora
     {
@@ -158,7 +158,7 @@ namespace PandoraSharp
             catch (System.Exception e)
             {
                 Util.Log.O(e.ToString());
-                throw new Exceptions.PandoraException(Util.ErrorCodes.ErrorRpc, e);
+                throw new PandoraException(Util.ErrorCodes.ErrorRpc, e);
             }
         }
 
@@ -174,7 +174,7 @@ namespace PandoraSharp
                     return false; //auth fault, signal a re-auth
 
             Util.Log.O("Fault: " + result.FaultString);
-            throw new Exceptions.PandoraException(result.FaultCode); //other, throw the exception
+            throw new PandoraException(result.FaultCode); //other, throw the exception
         }
 
         protected internal string CallRPC_Internal(string method, Newtonsoft.Json.Linq.JObject request, bool isAuth,
@@ -495,7 +495,7 @@ namespace PandoraSharp
                     status = Util.ErrorCodes.ErrorRpc;
                 }
             }
-            catch (Exceptions.PandoraException ex)
+            catch (PandoraException ex)
             {
                 status = ex.Fault;
                 _connected = false;

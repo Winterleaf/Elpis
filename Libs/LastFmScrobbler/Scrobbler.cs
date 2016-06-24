@@ -1,4 +1,6 @@
-﻿namespace Lpfm.LastFmScrobbler
+﻿using Elpis.Lpfm.LastFmScrobbler.Api;
+
+namespace Elpis.Lpfm.LastFmScrobbler
 {
     /// <summary>
     ///     Allows a client to "scrobble" tracks to the Last.fm webservice as they are played
@@ -20,8 +22,8 @@
 
             if (!string.IsNullOrEmpty(sessionKey)) Authentication.Session = new Session {Key = sessionKey};
 
-            AuthApi = new Api.AuthApi();
-            TrackApi = new Api.TrackApi();
+            AuthApi = new AuthApi();
+            TrackApi = new TrackApi();
         }
 
         /// <summary>
@@ -42,8 +44,8 @@
         private Authentication Authentication { get; }
         internal AuthenticationToken AuthenticationToken { get; set; }
 
-        internal Api.IAuthApi AuthApi { get; set; }
-        internal Api.ITrackApi TrackApi { get; set; }
+        internal IAuthApi AuthApi { get; set; }
+        internal ITrackApi TrackApi { get; set; }
 
         /// <summary>
         ///     Pass in a WebProxy to be used by LPFM
@@ -51,7 +53,7 @@
         /// <param name="proxy">A configured WebProxy object</param>
         public static void SetWebProxy(System.Net.WebProxy proxy)
         {
-            Api.WebRequestRestApi.SetWebProxy(proxy);
+            WebRequestRestApi.SetWebProxy(proxy);
         }
 
         /// <summary>

@@ -19,10 +19,14 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
+using Elpis.Wpf.BorderlessWindow;
+using Elpis.Wpf.Pages;
+using Elpis.Wpf.PageTransition;
+using Elpis.Wpf.UpdateSystem;
 using Enumerable = System.Linq.Enumerable;
-using StringExtensions = PandoraSharp.StringExtensions;
+using StringExtensions = Elpis.PandoraSharp.StringExtensions;
 
-namespace Elpis
+namespace Elpis.Wpf
 {
     public partial class MainWindow
     {
@@ -31,28 +35,28 @@ namespace Elpis
             InitializeComponent();
 
             //ContentBackground.Background.Opacity = 1.0;
-            new BorderlessWindow.WindowResizer(this,
-                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.TopLeft, topLeft),
-                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.Top, top),
-                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.TopRight, topRight),
-                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.Right, right),
-                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.BottomRight, bottomRight),
-                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.Bottom, bottom),
-                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.BottomLeft, bottomLeft),
-                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.Left, left));
+            new WindowResizer(this,
+                new WindowBorder(BorderPosition.TopLeft, topLeft),
+                new WindowBorder(BorderPosition.Top, top),
+                new WindowBorder(BorderPosition.TopRight, topRight),
+                new WindowBorder(BorderPosition.Right, right),
+                new WindowBorder(BorderPosition.BottomRight, bottomRight),
+                new WindowBorder(BorderPosition.Bottom, bottom),
+                new WindowBorder(BorderPosition.BottomLeft, bottomLeft),
+                new WindowBorder(BorderPosition.Left, left));
 
             TitleBar.MouseLeftButtonDown += (o, e) => DragMove();
             MinimizeButton.MouseLeftButtonDown += (o, e) => WindowState = System.Windows.WindowState.Minimized;
             CloseButton.MouseLeftButtonDown += (o, e) => Close();
 
-            _errorPage = new Pages.ErrorPage();
+            _errorPage = new ErrorPage();
             _errorPage.ErrorClose += _errorPage_ErrorClose;
             transitionControl.AddPage(_errorPage);
 
-            _loadingPage = new Pages.LoadingPage();
+            _loadingPage = new LoadingPage();
             transitionControl.AddPage(_loadingPage);
 
-            _update = new UpdateSystem.UpdateCheck();
+            _update = new UpdateCheck();
 
             transitionControl.ShowPage(_loadingPage);
 
@@ -152,9 +156,9 @@ namespace Elpis
 
         #region Globals
 
-        private readonly Pages.ErrorPage _errorPage;
+        private readonly ErrorPage _errorPage;
         private HotKeyHost _keyHost;
-        private readonly Pages.LoadingPage _loadingPage;
+        private readonly LoadingPage _loadingPage;
 
         private readonly System.Windows.Forms.ToolStripSeparator _notifyMenuBreakSong =
             new System.Windows.Forms.ToolStripSeparator();
@@ -168,13 +172,13 @@ namespace Elpis
         private readonly System.Windows.Forms.ToolStripSeparator _notifyMenuBreakExit =
             new System.Windows.Forms.ToolStripSeparator();
 
-        private Pages.About _aboutPage;
+        private About _aboutPage;
 
         private readonly Config _config;
 
         private bool _finalComplete;
         private bool _initComplete;
-        private Pages.LoginPage _loginPage;
+        private LoginPage _loginPage;
 
         private System.Windows.Forms.NotifyIcon _notify;
         private System.Windows.Forms.ContextMenuStrip _notifyMenu;
@@ -191,11 +195,11 @@ namespace Elpis
         private System.Threading.Timer _notifyDoubleClickTimer;
         private static bool _notifyDoubleClicked;
         public static PandoraSharpPlayer.Player Player;
-        public static Pages.PlaylistPage PlaylistPage;
+        public static PlaylistPage PlaylistPage;
         private static MainWindow _mainWindow;
         private System.Windows.Controls.UserControl _prevPage;
-        private Pages.Search _searchPage;
-        private Pages.Settings _settingsPage;
+        private Search _searchPage;
+        private Settings _settingsPage;
         private bool _showingError;
         private bool _stationLoaded;
 
@@ -205,14 +209,14 @@ namespace Elpis
 
         private bool _forceClose;
 
-        private Pages.StationList _stationPage;
-        private Pages.QuickMixPage _quickMixPage;
-        private readonly UpdateSystem.UpdateCheck _update;
+        private StationList _stationPage;
+        private QuickMixPage _quickMixPage;
+        private readonly UpdateCheck _update;
 #pragma warning disable 169
-        private Pages.UpdatePage _updatePage;
+        private UpdatePage _updatePage;
 #pragma warning restore 169
-        private Pages.RestartPage _restartPage;
-        private Pages.LastFmAuthPage _lastFmPage;
+        private RestartPage _restartPage;
+        private LastFmAuthPage _lastFmPage;
 
         private Util.ErrorCodes _lastError = Util.ErrorCodes.Success;
         private System.Exception _lastException;
@@ -465,31 +469,31 @@ namespace Elpis
 
         private void SetupPages()
         {
-            _searchPage = new Pages.Search(Player);
+            _searchPage = new Search(Player);
             transitionControl.AddPage(_searchPage);
 
-            _settingsPage = new Pages.Settings(Player, _config, _keyHost);
+            _settingsPage = new Settings(Player, _config, _keyHost);
             transitionControl.AddPage(_settingsPage);
 
-            _restartPage = new Pages.RestartPage();
+            _restartPage = new RestartPage();
             transitionControl.AddPage(_restartPage);
 
-            _aboutPage = new Pages.About();
+            _aboutPage = new About();
             transitionControl.AddPage(_aboutPage);
 
-            _stationPage = new Pages.StationList(Player);
+            _stationPage = new StationList(Player);
             transitionControl.AddPage(_stationPage);
 
-            _quickMixPage = new Pages.QuickMixPage(Player);
+            _quickMixPage = new QuickMixPage(Player);
             transitionControl.AddPage(_quickMixPage);
 
-            _loginPage = new Pages.LoginPage(Player, _config);
+            _loginPage = new LoginPage(Player, _config);
             transitionControl.AddPage(_loginPage);
 
-            PlaylistPage = new Pages.PlaylistPage(Player);
+            PlaylistPage = new PlaylistPage(Player);
             transitionControl.AddPage(PlaylistPage);
 
-            _lastFmPage = new Pages.LastFmAuthPage();
+            _lastFmPage = new LastFmAuthPage();
             transitionControl.AddPage(_lastFmPage);
         }
 
@@ -649,7 +653,7 @@ namespace Elpis
                 }
                 else
                 {
-                    Microsoft.Shell.NativeMethods.ShowToFront(
+                    NativeMethods.ShowToFront(
                         new System.Windows.Interop.WindowInteropHelper(this).Handle);
                 }
             };
@@ -1065,12 +1069,12 @@ namespace Elpis
         public void ShowStationList()
         {
             _stationPage.Stations = Player.Stations;
-            transitionControl.ShowPage(_stationPage, PageTransition.PageTransitionType.Next);
+            transitionControl.ShowPage(_stationPage, PageTransitionType.Next);
         }
 
         private void RestorePrevPage()
         {
-            transitionControl.ShowPage(_prevPage, PageTransition.PageTransitionType.Next);
+            transitionControl.ShowPage(_prevPage, PageTransitionType.Next);
             _prevPage = null;
         }
 
@@ -1130,7 +1134,7 @@ namespace Elpis
 
         private void _loginPage_ConnectingEvent()
         {
-            this.BeginDispatch(() => transitionControl.ShowPage(_loadingPage, PageTransition.PageTransitionType.Next));
+            this.BeginDispatch(() => transitionControl.ShowPage(_loadingPage, PageTransitionType.Next));
         }
 
         private void _errorPage_ErrorClose(bool hardFail)
@@ -1315,7 +1319,7 @@ namespace Elpis
         {
             _prevPage = transitionControl.CurrentPage;
             _searchPage.SearchMode = _searchMode = SearchMode.NewStation;
-            transitionControl.ShowPage(_searchPage, PageTransition.PageTransitionType.Previous);
+            transitionControl.ShowPage(_searchPage, PageTransitionType.Previous);
         }
 
         private static void mainBar_VolumeChanged(double vol)
@@ -1331,7 +1335,7 @@ namespace Elpis
             if (Equals(transitionControl.CurrentPage, _settingsPage))
                 RestorePrevPage();
             else
-                transitionControl.ShowPage(_settingsPage, PageTransition.PageTransitionType.Previous);
+                transitionControl.ShowPage(_settingsPage, PageTransitionType.Previous);
         }
 
         private void mainBar_AboutClick()
@@ -1342,7 +1346,7 @@ namespace Elpis
             if (Equals(transitionControl.CurrentPage, _aboutPage))
                 RestorePrevPage();
             else
-                transitionControl.ShowPage(_aboutPage, PageTransition.PageTransitionType.Previous);
+                transitionControl.ShowPage(_aboutPage, PageTransitionType.Previous);
         }
 
         private void _player_StationsRefreshed(object sender)
@@ -1371,7 +1375,7 @@ namespace Elpis
             this.BeginDispatch(() =>
             {
                 mainBar.SetModePlayList();
-                transitionControl.ShowPage(PlaylistPage, PageTransition.PageTransitionType.Next);
+                transitionControl.ShowPage(PlaylistPage, PageTransitionType.Next);
                 if (_config.Fields.Pandora_AutoPlay)
                 {
                     _config.Fields.Pandora_LastStationID = station.Id;

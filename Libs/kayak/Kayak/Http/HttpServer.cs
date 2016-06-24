@@ -1,8 +1,10 @@
-﻿namespace Kayak.Http
+﻿using Elpis.Kayak.Net;
+
+namespace Elpis.Kayak.Http
 {
     public static class HttpServerExtensions
     {
-        public static Net.IServer CreateHttp(this Net.IServerFactory factory, IHttpRequestDelegate channel, Net.IScheduler scheduler)
+        public static IServer CreateHttp(this IServerFactory factory, IHttpRequestDelegate channel, IScheduler scheduler)
         {
             HttpServerFactory f = new HttpServerFactory(factory);
             return f.Create(channel, scheduler);
@@ -11,20 +13,20 @@
 
     internal class HttpServerFactory : IHttpServerFactory
     {
-        public HttpServerFactory(Net.IServerFactory serverFactory)
+        public HttpServerFactory(IServerFactory serverFactory)
         {
             _serverFactory = serverFactory;
         }
 
-        private readonly Net.IServerFactory _serverFactory;
+        private readonly IServerFactory _serverFactory;
 
-        public Net.IServer Create(IHttpRequestDelegate del, Net.IScheduler scheduler)
+        public IServer Create(IHttpRequestDelegate del, IScheduler scheduler)
         {
             return _serverFactory.Create(new HttpServerDelegate(del), scheduler);
         }
     }
 
-    internal class HttpServerDelegate : Net.IServerDelegate
+    internal class HttpServerDelegate : IServerDelegate
     {
         public HttpServerDelegate(IHttpRequestDelegate requestDelegate)
         {
@@ -33,7 +35,7 @@
 
         private readonly IHttpRequestDelegate _requestDelegate;
 
-        public Net.ISocketDelegate OnConnection(Net.IServer server, Net.ISocket socket)
+        public ISocketDelegate OnConnection(IServer server, ISocket socket)
         {
             // XXX freelist
             HttpServerTransaction tx = new HttpServerTransaction(socket);
@@ -42,6 +44,6 @@
             return socketDelegate;
         }
 
-        public void OnClose(Net.IServer server) {}
+        public void OnClose(IServer server) {}
     }
 }

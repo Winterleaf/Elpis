@@ -1,13 +1,15 @@
-﻿namespace Kayak.Http
+﻿using Elpis.Kayak.Net;
+
+namespace Elpis.Kayak.Http
 {
     internal interface IHeaderRenderer
     {
-        void Render(Net.ISocket consumer, HttpResponseHead head);
+        void Render(ISocket consumer, HttpResponseHead head);
     }
 
     internal class HttpResponseHeaderRenderer : IHeaderRenderer
     {
-        public void Render(Net.ISocket socket, HttpResponseHead head)
+        public void Render(ISocket socket, HttpResponseHead head)
         {
             string status = head.Status;
             System.Collections.Generic.IDictionary<string, string> headers = head.Headers;

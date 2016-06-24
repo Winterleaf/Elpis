@@ -1,9 +1,9 @@
-﻿namespace Elpis
+﻿namespace Elpis.Wpf
 {
     /// <summary>
     ///     Interaction logic for App.xaml
     /// </summary>
-    public partial class App : System.Windows.Application, Microsoft.Shell.ISingleInstanceApp
+    public partial class App : System.Windows.Application, ISingleInstanceApp
     {
         #region ISingleInstanceApp Members
 
@@ -17,13 +17,13 @@
         [System.STAThread]
         public static void Main()
         {
-            if (!Microsoft.Shell.SingleInstance<App>.InitializeAsFirstInstance("ElpisInstance")) return;
+            if (!SingleInstance<App>.InitializeAsFirstInstance("ElpisInstance")) return;
             App application = new App();
             application.Init();
             application.Run();
 
             // Allow single instance code to perform cleanup operations
-            Microsoft.Shell.SingleInstance<App>.Cleanup();
+            SingleInstance<App>.Cleanup();
         }
 
         public void Init()
@@ -35,7 +35,7 @@
         {
             base.OnStartup(e);
             HandleCommandLine(System.Environment.GetCommandLineArgs());
-            if (Elpis.MainWindow.Clo.ShowHelp)
+            if (Wpf.MainWindow.Clo.ShowHelp)
                 Current.Shutdown();
         }
 
@@ -72,11 +72,11 @@
             catch (Util.OptionException e)
             {
                 clo.ShowHelp = true;
-                Elpis.MainWindow.SetCommandLine(clo);
+                Wpf.MainWindow.SetCommandLine(clo);
                 ShowHelp(p, e.Message);
             }
 
-            Elpis.MainWindow.SetCommandLine(clo);
+            Wpf.MainWindow.SetCommandLine(clo);
 
             if (clo.ShowHelp)
             {

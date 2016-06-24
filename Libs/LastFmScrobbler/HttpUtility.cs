@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Lpfm.LastFmScrobbler
+namespace Elpis.Lpfm.LastFmScrobbler
 {
     /// <summary>
     /// 

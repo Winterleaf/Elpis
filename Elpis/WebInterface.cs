@@ -19,7 +19,7 @@
 
 
 
-namespace Elpis
+namespace Elpis.Wpf
 {
     internal class WebInterface
     {
@@ -70,7 +70,7 @@ namespace Elpis
                     // when you subscribe to the request body before calling OnResponse,
                     // the server will automatically send 100-continue if the client is
                     // expecting it.
-                    bool ret = MainWindow.Next();
+                    bool ret = Wpf.MainWindow.Next();
 
                     string body = ret ? "Successfully skipped." : "You have to wait for 20 seconds to skip again.";
 
@@ -88,7 +88,7 @@ namespace Elpis
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/pause"))
                 {
-                    MainWindow.Pause();
+                    Wpf.MainWindow.Pause();
                     const string body = "Paused.";
 
                     Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
@@ -105,7 +105,7 @@ namespace Elpis
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/play"))
                 {
-                    MainWindow.Play();
+                    Wpf.MainWindow.Play();
                     const string body = "Playing.";
 
                     Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
@@ -122,8 +122,8 @@ namespace Elpis
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/toggleplaypause"))
                 {
-                    string body = MainWindow.Player.Playing ? "Paused." : "Playing.";
-                    MainWindow.PlayPauseToggle();
+                    string body = Wpf.MainWindow.Player.Playing ? "Paused." : "Playing.";
+                    Wpf.MainWindow.PlayPauseToggle();
 
                     Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
@@ -139,9 +139,9 @@ namespace Elpis
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/like"))
                 {
-                    MainWindow.Like();
+                    Wpf.MainWindow.Like();
                     string body = "Like";
-                    if (MainWindow.GetCurrentSong().Loved)
+                    if (Wpf.MainWindow.GetCurrentSong().Loved)
                         body = "Liked";
 
                     Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
@@ -158,7 +158,7 @@ namespace Elpis
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/dislike"))
                 {
-                    MainWindow.Dislike();
+                    Wpf.MainWindow.Dislike();
                     string body = "Disliked.";
 
                     Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
@@ -175,7 +175,7 @@ namespace Elpis
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/currentsong"))
                 {
-                    PandoraSharp.Song s = MainWindow.GetCurrentSong();
+                    PandoraSharp.Song s = Wpf.MainWindow.GetCurrentSong();
                     string body = new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(s);
 
                     Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead

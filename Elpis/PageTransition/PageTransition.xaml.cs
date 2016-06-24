@@ -17,7 +17,7 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-namespace Elpis.PageTransition
+namespace Elpis.Wpf.PageTransition
 {
     public partial class PageTransition
     {

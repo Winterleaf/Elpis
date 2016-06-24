@@ -1,4 +1,4 @@
-﻿namespace Lpfm.LastFmScrobbler
+﻿namespace Elpis.Lpfm.LastFmScrobbler
 {
     /// <summary>
     ///     Extends a Track DTO with field corrected meta-data

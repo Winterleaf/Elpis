@@ -1,4 +1,4 @@
-﻿namespace Elpis
+﻿namespace Elpis.Wpf
 {
     public class CommandLineOptions
     {

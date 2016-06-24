@@ -1,6 +1,6 @@
 ﻿ // XXX all of this should live in HTTP Machine
 
-namespace Kayak.Http.Parsing
+namespace Elpis.Kayak.Http.Parsing
 {
     internal struct HttpRequestHeaders
     {

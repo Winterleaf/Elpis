@@ -19,7 +19,7 @@
 
 using Enumerable = System.Linq.Enumerable;
 
-namespace Elpis
+namespace Elpis.Wpf
 {
     public class HotkeyConfig : HotKey
     {

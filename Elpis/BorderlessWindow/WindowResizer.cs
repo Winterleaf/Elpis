@@ -19,7 +19,7 @@
 
 using Enumerable = System.Linq.Enumerable;
 
-namespace Elpis.BorderlessWindow
+namespace Elpis.Wpf.BorderlessWindow
 {
     /// <summary>
     ///     Determines the position of a window border.

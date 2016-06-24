@@ -18,7 +18,7 @@
 
 #endregion
 
-namespace BassPlayer
+namespace Elpis.BassPlayer
 {
     internal class StreamCopy : Un4seen.Bass.Misc.BaseDSP
     {

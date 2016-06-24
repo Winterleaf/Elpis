@@ -1,9 +1,9 @@
-﻿namespace Kayak.Http.Parsing
+﻿namespace Elpis.Kayak.Http.Parsing
 {
     internal struct ParserEvent
     {
         public ParserEventType Type;
-        public Parsing.HttpRequestHeaders Request;
+        public HttpRequestHeaders Request;
         public bool KeepAlive;
         public System.ArraySegment<byte> Data;
     }
@@ -15,7 +15,7 @@
         RequestEnded
     }
 
-    internal class ParserEventQueue : Parsing.IHighLevelParserDelegate
+    internal class ParserEventQueue : IHighLevelParserDelegate
     {
         public ParserEventQueue()
         {
@@ -26,7 +26,7 @@
 
         private readonly System.Collections.Generic.List<ParserEvent> _events;
 
-        public void OnRequestBegan(Parsing.HttpRequestHeaders request, bool shouldKeepAlive)
+        public void OnRequestBegan(HttpRequestHeaders request, bool shouldKeepAlive)
         {
             _events.Add(new ParserEvent
             {

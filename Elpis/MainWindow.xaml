@@ -1,7 +1,8 @@
-﻿<Window x:Class="Elpis.MainWindow" xmlns:elpis="clr-namespace:Elpis"
+﻿<Window x:Class="Elpis.Wpf.MainWindow" xmlns:elpis="clr-namespace:Elpis"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:pageTransition="clr-namespace:Elpis.PageTransition"
+        xmlns:pageTransition1="clr-namespace:Elpis.Wpf.PageTransition"
+        xmlns:wpf="clr-namespace:Elpis.Wpf"
         Title="Elpis"
         Height="520" Width="440" MinHeight="540" MinWidth="440" MaxHeight="2000" MaxWidth="640" WindowStyle="None"
         ResizeMode="CanMinimize" Icon="/Elpis;component/Images/main_icon.png" Loaded="Window_Loaded"
@@ -18,16 +19,16 @@
     </Window.Resources>
 
     <Window.CommandBindings>
-        <CommandBinding Command="{x:Static  elpis:PlayerCommands.PlayPause}"
+        <CommandBinding Command="{x:Static  wpf:PlayerCommands.PlayPause}"
                         Executed="PlayPauseToggled"
                         CanExecute="CanExecutePlayPauseSkip" />
-        <CommandBinding Command="{x:Static elpis:PlayerCommands.Next}"
+        <CommandBinding Command="{x:Static wpf:PlayerCommands.Next}"
                         Executed="SkipTrack"
                         CanExecute="CanExecutePlayPauseSkip" />
-        <CommandBinding Command="{x:Static elpis:PlayerCommands.ThumbsUp}"
+        <CommandBinding Command="{x:Static wpf:PlayerCommands.ThumbsUp}"
                         Executed="ExecuteThumbsUp"
                         CanExecute="CanExecuteThumbsUpDown" />
-        <CommandBinding Command="{x:Static elpis:PlayerCommands.ThumbsDown}"
+        <CommandBinding Command="{x:Static wpf:PlayerCommands.ThumbsDown}"
                         Executed="ExecuteThumbsDown"
                         CanExecute="CanExecuteThumbsUpDown" />
     </Window.CommandBindings>
@@ -88,7 +89,7 @@
                                Foreground="{StaticResource MainFontBrush}" Margin="3" HorizontalAlignment="Right"
                                VerticalAlignment="Top" />
                 </Grid>
-                <elpis:MainBar x:Name="mainBar" Grid.Row="1" />
+                <wpf:MainBar x:Name="mainBar" Grid.Row="1" />
                 <Grid Grid.Row="2">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
@@ -98,7 +99,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <pageTransition:PageTransition Grid.Row="0" Grid.ColumnSpan="2" x:Name="transitionControl"
+                    <pageTransition1:PageTransition Grid.Row="0" Grid.ColumnSpan="2" x:Name="transitionControl"
                                           Background="{StaticResource MainBGBrush}" Margin="0" TransitionType="Next"
                                           HorizontalAlignment="Stretch"
                                           VerticalAlignment="Stretch" CurrentPageSet="transitionControl_CurrentPageSet" />
