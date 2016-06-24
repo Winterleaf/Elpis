@@ -6,6 +6,8 @@ licensing and such stays in place and they are welcome to pull this code back in
 Beyond taking a pass at all the source code and cleaning it up, I added the abiltiy to record the songs it plays to the hard drive.
 The new option is in settings.
 
+Installer Location: https://github.com/Winterleaf/Elpis/raw/master/Elpis.Wizard/Release/Elpis%20Installer.msi
+
 Enjoy!
 
 Vince Gee
