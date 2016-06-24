@@ -218,6 +218,8 @@ namespace Elpis.Wpf.Pages
         {
             _config.Fields.Login_Email = string.Empty;
             _config.Fields.Login_Password = string.Empty;
+            _config.Fields.RipPath = string.Empty;
+            _config.Fields.RipStream = false;
 
             SaveConfig();
 
