@@ -1,22 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Kayak
+﻿namespace Kayak
 {
-    class Disposable : IDisposable
+    internal class Disposable : System.IDisposable
     {
-        readonly Action dispose;
-
-        public Disposable(Action dispose)
+        public Disposable(System.Action dispose)
         {
-            this.dispose = dispose;
+            _dispose = dispose;
         }
+
+        private readonly System.Action _dispose;
 
         public void Dispose()
         {
-            dispose();
+            _dispose();
         }
     }
 }

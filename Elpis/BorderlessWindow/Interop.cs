@@ -17,72 +17,61 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Interop;
-
-namespace GUI.Interop
+namespace Elpis.BorderlessWindow
 {
 
     #region structs
 
     /// <summary>
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    public class MONITORINFO
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential,
+        CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    public class Monitorinfo
     {
         /// <summary>
-        /// </summary>            
-        public int cbSize = Marshal.SizeOf(typeof (MONITORINFO));
+        /// </summary>
+        public int cbSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof (Monitorinfo));
 
         /// <summary>
-        /// </summary>            
-        public RECT rcMonitor;
-
-        /// <summary>
-        /// </summary>            
-        public RECT rcWork;
-
-        /// <summary>
-        /// </summary>            
+        /// </summary>
         public int dwFlags;
+
+        /// <summary>
+        /// </summary>
+        public Rect rcMonitor;
+
+        /// <summary>
+        /// </summary>
+        public Rect rcWork;
     }
 
-
     /// <summary> Win32 </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    public struct RECT
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 0)]
+    public struct Rect
     {
         /// <summary> Win32 </summary>
-        public int left;
+        public readonly int left;
 
         /// <summary> Win32 </summary>
-        public int top;
+        public readonly int top;
 
         /// <summary> Win32 </summary>
-        public int right;
+        public readonly int right;
 
         /// <summary> Win32 </summary>
         public int bottom;
 
         /// <summary> Win32 </summary>
-        public static readonly RECT Empty;
+        public static readonly Rect Empty;
 
         /// <summary> Win32 </summary>
-        public int Width
-        {
-            get { return Math.Abs(right - left); } // Abs needed for BIDI OS
-        }
+        public int Width => System.Math.Abs(right - left);
 
         /// <summary> Win32 </summary>
-        public int Height
-        {
-            get { return bottom - top; }
-        }
+        public int Height => bottom - top;
 
         /// <summary> Win32 </summary>
-        public RECT(int left, int top, int right, int bottom)
+        public Rect(int left, int top, int right, int bottom)
         {
             this.left = left;
             this.top = top;
@@ -90,9 +79,8 @@ namespace GUI.Interop
             this.bottom = bottom;
         }
 
-
         /// <summary> Win32 </summary>
-        public RECT(RECT rcSrc)
+        public Rect(Rect rcSrc)
         {
             left = rcSrc.left;
             top = rcSrc.top;
@@ -101,14 +89,7 @@ namespace GUI.Interop
         }
 
         /// <summary> Win32 </summary>
-        public bool IsEmpty
-        {
-            get
-            {
-                // BUGBUG : On Bidi OS (hebrew arabic) left > right
-                return left >= right || top >= bottom;
-            }
-        }
+        public bool IsEmpty => left >= right || top >= bottom;
 
         /// <summary> Return a user friendly representation of this struct </summary>
         public override string ToString()
@@ -123,11 +104,11 @@ namespace GUI.Interop
         /// <summary> Determine if 2 RECT are equal (deep compare) </summary>
         public override bool Equals(object obj)
         {
-            if (!(obj is RECT))
+            if (!(obj is Rect))
             {
                 return false;
             }
-            return (this == (RECT) obj);
+            return this == (Rect) obj;
         }
 
         /// <summary>Return the HashCode for this struct (not garanteed to be unique)</summary>
@@ -136,39 +117,38 @@ namespace GUI.Interop
             return left.GetHashCode() + top.GetHashCode() + right.GetHashCode() + bottom.GetHashCode();
         }
 
-
         /// <summary> Determine if 2 RECT are equal (deep compare)</summary>
-        public static bool operator ==(RECT rect1, RECT rect2)
+        public static bool operator ==(Rect rect1, Rect rect2)
         {
-            return (rect1.left == rect2.left && rect1.top == rect2.top && rect1.right == rect2.right &&
-                    rect1.bottom == rect2.bottom);
+            return rect1.left == rect2.left && rect1.top == rect2.top && rect1.right == rect2.right &&
+                   rect1.bottom == rect2.bottom;
         }
 
         /// <summary> Determine if 2 RECT are different(deep compare)</summary>
-        public static bool operator !=(RECT rect1, RECT rect2)
+        public static bool operator !=(Rect rect1, Rect rect2)
         {
             return !(rect1 == rect2);
         }
     }
 
     /// <summary>
-    /// POINT aka POINTAPI
+    ///     POINT aka POINTAPI
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct POINT
     {
         /// <summary>
-        /// x coordinate of point.
+        ///     x coordinate of point.
         /// </summary>
         public int x;
 
         /// <summary>
-        /// y coordinate of point.
+        ///     y coordinate of point.
         /// </summary>
         public int y;
 
         /// <summary>
-        /// Construct a point of coordinates (x,y).
+        ///     Construct a point of coordinates (x,y).
         /// </summary>
         public POINT(int x, int y)
         {
@@ -177,7 +157,7 @@ namespace GUI.Interop
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct MINMAXINFO
     {
         public POINT ptReserved;
@@ -185,41 +165,41 @@ namespace GUI.Interop
         public POINT ptMaxPosition;
         public POINT ptMinTrackSize;
         public POINT ptMaxTrackSize;
-    };
+    }
 
     #endregion
 
     public class Win32
     {
-        private readonly Window _window;
-        private POINT _maxTrack;
-        private bool _max_minSet;
-        private POINT _minTrack;
-
-        public Win32(Window win)
+        public Win32(System.Windows.Window win)
         {
             _window = win;
         }
 
-        public Win32()
-        {
-        }
+        public Win32() {}
 
-        [DllImport("user32")]
-        internal static extern bool GetMonitorInfo(IntPtr hMonitor, MONITORINFO lpmi);
+        private readonly System.Windows.Window _window;
+        
+        private POINT _maxTrack;
+        private POINT _minTrack;
 
-        [DllImport("User32")]
-        internal static extern IntPtr MonitorFromWindow(IntPtr handle, int flags);
+        [System.Runtime.InteropServices.DllImport("user32")]
+        internal static extern bool GetMonitorInfo(System.IntPtr hMonitor, Monitorinfo lpmi);
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        internal static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        [System.Runtime.InteropServices.DllImport("User32")]
+        internal static extern System.IntPtr MonitorFromWindow(System.IntPtr handle, int flags);
 
-        public IntPtr SendWMMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam)
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        internal static extern System.IntPtr SendMessage(System.IntPtr hWnd, uint Msg, System.IntPtr wParam,
+            System.IntPtr lParam);
+
+        public System.IntPtr SendWMMessage(System.IntPtr hWnd, uint Msg, System.IntPtr wParam, System.IntPtr lParam)
         {
             return SendMessage(hWnd, Msg, wParam, lParam);
         }
 
-        public IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        public System.IntPtr WindowProc(System.IntPtr hwnd, int msg, System.IntPtr wParam, System.IntPtr lParam,
+            ref bool handled)
         {
             switch (msg)
             {
@@ -229,37 +209,37 @@ namespace GUI.Interop
                     break;
             }
 
-            return (IntPtr) 0;
+            return (System.IntPtr) 0;
         }
 
-        public void WmGetMinMaxInfo(IntPtr hwnd, IntPtr lParam)
+        public void WmGetMinMaxInfo(System.IntPtr hwnd, System.IntPtr lParam)
         {
-            var mmi = (MINMAXINFO) Marshal.PtrToStructure(lParam, typeof (MINMAXINFO));
+            MINMAXINFO mmi =
+                (MINMAXINFO) System.Runtime.InteropServices.Marshal.PtrToStructure(lParam, typeof (MINMAXINFO));
 
             // Adjust the maximized size and position to fit the work area of the correct monitor
             const int MONITOR_DEFAULTTONEAREST = 0x00000002;
-            IntPtr monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            System.IntPtr monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
 
-            if (monitor != IntPtr.Zero)
+            if (monitor != System.IntPtr.Zero)
             {
-                if (!_max_minSet)
-                {
+                
                     _maxTrack = mmi.ptMaxTrackSize;
                     _minTrack = mmi.ptMinTrackSize;
-                }
+                
 
-                var monitorInfo = new MONITORINFO();
+                Monitorinfo monitorInfo = new Monitorinfo();
                 GetMonitorInfo(monitor, monitorInfo);
-                RECT rcWorkArea = monitorInfo.rcWork;
-                RECT rcMonitorArea = monitorInfo.rcMonitor;
-                mmi.ptMaxPosition.x = Math.Abs(rcWorkArea.left - rcMonitorArea.left);
-                mmi.ptMaxPosition.y = Math.Abs(rcWorkArea.top - rcMonitorArea.top);
-                mmi.ptMaxSize.x = Math.Abs(rcWorkArea.right - rcWorkArea.left);
-                mmi.ptMaxSize.y = Math.Abs(rcWorkArea.bottom - rcWorkArea.top);
+                Rect rcWorkArea = monitorInfo.rcWork;
+                Rect rcMonitorArea = monitorInfo.rcMonitor;
+                mmi.ptMaxPosition.x = System.Math.Abs(rcWorkArea.left - rcMonitorArea.left);
+                mmi.ptMaxPosition.y = System.Math.Abs(rcWorkArea.top - rcMonitorArea.top);
+                mmi.ptMaxSize.x = System.Math.Abs(rcWorkArea.right - rcWorkArea.left);
+                mmi.ptMaxSize.y = System.Math.Abs(rcWorkArea.bottom - rcWorkArea.top);
 
                 if (_window != null)
                 {
-                    if (_window.WindowState == WindowState.Maximized)
+                    if (_window.WindowState == System.Windows.WindowState.Maximized)
                     {
                         mmi.ptMaxTrackSize = _maxTrack;
                         mmi.ptMinTrackSize = _minTrack;
@@ -267,8 +247,10 @@ namespace GUI.Interop
                     else
                     {
                         // Bug Fix #13: Translate WPF scaled coordinates to screen coordinates.
-                        var windowMaxDimens = WpfToScreenPixels(new Point(_window.MaxWidth, _window.MaxHeight));
-                        var windowMinDimens = WpfToScreenPixels(new Point(_window.MinWidth, _window.MinHeight));
+                        System.Windows.Point windowMaxDimens =
+                            WpfToScreenPixels(new System.Windows.Point(_window.MaxWidth, _window.MaxHeight));
+                        System.Windows.Point windowMinDimens =
+                            WpfToScreenPixels(new System.Windows.Point(_window.MinWidth, _window.MinHeight));
 
                         mmi.ptMaxTrackSize.x = (int) windowMaxDimens.X;
                         mmi.ptMaxTrackSize.y = (int) windowMaxDimens.Y;
@@ -278,24 +260,25 @@ namespace GUI.Interop
                 }
             }
 
-            Marshal.StructureToPtr(mmi, lParam, true);
+            System.Runtime.InteropServices.Marshal.StructureToPtr(mmi, lParam, true);
         }
 
-        public void SourceInitialized(Window source)
+        public void SourceInitialized(System.Windows.Window source)
         {
-            IntPtr handle = (new WindowInteropHelper(source)).Handle;
-            HwndSource.FromHwnd(handle).AddHook(WindowProc);
+            System.IntPtr handle = new System.Windows.Interop.WindowInteropHelper(source).Handle;
+            System.Windows.Interop.HwndSource.FromHwnd(handle).AddHook(WindowProc);
         }
 
         /// <summary>
-        /// Transforms a WPF Point to screen point accounting for UI scaling.
-        /// See: http://stackoverflow.com/questions/6931333/wpf-converting-between-screen-coordinates-and-wpf-coordinates
+        ///     Transforms a WPF Point to screen point accounting for UI scaling.
+        ///     See: http://stackoverflow.com/questions/6931333/wpf-converting-between-screen-coordinates-and-wpf-coordinates
         /// </summary>
         /// <param name="p">The point to transform.</param>
         /// <returns>The transformed point.</returns>
-        private Point WpfToScreenPixels(Point p)
+        private System.Windows.Point WpfToScreenPixels(System.Windows.Point p)
         {
-            var t = PresentationSource.FromVisual(this._window).CompositionTarget.TransformFromDevice;
+            System.Windows.Media.Matrix t =
+                System.Windows.PresentationSource.FromVisual(_window).CompositionTarget.TransformFromDevice;
             t.Invert();
             return t.Transform(p);
         }

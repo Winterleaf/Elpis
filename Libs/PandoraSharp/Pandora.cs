@@ -17,82 +17,17 @@
  * along with PandoraSharp. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using PandoraSharp.Exceptions;
-using Util;
-using Newtonsoft.Json.Linq;
 
 namespace PandoraSharp
 {
     public class Pandora
     {
-        #region Delegates
-
-        public delegate void ConnectionEventHandler(object sender, bool state, ErrorCodes code);
-
-        public delegate void FeedbackUpdateEventHandler(object sender, Song song, bool success);
-
-        public delegate void LoginStatusEventHandler(object sender, string status);
-
-        public delegate void PandoraErrorEventHandler(object sender, string errorCode, string msg);
-
-        public delegate void StationsUpdatedEventHandler(object sender);
-
-        public delegate void StationsUpdatingEventHandler(object sender);
-
-        public delegate void QuickMixSavedEventHandler(object sender);
-
-        #endregion
-
-        #region SortOrder enum
-
-        public enum SortOrder
-        {
-            DateAsc,
-            DateDesc,
-            AlphaAsc,
-            AlphaDesc,
-            RatingAsc,
-            RatingDesc
-        }
-
-        #endregion
-
-        private readonly object _authTokenLock = new object();
-        private readonly object _partnerIDLock = new object();
-        private readonly object _userIDLock = new object();
-        private readonly object _rpcCountLock = new object();
-
-        protected internal List<string> QuickMixStationIDs = new List<string>();
-        private string _audioFormat = PAudioFormat.MP3;
-
-        private string _authToken;
-        private string _partnerID;
-        private string _userID;
-
-        private bool _authorizing;
-        private bool _connected;
-        private bool _firstAuthComplete = false;
-        private string _imageCachePath = "";
-        private string _password = "";
-        private string _rid;
-        private int _rpcCount;
-        private long _syncTime;
-        private long _timeSynced;
-        private bool _metaDataUpToDate;
-
-        private string _user = "";
-        private string listenerId;
         //private string webAuthToken;
 
         public Pandora()
         {
-            QuickMixStationIDs = new List<string>();
+            QuickMixStationIDs = new System.Collections.Generic.List<string>();
             StationSortOrder = SortOrder.DateDesc;
             HasSubscription = true;
             //this.set_proxy(null);
@@ -116,51 +51,47 @@ namespace PandoraSharp
             }
         }
 
-        private string PartnerID
+        private string PartnerId
         {
             get
             {
-                lock (_partnerIDLock)
+                lock (_partnerIdLock)
                 {
-                    return _partnerID;
+                    return _partnerId;
                 }
             }
             set
             {
-                lock (_partnerIDLock)
+                lock (_partnerIdLock)
                 {
-                    _partnerID = value;
+                    _partnerId = value;
                 }
             }
         }
 
-        private string UserID
+        private string UserId
         {
             get
             {
-                lock (_userIDLock)
+                lock (_userIdLock)
                 {
-                    return _userID;
+                    return _userId;
                 }
             }
             set
             {
-                lock (_userIDLock)
+                lock (_userIdLock)
                 {
-                    _userID = value;
+                    _userId = value;
                 }
             }
         }
 
-        public List<Station> Stations { get; private set; }
+        public System.Collections.Generic.List<Station> Stations { get; private set; }
 
-        public string ImageCachePath
-        {
-            get { return _imageCachePath; }
-            set { _imageCachePath = value; }
-        }
+        public string ImageCachePath { get; set; } = "";
 
-        [DefaultValue(true)]
+        [System.ComponentModel.DefaultValue(true)]
         public bool HasSubscription { get; private set; }
 
         public string AudioFormat
@@ -169,14 +100,48 @@ namespace PandoraSharp
             set { SetAudioFormat(value); }
         }
 
-        private bool _forceSSL = false;
-        public bool ForceSSL
-        {
-            get { return _forceSSL; }
-            set { _forceSSL = value; }
-        }
+        public bool ForceSsl { get; set; } = false;
 
         public SortOrder StationSortOrder { get; set; }
+
+        #region SortOrder enum
+
+        public enum SortOrder
+        {
+            DateAsc,
+            DateDesc,
+            AlphaAsc,
+            AlphaDesc,
+            RatingAsc,
+            RatingDesc
+        }
+
+        #endregion
+
+        private readonly object _authTokenLock = new object();
+        private readonly object _partnerIdLock = new object();
+        private readonly object _rpcCountLock = new object();
+        private readonly object _userIdLock = new object();
+        private string _audioFormat = PAudioFormat.Mp3;
+
+        private bool _authorizing;
+
+        private string _authToken;
+        private bool _connected;
+        //private bool _firstAuthComplete;
+
+        private string _partnerId;
+        private string _password = "";
+        private int _rpcCount;
+        private long _syncTime;
+        private long _timeSynced;
+
+        private string _user = "";
+        private string _userId;
+        //private string _listenerId;
+
+        protected internal System.Collections.Generic.List<string> QuickMixStationIDs;
+
         public event ConnectionEventHandler ConnectionEvent;
         public event StationsUpdatedEventHandler StationUpdateEvent;
         public event StationsUpdatingEventHandler StationsUpdatingEvent;
@@ -184,16 +149,16 @@ namespace PandoraSharp
         public event LoginStatusEventHandler LoginStatusEvent;
         public event QuickMixSavedEventHandler QuickMixSavedEvent;
 
-        protected internal string RPCRequest(string url, string data)
+        protected internal string RpcRequest(string url, string data)
         {
             try
             {
-                return PRequest.StringRequest(url, data);
+                return Util.PRequest.StringRequest(url, data);
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                Log.O(e.ToString());
-                throw new PandoraException(ErrorCodes.ERROR_RPC, e);
+                Util.Log.O(e.ToString());
+                throw new Exceptions.PandoraException(Util.ErrorCodes.ErrorRpc, e);
             }
         }
 
@@ -201,65 +166,56 @@ namespace PandoraSharp
         //return false, which signals that a re-auth and retry needs to be done
         //otherwise return true signalling all clear.
         //All other faults will be thrown
-        protected internal bool HandleFaults(JSONResult result, bool secondTry)
+        protected internal bool HandleFaults(JsonResult result, bool secondTry)
         {
-            if (result.Fault)
-            {
-                if (result.FaultCode == ErrorCodes.INVALID_AUTH_TOKEN)
-                    if (!secondTry)
-                        return false; //auth fault, signal a re-auth
+            if (!result.Fault) return true; //no fault
+            if (result.FaultCode == Util.ErrorCodes.InvalidAuthToken)
+                if (!secondTry)
+                    return false; //auth fault, signal a re-auth
 
-                Log.O("Fault: " + result.FaultString);
-                throw new PandoraException(result.FaultCode); //other, throw the exception
-            }
-
-            return true; //no fault
+            Util.Log.O("Fault: " + result.FaultString);
+            throw new Exceptions.PandoraException(result.FaultCode); //other, throw the exception
         }
 
-        protected internal string CallRPC_Internal(string method, JObject request, 
-            bool isAuth, bool useSSL = false)
+        protected internal string CallRPC_Internal(string method, Newtonsoft.Json.Linq.JObject request, bool isAuth,
+            bool useSsl = false)
         {
-            int callID = 0;
+            int callId;
             lock (_rpcCountLock)
             {
-                callID = _rpcCount++;
+                callId = _rpcCount++;
             }
 
-            string shortMethod = (method.Contains("&") ? 
-                method.Substring(0, method.IndexOf("&")) : method);
+            string url = (useSsl || ForceSsl ? "https://" : "http://") + Const.RpcUrl + "?method=" + method;
 
-            string url = (useSSL || _forceSSL ? "https://" : "http://") + Const.RPC_URL + "?method=" + method;
+            if (request == null) request = new Newtonsoft.Json.Linq.JObject();
 
-            if (request == null) request = new JObject();
-
-            if(AuthToken != null && 
-                PartnerID != null)
+            if (AuthToken != null && PartnerId != null)
             {
                 //if (!url.EndsWith("?")) url += "?";
-                url += ("&partner_id=" + PartnerID);
-                url += ("&auth_token=" + Uri.EscapeDataString(AuthToken));
+                url += "&partner_id=" + PartnerId;
+                url += "&auth_token=" + System.Uri.EscapeDataString(AuthToken);
 
-                if (UserID != null)
+                if (UserId != null)
                 {
-                    url += ("&user_id=" + UserID);
+                    url += "&user_id=" + UserId;
                     request["userAuthToken"] = AuthToken;
                     request["syncTime"] = AdjustedSyncTime();
                 }
             }
 
             string json = request.ToString();
-            string data = string.Empty;
-            if(method == "auth.partnerLogin")
-                data = json;
-            else
-                data = Crypto.out_key.Encrypt(json);
+            string data = method == "auth.partnerLogin" ? json : Crypto.OutKey.Encrypt(json);
 
-            Log.O("[" + callID + ":url]: " + url);
+            Util.Log.O("[" + callId + ":url]: " + url);
 
             if (isAuth)
-                Log.O("[" + callID + ":json]: " + json.SanitizeJSON().Replace(_password, "********").Replace(_user, "********"));
+                Util.Log.O("[" + callId + ":json]: " +
+                           Util.StringExtensions.SanitizeJson(json)
+                               .Replace(_password, "********")
+                               .Replace(_user, "********"));
             else
-                Log.O("[" + callID + ":json]: " + json.SanitizeJSON());
+                Util.Log.O("[" + callId + ":json]: " + Util.StringExtensions.SanitizeJson(json));
 
             //if reauthorizing, wait until it completes.
             if (!isAuth)
@@ -269,85 +225,79 @@ namespace PandoraSharp
                 {
                     waitCount--;
                     if (waitCount >= 0)
-                        Thread.Sleep(1000);
+                        System.Threading.Thread.Sleep(1000);
                     else
                         break;
                 }
             }
 
-            string response = RPCRequest(url, data);
-            Log.O("[" + callID + ":response]: " + response.SanitizeJSON());
+            string response = RpcRequest(url, data);
+            Util.Log.O("[" + callId + ":response]: " + Util.StringExtensions.SanitizeJson(response));
             return response;
         }
 
-        protected internal JSONResult CallRPC(string method, JObject request = null, 
-                                          bool isAuth = false, bool useSSL = false)
+        protected internal JsonResult CallRPC(string method, Newtonsoft.Json.Linq.JObject request = null,
+            bool isAuth = false, bool useSsl = false)
         {
-            string response = CallRPC_Internal(method, request, isAuth, useSSL);
-            JSONResult result = new JSONResult(response);
-            if (result.Fault)
+            string response = CallRPC_Internal(method, request, isAuth, useSsl);
+            JsonResult result = new JsonResult(response);
+            if (!result.Fault) return result;
+            if (HandleFaults(result, false)) return result;
+            Util.Log.O("Reauth Required");
+            if (!AuthenticateUser())
             {
-                if (!HandleFaults(result, false))
-                {
-                    Log.O("Reauth Required");
-                    if (!AuthenticateUser())
-                    {
-                        HandleFaults(result, true);
-                    }
-                    else
-                    {
-                        response = CallRPC_Internal(method, request, isAuth, useSSL);
-                        HandleFaults(result, true);
-                    }
-                }
+                HandleFaults(result, true);
+            }
+            else
+            {
+                CallRPC_Internal(method, request, isAuth, useSsl);
+                HandleFaults(result, true);
             }
 
             return result;
         }
 
-        protected internal JSONResult CallRPC(string method, params object[] args)
+        protected internal JsonResult CallRPC(string method, params object[] args)
         {
-            JObject req = new JObject();
-            if (args.Length % 2 != 0)
+            Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject();
+            if (args.Length%2 != 0)
             {
-                Log.O("CallRPC: Called with an uneven number of arguments!");
+                Util.Log.O("CallRPC: Called with an uneven number of arguments!");
                 return null;
-            } 
+            }
 
-            for (int i=0; i < args.Length; i+=2)
+            for (int i = 0; i < args.Length; i += 2)
             {
-                if(args[i].GetType() != typeof(string) || args[i].GetType() != typeof(String))
+                if (args[i].GetType() != typeof (string) || args[i].GetType() != typeof (string))
                 {
-                    Log.O("CallRPC: Called with an incorrect parameter type!");
+                    Util.Log.O("CallRPC: Called with an incorrect parameter type!");
                     return null;
                 }
-                req[(string)args[i]] = JToken.FromObject(args[i + 1]);
+                req[(string) args[i]] = Newtonsoft.Json.Linq.JToken.FromObject(args[i + 1]);
             }
 
             return CallRPC(method, req);
         }
 
-        protected internal object CallRPC(string method, object[] args, bool b_url_args = false,
-                                          bool isAuth = false, bool useSSL = false, bool insertTime = true)
+        protected internal object CallRPC(string method, object[] args, bool bUrlArgs = false, bool isAuth = false,
+            bool useSsl = false, bool insertTime = true)
         {
             return null;
         }
 
         public void RefreshStations()
         {
-            Log.O("RefreshStations");
-            if (StationsUpdatingEvent != null)
-                StationsUpdatingEvent(this);
+            Util.Log.O("RefreshStations");
+            StationsUpdatingEvent?.Invoke(this);
 
-            JObject req = new JObject();
-            req["includeStationArtUrl"] = true;
-            var stationList = CallRPC("user.getStationList", req);
+            Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["includeStationArtUrl"] = true};
+            JsonResult stationList = CallRPC("user.getStationList", req);
 
             QuickMixStationIDs.Clear();
 
-            Stations = new List<Station>();
-            var stations = stationList.Result["stations"];
-            foreach (JToken d in stations)
+            Stations = new System.Collections.Generic.List<Station>();
+            Newtonsoft.Json.Linq.JToken stations = stationList.Result["stations"];
+            foreach (Newtonsoft.Json.Linq.JToken d in stations)
             {
                 Stations.Add(new Station(this, d));
             }
@@ -358,23 +308,24 @@ namespace PandoraSharp
             {
                 foreach (Station s in Stations)
                 {
-                    if (QuickMixStationIDs.Contains(s.ID))
+                    if (QuickMixStationIDs.Contains(s.Id))
                         s.UseQuickMix = true;
                 }
             }
 
-            List<Station> quickMixes = Stations.FindAll(x => x.IsQuickMix);
+            System.Collections.Generic.List<Station> quickMixes = Stations.FindAll(x => x.IsQuickMix);
             Stations = Stations.FindAll(x => !x.IsQuickMix);
 
             switch (StationSortOrder)
             {
                 case SortOrder.DateDesc:
                     //Stations = Stations.OrderByDescending(x => x.ID).ToList();
-                    Stations = Stations.OrderByDescending(x => Convert.ToInt64(x.ID)).ToList();
+                    Stations =
+                        Stations.OrderByDescending(x => System.Convert.ToInt64(x.Id)).ToList();
                     break;
                 case SortOrder.DateAsc:
                     //Stations = Stations.OrderBy(x => x.ID).ToList();
-                    Stations = Stations.OrderBy(x => Convert.ToInt64(x.ID)).ToList();
+                    Stations = Stations.OrderBy(x => System.Convert.ToInt64(x.Id)).ToList();
                     break;
                 case SortOrder.AlphaDesc:
                     Stations = Stations.OrderByDescending(x => x.Name).ToList();
@@ -390,13 +341,13 @@ namespace PandoraSharp
                     GetStationMetaData();
                     Stations = Stations.OrderByDescending(x => x.ThumbsUp).ToList();
                     break;
-
+                default:
+                    throw new System.ArgumentOutOfRangeException();
             }
 
             Stations.InsertRange(0, quickMixes);
 
-            if (StationUpdateEvent != null)
-                StationUpdateEvent(this);
+            StationUpdateEvent?.Invoke(this);
         }
 
         //private string getSyncKey()
@@ -445,7 +396,7 @@ namespace PandoraSharp
 
         public void Logout()
         {
-            _firstAuthComplete = false;
+            //_firstAuthComplete = false;
         }
 
         public long AdjustedSyncTime()
@@ -457,74 +408,58 @@ namespace PandoraSharp
         {
             _authorizing = true;
 
-            Log.O("AuthUser");
+            Util.Log.O("AuthUser");
 
-            listenerId = null;
+            //_listenerId = null;
             //webAuthToken = null;
             AuthToken = null;
-            PartnerID = null;
-            UserID = null;
+            PartnerId = null;
+            UserId = null;
 
-            JObject req = new JObject();
-            req["username"] = "android";
-            req["password"] = "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7";
-            req["deviceModel"] = "android-generic";
+            Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["username"] = "android", ["password"] = "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7", ["deviceModel"] = "android-generic", ["version"] = "5", ["includeUrls"] = true};
 
-            req["version"] = "5";
-            req["includeUrls"] = true;
-
-            JSONResult ret;
+            JsonResult ret;
 
             try
             {
                 ret = CallRPC("auth.partnerLogin", req, true, true);
                 if (ret.Fault)
                 {
-                    Log.O("PartnerLogin Error: " + ret.FaultString);
+                    Util.Log.O("PartnerLogin Error: " + ret.FaultString);
                     return false;
                 }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                Log.O(e.ToString());
+                Util.Log.O(e.ToString());
                 return false;
             }
 
-            JToken result = ret["result"];
+            Newtonsoft.Json.Linq.JToken result = ret["result"];
 
             _syncTime = Crypto.DecryptSyncTime(result["syncTime"].ToString());
             _timeSynced = Time.Unix();
 
-            PartnerID = result["partnerId"].ToString();
+            PartnerId = result["partnerId"].ToString();
             AuthToken = result["partnerAuthToken"].ToString();
 
-            req = new JObject();
+            req = new Newtonsoft.Json.Linq.JObject {["loginType"] = "user", ["username"] = _user, ["password"] = _password, ["includePandoraOneInfo"] = true, ["includeAdAttributes"] = true, ["includeSubscriptionExpiration"] = true, ["partnerAuthToken"] = AuthToken, ["syncTime"] = _syncTime};
 
-            req["loginType"] = "user";
-            req["username"] = _user;
-            req["password"] = _password;
-
-            req["includePandoraOneInfo"] = true;
-            req["includeAdAttributes"] = true;
-            req["includeSubscriptionExpiration"] = true;
             //req["includeStationArtUrl"] = true;
             //req["returnStationList"] = true;
 
-            req["partnerAuthToken"] = AuthToken;
-            req["syncTime"] = _syncTime;// AdjustedSyncTime();
-
-            ret = null;
+            // AdjustedSyncTime();
 
             ret = CallRPC("auth.userLogin", req, true, true);
             if (ret.Fault)
             {
-                Log.O("UserLogin Error: " + ret.FaultString);
+                Util.Log.O("UserLogin Error: " + ret.FaultString);
                 return false;
             }
 
             result = ret["result"];
             AuthToken = result["userAuthToken"].ToString();
-            UserID = result["userId"].ToString();
+            UserId = result["userId"].ToString();
             HasSubscription = !result["hasAudioAds"].ToObject<bool>();
 
             _authorizing = false;
@@ -533,14 +468,13 @@ namespace PandoraSharp
 
         private void SendLoginStatus(string status)
         {
-            if (LoginStatusEvent != null)
-                LoginStatusEvent(this, status);
+            LoginStatusEvent?.Invoke(this, status);
         }
 
         public void Connect(string user, string password)
         {
-            Log.O("Connect");
-            ErrorCodes status = ErrorCodes.SUCCESS;
+            Util.Log.O("Connect");
+            Util.ErrorCodes status = Util.ErrorCodes.Success;
             _connected = false;
 
             _user = user;
@@ -558,24 +492,22 @@ namespace PandoraSharp
                 }
                 else
                 {
-                    status = ErrorCodes.ERROR_RPC;
+                    status = Util.ErrorCodes.ErrorRpc;
                 }
             }
-            catch (PandoraException ex)
+            catch (Exceptions.PandoraException ex)
             {
                 status = ex.Fault;
                 _connected = false;
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
-                status = ErrorCodes.UNKNOWN_ERROR;
-                Log.O("Connection Error: " + ex.ToString());
+                status = Util.ErrorCodes.UnknownError;
+                Util.Log.O("Connection Error: " + ex);
                 _connected = false;
             }
 
-
-            if (ConnectionEvent != null)
-                ConnectionEvent(this, _connected, status);
+            ConnectionEvent?.Invoke(this, _connected, status);
         }
 
         //public void SetProxy()
@@ -585,12 +517,9 @@ namespace PandoraSharp
 
         public void SetAudioFormat(string fmt)
         {
-            if ((fmt != PAudioFormat.AACPlus &&
-                 fmt != PAudioFormat.MP3 &&
-                 fmt != PAudioFormat.MP3_HIFI) ||
-                (!HasSubscription && fmt == PAudioFormat.MP3_HIFI))
+            if ((fmt != PAudioFormat.AacPlus && fmt != PAudioFormat.Mp3 && fmt != PAudioFormat.Mp3Hifi) || (!HasSubscription && fmt == PAudioFormat.Mp3Hifi))
             {
-                fmt = PAudioFormat.MP3;
+                fmt = PAudioFormat.Mp3;
             }
 
             _audioFormat = fmt;
@@ -598,50 +527,35 @@ namespace PandoraSharp
 
         public void SaveQuickMix()
         {
-            var ids = new List<string>();
-            foreach (Station s in Stations)
-            {
-                if (s.UseQuickMix)
-                    ids.Add(s.ID);
-            }
-
-            JObject req = new JObject();
-            req["quickMixStationIds"] = new JArray(ids.ToArray());
+            Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["quickMixStationIds"] = new Newtonsoft.Json.Linq.JArray((from s in Stations where s.UseQuickMix select s.Id).ToArray().Cast<string>())};
 
             CallRPC("user.setQuickMix", req);
 
-            if (QuickMixSavedEvent != null)
-                QuickMixSavedEvent(this);
+            QuickMixSavedEvent?.Invoke(this);
         }
 
-        public List<SearchResult> Search(string query)
+        public System.Collections.Generic.List<SearchResult> Search(string query)
         {
-            Log.O("Search: " + query);
-            JObject req = new JObject();
-            req["searchText"] = query;
-            var search = CallRPC("music.search", req);
+            Util.Log.O("Search: " + query);
+            Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["searchText"] = query};
+            JsonResult search = CallRPC("music.search", req);
 
-            var list = new List<SearchResult>();
-            var artists = search.Result["artists"];
-            var songs = search.Result["songs"];
-            foreach (JToken a in artists)
-                list.Add(new SearchResult(SearchResultType.Artist, a));
+            Newtonsoft.Json.Linq.JToken artists = search.Result["artists"];
+            Newtonsoft.Json.Linq.JToken songs = search.Result["songs"];
+            System.Collections.Generic.List<SearchResult> list = artists.Select(a => new SearchResult(SearchResultType.Artist, a)).ToList();
+            list.AddRange(songs.Select(s => new SearchResult(SearchResultType.Song, s)));
 
-            foreach (JToken s in songs)
-                list.Add(new SearchResult(SearchResultType.Song, s));
-
-            list = list.OrderByDescending((i) => i.Score).ToList();
+            list = list.OrderByDescending(i => i.Score).ToList();
 
             return list;
         }
 
         public Station CreateStationFromSearch(string token)
         {
-            JObject req = new JObject();
-            req["musicToken"] = token;
-            var result = CallRPC("station.createStation", req);
+            Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["musicToken"] = token};
+            JsonResult result = CallRPC("station.createStation", req);
 
-            var station = new Station(this, result.Result);
+            Station station = new Station(this, result.Result);
             Stations.Add(station);
 
             return station;
@@ -649,12 +563,10 @@ namespace PandoraSharp
 
         private Station CreateStation(Song song, string type)
         {
-            JObject req = new JObject();
-            req["trackToken"] = song.TrackToken;
-            req["musicType"] = type;
-            var result = CallRPC("station.createStation", req);
+            Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["trackToken"] = song.TrackToken, ["musicType"] = type};
+            JsonResult result = CallRPC("station.createStation", req);
 
-            var station = new Station(this, result.Result);
+            Station station = new Station(this, result.Result);
             Stations.Add(station);
 
             return station;
@@ -662,22 +574,20 @@ namespace PandoraSharp
 
         private void GetStationMetaData()
         {
-            Log.O("RetrieveStationMetaData");
+            Util.Log.O("RetrieveStationMetaData");
 
-            Parallel.ForEach(Stations, station =>
+            System.Threading.Tasks.Parallel.ForEach(Stations, station =>
             {
-                JObject req = new JObject();
+                Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["stationToken"] = station.IdToken, ["includeExtendedAttributes"] = true};
 
-                req["stationToken"] = station.IdToken;
-                req["includeExtendedAttributes"] = true;
-                var stationInfo = CallRPC("station.getStation", req);
+                JsonResult stationInfo = CallRPC("station.getStation", req);
 
-                var feedback = stationInfo.Result["feedback"];
+                Newtonsoft.Json.Linq.JToken feedback = stationInfo.Result["feedback"];
 
-                station.ThumbsUp = Convert.ToInt32(feedback["totalThumbsUp"].ToString());
-                station.ThumbsDown = Convert.ToInt32(feedback["totalThumbsDown"].ToString());
+                station.ThumbsUp = System.Convert.ToInt32(feedback["totalThumbsUp"].ToString());
+                station.ThumbsDown = System.Convert.ToInt32(feedback["totalThumbsDown"].ToString());
             });
-        } 
+        }
 
         public Station CreateStationFromSong(Song song)
         {
@@ -691,51 +601,56 @@ namespace PandoraSharp
 
         public void AddFeedback(string stationToken, string trackToken, SongRating rating)
         {
-            Log.O("AddFeedback");
+            Util.Log.O("AddFeedback");
 
-            bool rate = (rating == SongRating.love) ? true : false;
+            bool rate = rating == SongRating.Love;
 
-            JObject req = new JObject();
-            req["stationToken"] = stationToken;
-            req["trackToken"] = trackToken;
-            req["isPositive"] = rate;
+            Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["stationToken"] = stationToken, ["trackToken"] = trackToken, ["isPositive"] = rate};
 
             CallRPC("station.addFeedback", req);
         }
 
-        public void DeleteFeedback(string feedbackID)
+        public void DeleteFeedback(string feedbackId)
         {
-            Log.O("DeleteFeedback");
+            Util.Log.O("DeleteFeedback");
 
-            object result = CallRPC("station.deleteFeedback", "feedbackId", feedbackID);
+            CallRPC("station.deleteFeedback", "feedbackId", feedbackId);
         }
 
         public void CallFeedbackUpdateEvent(Song song, bool success)
         {
-            if (FeedbackUpdateEvent != null)
-                FeedbackUpdateEvent(this, song, success);
+            FeedbackUpdateEvent?.Invoke(this, song, success);
         }
 
-        public Station GetStationByID(string id)
+        public Station GetStationById(string id)
         {
-            foreach (Station s in Stations)
-            {
-                if (s.ID == id)
-                    return s;
-            }
-
-            return null;
+            return Stations.FirstOrDefault(s => s.Id == id);
         }
 
-        public string GetFeedbackID(string stationToken, string trackToken)
+        public string GetFeedbackId(string stationToken, string trackToken)
         {
-            JObject req = new JObject();
-            req["stationToken"] = stationToken;
-            req["trackToken"] = trackToken;
-            req["isPositive"] = true;
+            Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["stationToken"] = stationToken, ["trackToken"] = trackToken, ["isPositive"] = true};
 
-            var feedback = CallRPC("station.addFeedback", req);
-            return (string)feedback.Result["feedbackId"];
+            JsonResult feedback = CallRPC("station.addFeedback", req);
+            return (string) feedback.Result["feedbackId"];
         }
+
+        #region Delegates
+
+        public delegate void ConnectionEventHandler(object sender, bool state, Util.ErrorCodes code);
+
+        public delegate void FeedbackUpdateEventHandler(object sender, Song song, bool success);
+
+        public delegate void LoginStatusEventHandler(object sender, string status);
+
+        public delegate void PandoraErrorEventHandler(object sender, string errorCode, string msg);
+
+        public delegate void StationsUpdatedEventHandler(object sender);
+
+        public delegate void StationsUpdatingEventHandler(object sender);
+
+        public delegate void QuickMixSavedEventHandler(object sender);
+
+        #endregion
     }
 }

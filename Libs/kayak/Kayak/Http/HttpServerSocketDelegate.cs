@@ -1,44 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using HttpMachine;
-using System.Diagnostics;
-
-namespace Kayak.Http
+﻿namespace Kayak.Http
 {
     // transforms socket events into http server transaction events.
-    class HttpServerSocketDelegate : ISocketDelegate
+    internal class HttpServerSocketDelegate : Net.ISocketDelegate
     {
-        HttpParser parser;
-        ParserToTransactionTransform transactionTransform;
-        IHttpServerTransactionDelegate transactionDelegate;
-        IHttpServerTransaction transaction;
-
-        public HttpServerSocketDelegate(IHttpServerTransaction transaction, IHttpServerTransactionDelegate transactionDelegate)
+        public HttpServerSocketDelegate(IHttpServerTransaction transaction,
+            IHttpServerTransactionDelegate transactionDelegate)
         {
-            this.transaction = transaction;
-            this.transactionDelegate = transactionDelegate;
-            transactionTransform = new ParserToTransactionTransform(transaction, transactionDelegate);
-            parser = new HttpParser(new ParserDelegate(transactionTransform));
+            _transaction = transaction;
+            _transactionDelegate = transactionDelegate;
+            _transactionTransform = new Parsing.ParserToTransactionTransform(transaction, transactionDelegate);
+            _parser = new HttpMachine.HttpParser(new Parsing.ParserDelegate(_transactionTransform));
         }
 
-        public bool OnData(ISocket socket, ArraySegment<byte> data, Action continuation)
+        private readonly HttpMachine.HttpParser _parser;
+        private readonly IHttpServerTransaction _transaction;
+        private readonly IHttpServerTransactionDelegate _transactionDelegate;
+        private readonly Parsing.ParserToTransactionTransform _transactionTransform;
+
+        public bool OnData(Net.ISocket socket, System.ArraySegment<byte> data, System.Action continuation)
         {
             try
             {
-                var parsed = parser.Execute(data);
+                int parsed = _parser.Execute(data);
 
-                if (parsed != data.Count)
-                {
-                    Trace.Write("Error while parsing request.");
-                    throw new Exception("Error while parsing request.");
-                }
+                if (parsed == data.Count) return _transactionTransform.Commit(continuation);
+                Kayak.Extensions.Trace.Write("Error while parsing request.");
+                throw new System.Exception("Error while parsing request.");
 
                 // raises request events on transaction delegate
-                return transactionTransform.Commit(continuation);
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 // XXX test this behavior
                 OnError(socket, e);
@@ -47,31 +38,31 @@ namespace Kayak.Http
             }
         }
 
-        public void OnEnd(ISocket socket)
+        public void OnEnd(Net.ISocket socket)
         {
-            Debug.WriteLine("Socket OnEnd.");
+            System.Diagnostics.Debug.WriteLine("Socket OnEnd.");
 
             // parse EOF
-            OnData(socket, default(ArraySegment<byte>), null);
+            OnData(socket, default(System.ArraySegment<byte>), null);
 
-            transactionDelegate.OnEnd(transaction);
+            _transactionDelegate.OnEnd(_transaction);
         }
 
-        public void OnError(ISocket socket, Exception e)
+        public void OnError(Net.ISocket socket, System.Exception e)
         {
-            Debug.WriteLine("Socket OnError.");
-            e.DebugStackTrace();
-            transactionDelegate.OnError(transaction, e);
+            System.Diagnostics.Debug.WriteLine("Socket OnError.");
+            Kayak.Extensions.Extensions.DebugStackTrace(e);
+            _transactionDelegate.OnError(_transaction, e);
         }
 
-        public void OnClose(ISocket socket)
+        public void OnClose(Net.ISocket socket)
         {
-            transactionDelegate.OnClose(transaction);
+            _transactionDelegate.OnClose(_transaction);
         }
 
-        public void OnConnected(ISocket socket)
+        public void OnConnected(Net.ISocket socket)
         {
-            throw new NotImplementedException();
+            throw new System.NotImplementedException();
         }
     }
 }

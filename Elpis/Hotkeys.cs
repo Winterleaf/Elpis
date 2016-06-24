@@ -16,71 +16,58 @@
  * You should have received a copy of the GNU General Public License 
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
-using System;
-using System.ComponentModel;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows;
-using System.Windows.Threading;
-using DrWPF.Windows.Data;
-using Log = Util.Log;
 
-namespace Elpis.Hotkeys
+using Enumerable = System.Linq.Enumerable;
+
+namespace Elpis
 {
-    public class HotKeyEventArgs : EventArgs
+    public class HotKeyEventArgs : System.EventArgs
     {
-        public HotKey HotKey { get; private set; }
-
         public HotKeyEventArgs(HotKey hotKey)
         {
             HotKey = hotKey;
         }
+
+        public HotKey HotKey { get; private set; }
     }
 
-    public class HotKeyAlreadyRegisteredException : Exception
+    public class HotKeyAlreadyRegisteredException : System.Exception
     {
-        public HotKey HotKey { get; private set; }
-
-        public HotKeyAlreadyRegisteredException(string message, HotKey hotKey)
-            : base(message)
+        public HotKeyAlreadyRegisteredException(string message, HotKey hotKey) : base(message)
         {
             HotKey = hotKey;
         }
 
-        public HotKeyAlreadyRegisteredException(string message, HotKey hotKey, Exception inner)
+        public HotKeyAlreadyRegisteredException(string message, HotKey hotKey, System.Exception inner)
             : base(message, inner)
         {
             HotKey = hotKey;
         }
-    }
 
-    public class HotKeyNotSupportedException : Exception
-    {
         public HotKey HotKey { get; private set; }
-
-        public HotKeyNotSupportedException(string message, HotKey hotKey)
-            : base(message)
-        {
-            HotKey = hotKey;
-        }
-
-        public HotKeyNotSupportedException(string message, HotKey hotKey, Exception inner)
-            : base(message, inner)
-        {
-            HotKey = hotKey;
-        }
     }
 
-    public class HotKey : INotifyPropertyChanged, IEquatable<HotKey>
+    public class HotKeyNotSupportedException : System.Exception
     {
-        protected HotKey()
+        public HotKeyNotSupportedException(string message, HotKey hotKey) : base(message)
         {
+            HotKey = hotKey;
         }
 
-        public HotKey(RoutedUICommand command, Key key, ModifierKeys modifiers, bool global, bool enabled = true)
+        public HotKeyNotSupportedException(string message, HotKey hotKey, System.Exception inner) : base(message, inner)
+        {
+            HotKey = hotKey;
+        }
+
+        public HotKey HotKey { get; private set; }
+    }
+
+    public class HotKey : System.ComponentModel.INotifyPropertyChanged, System.IEquatable<HotKey>
+    {
+        protected HotKey() {}
+
+        public HotKey(System.Windows.Input.RoutedUICommand command, System.Windows.Input.Key key,
+            System.Windows.Input.ModifierKeys modifiers, bool global, bool enabled = true)
         {
             Key = key;
             Modifiers = modifiers;
@@ -89,59 +76,87 @@ namespace Elpis.Hotkeys
             Command = command;
         }
 
-        public HotKey(RoutedUICommand command, Key key, ModifierKeys modifiers)
-            : this(command, key, modifiers, false, true)
-        {
-        }
+        public HotKey(System.Windows.Input.RoutedUICommand command, System.Windows.Input.Key key,
+            System.Windows.Input.ModifierKeys modifiers) : this(command, key, modifiers, false) {}
 
-        private RoutedUICommand _command;
-
-        public RoutedUICommand Command
+        public System.Windows.Input.RoutedUICommand Command
         {
             get { return _command; }
             set
             {
-                if (_command != value)
-                {
-                    _command = value;
-                    OnPropertyChanged("Command");
-                }
+                if (_command == value) return;
+                _command = value;
+                OnPropertyChanged("Command");
             }
         }
 
-        private Key _key;
-
-        public Key Key
+        public System.Windows.Input.Key Key
         {
             get { return _key; }
             set
             {
-                if (_key != value)
-                {
-                    OnPropertyChanging("Key");
-                    _key = value;
-                    OnPropertyChanged("Key");
-                }
+                if (_key == value) return;
+                OnPropertyChanging("Key");
+                _key = value;
+                OnPropertyChanged("Key");
             }
         }
 
-        private ModifierKeys _modifiers;
-
-        public ModifierKeys Modifiers
+        public System.Windows.Input.ModifierKeys Modifiers
         {
             get { return _modifiers; }
             set
             {
-                if (_modifiers != value)
-                {
-                    OnPropertyChanging("Modifiers");
-                    _modifiers = value;
-                    OnPropertyChanged("Modifiers");
-                }
+                if (_modifiers == value) return;
+                OnPropertyChanging("Modifiers");
+                _modifiers = value;
+                OnPropertyChanged("Modifiers");
             }
         }
 
-        public void SetKeyCombo(Key key, ModifierKeys modifiers)
+        public bool Enabled
+        {
+            get { return _enabled; }
+            set
+            {
+                if (value == _enabled) return;
+                _enabled = value;
+                OnPropertyChanged("Enabled");
+            }
+        }
+
+        public bool Global
+        {
+            get { return _global; }
+            set
+            {
+                if (value == _global) return;
+                OnPropertyChanging("Global");
+                _global = value;
+                OnPropertyChanged("Global");
+            }
+        }
+
+        public string KeysString => (Modifiers == System.Windows.Input.ModifierKeys.None ? "" : Modifiers + " + ") + Key;
+
+        private System.Windows.Input.RoutedUICommand _command;
+
+        private bool _enabled;
+
+        private bool _global;
+
+        private System.Windows.Input.Key _key;
+
+        private System.Windows.Input.ModifierKeys _modifiers;
+
+        public bool Equals(HotKey other)
+        {
+            return Key == other.Key && Modifiers == other.Modifiers;
+        }
+
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+
+        public void SetKeyCombo(System.Windows.Input.Key key, System.Windows.Input.ModifierKeys modifiers)
         {
             OnPropertyChanging("Key");
             _key = key;
@@ -149,130 +164,97 @@ namespace Elpis.Hotkeys
             OnPropertyChanged("Key");
         }
 
-        private bool _enabled;
-
-        public bool Enabled
-        {
-            get { return _enabled; }
-            set
-            {
-                if (value != _enabled)
-                {
-                    _enabled = value;
-                    OnPropertyChanged("Enabled");
-                }
-            }
-        }
-
-        private bool _global;
-
-        public bool Global
-        {
-            get { return _global; }
-            set
-            {
-                if (value != _global)
-                {
-                    OnPropertyChanging("Global");
-                    _global = value;
-                    OnPropertyChanged("Global");
-                }
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
         protected virtual void OnPropertyChanged(string propertyName)
         {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
         }
 
-        public event PropertyChangingEventHandler PropertyChanging;
+        public event System.ComponentModel.PropertyChangingEventHandler PropertyChanging;
 
         public virtual void OnPropertyChanging(string propertyName)
         {
-            if (PropertyChanging != null)
-                PropertyChanging(this, new PropertyChangingEventArgs(propertyName));
+            PropertyChanging?.Invoke(this, new System.ComponentModel.PropertyChangingEventArgs(propertyName));
         }
 
         public override bool Equals(object obj)
         {
             HotKey hotKey = obj as HotKey;
-            if (hotKey != null)
-                return Equals(hotKey);
-            else
-                return false;
-        }
-
-        public bool Equals(HotKey other)
-        {
-            return (Key == other.Key && Modifiers == other.Modifiers);
+            return hotKey != null && Equals(hotKey);
         }
 
         public override int GetHashCode()
         {
-            return (int)Modifiers + 10 * (int)Key;
-        }
-
-        public string KeysString
-        {
-            get { return (Modifiers == ModifierKeys.None ? "" : (Modifiers.ToString() + " + ")) + Key.ToString(); }
+            return (int) Modifiers + 10*(int) Key;
         }
 
         public override string ToString()
         {
-            return string.Format("{0} + {1} ({2}Enabled), {3}",
-                                 Key, Modifiers,
-                                 Enabled ? "" : "Not ",
-                                 Global ? "Global" : "");
+            return $"{Key} + {Modifiers} ({(Enabled ? "" : "Not ")}Enabled), {(Global ? "Global" : "")}";
         }
     }
 
     public static class PlayerCommands
     {
-        public static RoutedUICommand getCommandByName(string name)
+        public static System.Windows.Input.RoutedUICommand PlayPause =
+            new System.Windows.Input.RoutedUICommand("Pause currently playing track or Play if paused", "Play/Pause",
+                typeof (PlayerCommands));
+
+        public static System.Windows.Input.RoutedUICommand Next =
+            new System.Windows.Input.RoutedUICommand("Skips currently playing track", "Skip Song",
+                typeof (PlayerCommands));
+
+        public static System.Windows.Input.RoutedUICommand ThumbsUp =
+            new System.Windows.Input.RoutedUICommand("Marks this as a liked track that suits this station", "Thumbs Up",
+                typeof (PlayerCommands));
+
+        public static System.Windows.Input.RoutedUICommand ThumbsDown =
+            new System.Windows.Input.RoutedUICommand(
+                "Marks this as a disliked track or one that doesn't suit this station", "Thumbs Down",
+                typeof (PlayerCommands));
+
+        public static System.Collections.Generic.List<System.Windows.Input.RoutedUICommand> AllCommands => new System.Collections.Generic.List<System.Windows.Input.RoutedUICommand>
+        {
+            PlayPause,
+            Next,
+            ThumbsUp,
+            ThumbsDown
+        };
+
+        public static System.Windows.Input.RoutedUICommand GetCommandByName(string name)
         {
             if (name == PlayPause.Name) return PlayPause;
             if (name == Next.Name) return Next;
             if (name == ThumbsUp.Name) return ThumbsUp;
-            if (name == ThumbsDown.Name) return ThumbsDown;
-            return null;
+            return name == ThumbsDown.Name ? ThumbsDown : null;
         }
-
-        public static List<RoutedUICommand> AllCommands
-        {
-            get { return new List<RoutedUICommand>() { PlayPause, Next, ThumbsUp, ThumbsDown }; }
-
-        }
-
-        public static RoutedUICommand PlayPause = new RoutedUICommand("Pause currently playing track or Play if paused", "Play/Pause", typeof(PlayerCommands));
-        public static RoutedUICommand Next = new RoutedUICommand("Skips currently playing track", "Skip Song", typeof(PlayerCommands));
-        public static RoutedUICommand ThumbsUp = new RoutedUICommand("Marks this as a liked track that suits this station", "Thumbs Up", typeof(PlayerCommands));
-        public static RoutedUICommand ThumbsDown = new RoutedUICommand("Marks this as a disliked track or one that doesn't suit this station", "Thumbs Down", typeof(PlayerCommands));
     }
 
-    public sealed class HotKeyHost : IDisposable
+    public sealed class HotKeyHost : System.IDisposable
     {
-        private Window _window;
-        public bool IsEnabled { get; set; }
-        private ObservableDictionary<int, HotKey> hotKeys = new ObservableDictionary<int, HotKey>();
-
-        public HotKeyHost(Window window)
+        public HotKeyHost(System.Windows.Window window)
         {
             _window = window;
-            var hwnd = (HwndSource)HwndSource.FromVisual(window);
+            System.Windows.Interop.HwndSource hwnd =
+                (System.Windows.Interop.HwndSource) System.Windows.PresentationSource.FromVisual(window);
             Init(hwnd);
         }
 
-        private void Init(HwndSource hwndSource)
-        {
-            if (hwndSource == null)
-                throw new ArgumentNullException("hwndSource");
+        private static readonly SerialCounter IdGen = new SerialCounter(-1);
+        public bool IsEnabled { get; set; }
 
-            this.hook = new HwndSourceHook(WndProc);
-            this.hwndSource = hwndSource;
-            hwndSource.AddHook(hook);
+        public Util.ObservableDictionary<int, HotKey> HotKeys { get; } =
+            new Util.ObservableDictionary<int, HotKey>();
+
+        private readonly System.Windows.Window _window;
+
+        private void Init(System.Windows.Interop.HwndSource hhwndSource)
+        {
+            if (hhwndSource == null)
+                throw new System.ArgumentNullException(nameof(hhwndSource));
+
+            _hook = WndProc;
+            _hwndSource = hhwndSource;
+            hhwndSource.AddHook(_hook);
 
             IsEnabled = true;
         }
@@ -291,7 +273,7 @@ namespace Elpis.Hotkeys
 
         private void UnregisterHotKey(int id)
         {
-            HotKey hotKey = hotKeys[id];
+            HotKey hotKey = HotKeys[id];
             if (hotKey.Global)
             {
                 UnregisterGlobalHotKey(id);
@@ -302,148 +284,112 @@ namespace Elpis.Hotkeys
             }
         }
 
-        #region HotKey Interop
-
-        private const int WM_HotKey = 786;
-
-
-        [DllImport("user32", CharSet = CharSet.Ansi,
-            SetLastError = true, ExactSpelling = true)]
-        private static extern int RegisterHotKey(IntPtr hwnd,
-                                                 int id, int modifiers, int key);
-
-        [DllImport("user32", CharSet = CharSet.Ansi,
-            SetLastError = true, ExactSpelling = true)]
-        private static extern int UnregisterHotKey(IntPtr hwnd, int id);
-
-        #endregion
-
-        #region Interop-Encapsulation
-
-        private HwndSourceHook hook;
-        private HwndSource hwndSource;
-
-        private void RegisterGlobalHotKey(int id, HotKey hotKey)
+        private System.IntPtr WndProc(System.IntPtr hwnd, int msg, System.IntPtr wParam, System.IntPtr lParam,
+            ref bool handled)
         {
-            if ((int)hwndSource.Handle != 0)
-            {
-                RegisterHotKey(hwndSource.Handle, id, (int)hotKey.Modifiers, KeyInterop.VirtualKeyFromKey(hotKey.Key));
-                int error = Marshal.GetLastWin32Error();
-                if (error != 0)
-                {
-                    Exception e = new Win32Exception(error);
+            if (msg != WmHotKey) return new System.IntPtr(0);
+            Util.Log.O("HotKeys WndProc: IsEnabled - {0}", IsEnabled.ToString());
+            if (!IsEnabled || !HotKeys.ContainsKey((int) wParam)) return new System.IntPtr(0);
+            HotKey h = HotKeys[(int) wParam];
+            Util.Log.O("HotKeys WndProc: HotKey - {0}", h.KeysString);
+            if (!h.Global) return new System.IntPtr(0);
+            h.Command?.Execute(null, _window);
 
-                    if (error == 1409)
-                        throw new HotKeyAlreadyRegisteredException(e.Message, hotKey, e);
-                    else
-                        throw e;
-                }
-            }
-            else
-                throw new InvalidOperationException("Handle is invalid");
+            return new System.IntPtr(0);
         }
 
-        private void UnregisterGlobalHotKey(int id)
+        private void hotKey_PropertyChanging(object sender, System.ComponentModel.PropertyChangingEventArgs e)
         {
-            if ((int)hwndSource.Handle != 0)
-            {
-                UnregisterHotKey(hwndSource.Handle, id);
-                int error = Marshal.GetLastWin32Error();
-                if (error != 0)
-                    throw new Win32Exception(error);
-            }
-        }
-
-        #endregion
-
-        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-        {
-            if (msg == WM_HotKey)
-            {
-                Log.O("HotKeys WndProc: IsEnabled - {0}", IsEnabled.ToString());
-                if (IsEnabled && hotKeys.ContainsKey((int)wParam))
-                {
-                    HotKey h = hotKeys[(int)wParam];
-                    Log.O("HotKeys WndProc: HotKey - {0}", h.KeysString);
-                    if (h.Global)
-                    {
-                        if (h.Command != null)
-                        {
-                            h.Command.Execute(null, _window);
-                        }
-                    }
-                }
-            }
-
-            return new IntPtr(0);
-        }
-
-        #region ActiveWindowHotkeyBinding
-
-        private void RegisterActiveWindowHotkey(HotKey hotkey)
-        {
-            try
-            {
-                hotkey.Command.InputGestures.Add(new KeyGesture(hotkey.Key, hotkey.Modifiers));
-            }
-            catch (NotSupportedException e)
-            {
-                throw new HotKeyNotSupportedException("Alphanumeric Keys without modifiers are not supported as hotkeys", hotkey, e);
-            }
-        }
-
-        private void UnregisterActiveWindowHotkey(HotKey hotkey)
-        {
-            foreach (KeyGesture keygesture in hotkey.Command.InputGestures)
-            {
-                if (keygesture.Key == hotkey.Key && keygesture.Modifiers == hotkey.Modifiers)
-                {
-                    hotkey.Command.InputGestures.Remove(keygesture);
-                    break;
-                }
-            }
-        }
-
-        #endregion
-
-        private void hotKey_PropertyChanging(object sender, PropertyChangingEventArgs e)
-        {
+            // ReSharper disable once SwitchStatementMissingSomeCases
             switch (e.PropertyName)
             {
                 case "Global":
                 case "Modifiers":
                 case "Key":
-                    var kvPair = hotKeys.FirstOrDefault(h => h.Value == sender);
-                    if (kvPair.Value != null) { UnregisterHotKey(kvPair.Key); }
+                    System.Collections.Generic.KeyValuePair<int, HotKey> kvPair = Enumerable.FirstOrDefault(HotKeys,
+                        h => Equals(h.Value, sender));
+                    if (kvPair.Value != null)
+                    {
+                        UnregisterHotKey(kvPair.Key);
+                    }
                     break;
             }
         }
 
-        private void hotKey_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void hotKey_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            var kvPair = hotKeys.FirstOrDefault(h => h.Value == sender);
-            if (kvPair.Value != null)
+            System.Collections.Generic.KeyValuePair<int, HotKey> kvPair = Enumerable.FirstOrDefault(HotKeys,
+                h => Equals(h.Value, sender));
+            if (kvPair.Value == null) return;
+            // ReSharper disable once SwitchStatementMissingSomeCases
+            switch (e.PropertyName)
             {
+                case "Enabled":
+                    if (kvPair.Value.Enabled)
+                        RegisterHotKey(kvPair.Key, kvPair.Value);
+                    else
+                        UnregisterHotKey(kvPair.Key);
+                    break;
+                case "Global":
+                case "Modifiers":
+                case "Key":
+                    if (kvPair.Value.Enabled)
+                    {
+                        RegisterHotKey(kvPair.Key, kvPair.Value);
+                    }
+                    break;
+            }
+        }
 
-                switch (e.PropertyName)
+        public HotKey AddHotKey(HotKey hotKey)
+        {
+            try
+            {
+                if (hotKey == null)
+                    throw new System.ArgumentNullException(nameof(hotKey));
+                /* We let em add as many null keys to the list as they want, but never register them*/
+                if (hotKey.Key != System.Windows.Input.Key.None && HotKeys.ContainsValue(hotKey))
                 {
+                    throw new HotKeyAlreadyRegisteredException("HotKey already registered!", hotKey);
+                    //Log.O("HotKey already registered!");
+                }
 
-                    case "Enabled":
-                        if (kvPair.Value.Enabled)
-                            RegisterHotKey(kvPair.Key, kvPair.Value);
-                        else
-                            UnregisterHotKey(kvPair.Key);
-                        break;
-                    case "Global":
-                    case "Modifiers":
-                    case "Key":
-                        if (kvPair.Value.Enabled)
-                        {
-                            RegisterHotKey(kvPair.Key, kvPair.Value);
-                        }
-                        break;
+                try
+                {
+                    int id = IdGen.Next();
+                    if (hotKey.Enabled && hotKey.Key != System.Windows.Input.Key.None)
+                    {
+                        RegisterHotKey(id, hotKey);
+                    }
+                    hotKey.PropertyChanging += hotKey_PropertyChanging;
+                    hotKey.PropertyChanged += hotKey_PropertyChanged;
+                    HotKeys[id] = hotKey;
+                    return hotKey;
+                }
+                catch (HotKeyNotSupportedException)
+                {
+                    return null;
                 }
             }
+            catch (HotKeyAlreadyRegisteredException)
+            {
+                Util.Log.O("HotKey already registered!");
+            }
+            return null;
+        }
+
+        public bool RemoveHotKey(HotKey hotKey)
+        {
+            System.Collections.Generic.KeyValuePair<int, HotKey> kvPair = Enumerable.FirstOrDefault(HotKeys,
+                h => Equals(h.Value, hotKey));
+            if (kvPair.Value != null)
+            {
+                kvPair.Value.PropertyChanged -= hotKey_PropertyChanged;
+                if (kvPair.Value.Enabled)
+                    UnregisterHotKey(kvPair.Key);
+                return HotKeys.Remove(kvPair.Key);
+            }
+            return false;
         }
 
         public class SerialCounter
@@ -461,101 +407,111 @@ namespace Elpis.Hotkeys
             }
         }
 
-        public ObservableDictionary<int, HotKey> HotKeys
+        #region HotKey Interop
+
+        private const int WmHotKey = 786;
+
+        [System.Runtime.InteropServices.DllImport("user32", CharSet = System.Runtime.InteropServices.CharSet.Ansi,
+            SetLastError = true, ExactSpelling = true)]
+        private static extern int RegisterHotKey(System.IntPtr hwnd, int id, int modifiers, int key);
+
+        [System.Runtime.InteropServices.DllImport("user32", CharSet = System.Runtime.InteropServices.CharSet.Ansi,
+            SetLastError = true, ExactSpelling = true)]
+        private static extern int UnregisterHotKey(System.IntPtr hwnd, int id);
+
+        #endregion
+
+        #region Interop-Encapsulation
+
+        private System.Windows.Interop.HwndSourceHook _hook;
+        private System.Windows.Interop.HwndSource _hwndSource;
+
+        private void RegisterGlobalHotKey(int id, HotKey hotKey)
         {
-            get { return hotKeys; }
+            if ((int) _hwndSource.Handle != 0)
+            {
+                RegisterHotKey(_hwndSource.Handle, id, (int) hotKey.Modifiers,
+                    System.Windows.Input.KeyInterop.VirtualKeyFromKey(hotKey.Key));
+                int error = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+                if (error == 0) return;
+                System.Exception e = new System.ComponentModel.Win32Exception(error);
+
+                if (error == 1409)
+                    throw new HotKeyAlreadyRegisteredException(e.Message, hotKey, e);
+                throw e;
+            }
+            throw new System.InvalidOperationException("Handle is invalid");
         }
 
+        private void UnregisterGlobalHotKey(int id)
+        {
+            if ((int) _hwndSource.Handle == 0) return;
+            UnregisterHotKey(_hwndSource.Handle, id);
+            int error = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+            if (error != 0)
+                throw new System.ComponentModel.Win32Exception(error);
+        }
 
-        private static readonly SerialCounter idGen = new SerialCounter(-1);
+        #endregion
 
-        public HotKey AddHotKey(HotKey hotKey)
+        #region ActiveWindowHotkeyBinding
+
+        private static void RegisterActiveWindowHotkey(HotKey hotkey)
         {
             try
             {
-                if (hotKey == null)
-                    throw new ArgumentNullException("value");
-                /* We let em add as many null keys to the list as they want, but never register them*/
-                if (hotKey.Key != Key.None && hotKeys.ContainsValue(hotKey))
-                {
-                    throw new HotKeyAlreadyRegisteredException("HotKey already registered!", hotKey);
-                    //Log.O("HotKey already registered!");
-                }
-
-                try
-                {
-                    int id = idGen.Next();
-                    if (hotKey.Enabled && hotKey.Key != Key.None)
-                    {
-                        RegisterHotKey(id, hotKey);
-                    }
-                    hotKey.PropertyChanging += hotKey_PropertyChanging;
-                    hotKey.PropertyChanged += hotKey_PropertyChanged;
-                    hotKeys[id] = hotKey;
-                    return hotKey;
-                }
-                catch (HotKeyNotSupportedException e)
-                {
-                    return null;
-                }
+                hotkey.Command.InputGestures.Add(new System.Windows.Input.KeyGesture(hotkey.Key, hotkey.Modifiers));
             }
-            catch (HotKeyAlreadyRegisteredException e)
+            catch (System.NotSupportedException e)
             {
-                Log.O("HotKey already registered!");
+                throw new HotKeyNotSupportedException(
+                    "Alphanumeric Keys without modifiers are not supported as hotkeys", hotkey, e);
             }
-            return null;
         }
 
-
-        public bool RemoveHotKey(HotKey hotKey)
+        private void UnregisterActiveWindowHotkey(HotKey hotkey)
         {
-            var kvPair = hotKeys.FirstOrDefault(h => h.Value == hotKey);
-            if (kvPair.Value != null)
-            {
-                kvPair.Value.PropertyChanged -= hotKey_PropertyChanged;
-                if (kvPair.Value.Enabled)
-                    UnregisterHotKey(kvPair.Key);
-                return hotKeys.Remove(kvPair.Key);
+            foreach (System.Windows.Input.KeyGesture keygesture in Enumerable.Where(Enumerable.Cast<System.Windows.Input.KeyGesture>(hotkey.Command.InputGestures), keygesture => keygesture.Key == hotkey.Key && keygesture.Modifiers == hotkey.Modifiers)) {
+                hotkey.Command.InputGestures.Remove(keygesture);
+                break;
             }
-            return false;
         }
 
+        #endregion
 
         #region Destructor
 
-        private bool disposed;
+        private bool _disposed;
 
         private void Dispose(bool disposing)
         {
-            if (disposed)
+            if (_disposed)
                 return;
 
             if (disposing)
             {
-                hwndSource.RemoveHook(hook);
+                _hwndSource.RemoveHook(_hook);
             }
 
-            for (int i = hotKeys.Count - 1; i >= 0; i--)
+            for (int i = HotKeys.Count - 1; i >= 0; i--)
             {
                 UnregisterGlobalHotKey(i);
             }
 
-            disposed = true;
+            _disposed = true;
         }
 
         public void Dispose()
         {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
+            Dispose(true);
+            System.GC.SuppressFinalize(this);
         }
 
         ~HotKeyHost()
         {
-            this.Dispose(false);
+            Dispose(false);
         }
 
         #endregion
     }
-
-
 }

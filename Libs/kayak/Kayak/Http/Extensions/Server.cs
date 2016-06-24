@@ -1,9 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-
-namespace Kayak.Http
+﻿namespace Kayak.Http.Extensions
 {
-    public static partial class Extensions
-    {
-    }
+    public static partial class Extensions {}
 }

@@ -1,27 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-
-namespace Elpis.Controls
+﻿namespace Elpis.Controls
 {
     /// <summary>
-    /// Interaction logic for HotKeyEditor.xaml
+    ///     Interaction logic for HotKeyEditor.xaml
     /// </summary>
-    public partial class HotKeyEditor : UserControl
-    {
-        public HotKeyEditor()
-        {
-            //InitializeComponent();
-        }
-    }
+    public class HotKeyEditor : System.Windows.Controls.UserControl {}
 }

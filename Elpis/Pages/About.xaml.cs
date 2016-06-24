@@ -17,34 +17,30 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Windows;
-using System.Windows.Controls;
-
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for About.xaml
+    ///     Interaction logic for About.xaml
     /// </summary>
-    public partial class About : UserControl
+    public partial class About
     {
+        public About()
+        {
+            InitializeComponent();
+        }
+
         #region Delegates
 
         public delegate void CloseEvent();
 
         #endregion
 
-        public About()
-        {
-            InitializeComponent();
-        }
-
         public string Version { get; set; }
         public event CloseEvent Close;
 
-        private void btnClose_Click(object sender, RoutedEventArgs e)
+        private void btnClose_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            if (Close != null)
-                Close();
+            Close?.Invoke();
         }
 
         private void RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)

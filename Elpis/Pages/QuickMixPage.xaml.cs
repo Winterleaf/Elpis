@@ -1,33 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using Util;
+﻿using System.Linq;
 
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for QuickMixPage.xaml
+    ///     Interaction logic for QuickMixPage.xaml
     /// </summary>
-    public partial class QuickMixPage : UserControl
+    public partial class QuickMixPage : System.Windows.Controls.UserControl
     {
-        public delegate void CancelHandler();
-        public delegate void CloseHandler();
-
-        public event CancelHandler CancelEvent;
-        public event CloseHandler CloseEvent;
-
-        private readonly PandoraSharpPlayer.Player _player = null;
-
         public QuickMixPage(PandoraSharpPlayer.Player player)
         {
             _player = player;
@@ -36,51 +15,60 @@ namespace Elpis
             InitializeComponent();
         }
 
-        void _player_ExceptionEvent(object sender, ErrorCodes code, Exception ex)
+        public delegate void CancelHandler();
+
+        public delegate void CloseHandler();
+
+        private readonly PandoraSharpPlayer.Player _player;
+
+        public event CancelHandler CancelEvent;
+        public event CloseHandler CloseEvent;
+
+        private void _player_ExceptionEvent(object sender, Util.ErrorCodes code, System.Exception ex)
         {
             ShowWait(false);
         }
 
-        void _player_QuickMixSavedEvent(object sender)
+        private void _player_QuickMixSavedEvent(object sender)
         {
             ShowWait(false);
-            if (CloseEvent != null)
-                CloseEvent();
+            CloseEvent?.Invoke();
         }
 
         public void ShowWait(bool state)
         {
-            this.BeginDispatch(() =>
-            {
-                WaitScreen.Visibility = state
-                                            ? Visibility.Visible
-                                            : Visibility.Collapsed;
-            });
+            this.BeginDispatch(
+                () =>
+                {
+                    WaitScreen.Visibility = state
+                        ? System.Windows.Visibility.Visible
+                        : System.Windows.Visibility.Collapsed;
+                });
         }
 
-        private void btnCancel_Click(object sender, RoutedEventArgs e)
+        private void btnCancel_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            if (CancelEvent != null) CancelEvent();
+            CancelEvent?.Invoke();
         }
 
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        private void UserControl_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
             ShowWait(false);
 
-            var subList = from s in _player.Stations
-                          where !s.IsQuickMix
-                          select s;
+            System.Collections.Generic.IEnumerable<PandoraSharp.Station> subList = from s in _player.Stations
+                where !s.IsQuickMix
+                select s;
 
             StationItems.ItemsSource = subList;
         }
 
-        private void btnSave_Click(object sender, RoutedEventArgs e)
+        private void btnSave_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             ShowWait(true);
             _player.SaveQuickMix();
         }
 
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        private void UserControl_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
             ShowWait(false);
         }

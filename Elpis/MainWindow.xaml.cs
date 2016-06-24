@@ -19,170 +19,44 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Forms;
-using System.Windows.Input;
-using BassPlayer;
-using Elpis.Hotkeys;
-using Elpis.UpdateSystem;
-using GUI.BorderlessWindow;
-using GUI.PageTransition;
-using NDesk.Options;
-using PandoraSharp;
-using PandoraSharpPlayer;
-using Util;
-using Log = Util.Log;
-using UserControl = System.Windows.Controls.UserControl;
-using PandoraSharp.Plugins;
-using System.Windows.Interop;
+using Enumerable = System.Linq.Enumerable;
+using StringExtensions = PandoraSharp.StringExtensions;
 
 namespace Elpis
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
-        #region Globals
-
-        private readonly ErrorPage _errorPage;
-        private HotKeyHost _keyHost;
-        private readonly LoadingPage _loadingPage;
-        private readonly ToolStripSeparator _notifyMenu_BreakSong = new ToolStripSeparator();
-        private readonly ToolStripSeparator _notifyMenu_BreakStation = new ToolStripSeparator();
-        private readonly ToolStripSeparator _notifyMenu_BreakVote = new ToolStripSeparator();
-        private readonly ToolStripSeparator _notifyMenu_BreakExit = new ToolStripSeparator();
-        private About _aboutPage;
-
-        private string _configLocation;
-
-        private readonly Config _config;
-
-        private bool _finalComplete = false;
-        private bool _initComplete;
-        private LoginPage _loginPage;
-
-        private NotifyIcon _notify;
-        private ContextMenuStrip _notifyMenu;
-        private ToolStripMenuItem _notifyMenu_Album;
-        private ToolStripMenuItem _notifyMenu_Artist;
-        private ToolStripMenuItem _notifyMenu_Next;
-        private ToolStripMenuItem _notifyMenu_PlayPause;
-        private ToolStripMenuItem _notifyMenu_Stations;
-        private ToolStripMenuItem _notifyMenu_Title;
-        private ToolStripMenuItem _notifyMenu_UpVote;
-        private ToolStripMenuItem _notifyMenu_DownVote;
-        private ToolStripMenuItem _notifyMenu_Tired;
-        private ToolStripMenuItem _notifyMenu_Exit;
-        private System.Threading.Timer _notifyDoubleClickTimer;
-        private static Boolean _notifyDoubleClicked = false;
-        public static Player _player;
-        public static PlaylistPage _playlistPage;
-        public static MainWindow _mainWindow;
-        private UserControl _prevPage;
-        private Search _searchPage;
-        private Settings _settingsPage;
-        private bool _showingError;
-        private string _startupStation = null;
-        private bool _stationLoaded;
-
-        private SearchMode _searchMode = SearchMode.NewStation;
-
-        private readonly bool _configError = false;
-
-        private bool _forceClose = false;
-
-        private StationList _stationPage;
-        private QuickMixPage _quickMixPage;
-        private UpdateCheck _update;
-        private UpdatePage _updatePage;
-        private RestartPage _restartPage;
-        private LastFMAuthPage _lastFMPage;
-
-        private ErrorCodes _lastError = ErrorCodes.SUCCESS;
-        private Exception _lastException = null;
-
-        private PandoraSharpScrobbler _scrobbler;
-
-        private bool _isActiveWindow;
-
-        private static DateTime lastTimeSkipped;
-
-        private WebInterface _webInterfaceObject;
-
-        private bool _restarting = false;
-
-        private const int PLAY = 1;
-        private const int PAUSE = 2;
-        private const int LIKE = 3;
-        private const int DISLIKE = 4;
-        private const int SKIP = 5;
-
-#endregion
-
-#region Release Data Values
-
-        private string _bassRegEmail = "";
-        private string _bassRegKey = "";
-
-        public string ConfigLocation
-        {
-            get { return _configLocation; }
-            set { _configLocation = value; }
-        }
-
-        public string StartupStation
-        {
-            get { return _startupStation; }
-            set { _startupStation = value; }
-        }
-
-        public void InitReleaseData()
-        {
-#if APP_RELEASE
-            _bassRegEmail = ReleaseData.BassRegEmail;
-            _bassRegKey = ReleaseData.BassRegKey;
-#endif
-        }
-
-#endregion
-
         public MainWindow()
         {
             InitializeComponent();
 
             //ContentBackground.Background.Opacity = 1.0;
-            new WindowResizer(this,
-                              new WindowBorder(BorderPosition.TopLeft, topLeft),
-                              new WindowBorder(BorderPosition.Top, top),
-                              new WindowBorder(BorderPosition.TopRight, topRight),
-                              new WindowBorder(BorderPosition.Right, right),
-                              new WindowBorder(BorderPosition.BottomRight, bottomRight),
-                              new WindowBorder(BorderPosition.Bottom, bottom),
-                              new WindowBorder(BorderPosition.BottomLeft, bottomLeft),
-                              new WindowBorder(BorderPosition.Left, left));
+            new BorderlessWindow.WindowResizer(this,
+                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.TopLeft, topLeft),
+                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.Top, top),
+                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.TopRight, topRight),
+                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.Right, right),
+                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.BottomRight, bottomRight),
+                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.Bottom, bottom),
+                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.BottomLeft, bottomLeft),
+                new BorderlessWindow.WindowBorder(BorderlessWindow.BorderPosition.Left, left));
 
-            TitleBar.MouseLeftButtonDown += ((o, e) => DragMove());
-            MinimizeButton.MouseLeftButtonDown += ((o, e) => WindowState = WindowState.Minimized);
-            CloseButton.MouseLeftButtonDown += ((o, e) => Close());
+            TitleBar.MouseLeftButtonDown += (o, e) => DragMove();
+            MinimizeButton.MouseLeftButtonDown += (o, e) => WindowState = System.Windows.WindowState.Minimized;
+            CloseButton.MouseLeftButtonDown += (o, e) => Close();
 
-            _errorPage = new ErrorPage();
+            _errorPage = new Pages.ErrorPage();
             _errorPage.ErrorClose += _errorPage_ErrorClose;
             transitionControl.AddPage(_errorPage);
 
-            _loadingPage = new LoadingPage();
+            _loadingPage = new Pages.LoadingPage();
             transitionControl.AddPage(_loadingPage);
 
-            _update = new UpdateCheck();
+            _update = new UpdateSystem.UpdateCheck();
 
             transitionControl.ShowPage(_loadingPage);
 
-            _config = new Config(_configLocation ?? "");
+            _config = new Config(ConfigLocation ?? "");
 
             if (!_config.LoadConfig())
             {
@@ -191,79 +65,199 @@ namespace Elpis
             else
             {
                 if (_config.Fields.Proxy_Address != string.Empty)
-                    PRequest.SetProxy(_config.Fields.Proxy_Address, _config.Fields.Proxy_Port,
+                    Util.PRequest.SetProxy(_config.Fields.Proxy_Address, _config.Fields.Proxy_Port,
                         _config.Fields.Proxy_User, _config.Fields.Proxy_Password);
 
-                var loc = _config.Fields.Elpis_StartupLocation;
-                var size = _config.Fields.Elpis_StartupSize;
+                System.Windows.Point loc = _config.Fields.Elpis_StartupLocation;
+                System.Windows.Size size = _config.Fields.Elpis_StartupSize;
 
-                if (loc.X != -1 && loc.Y != -1)
+                if (System.Math.Abs(loc.X - (-1)) > .0001 && System.Math.Abs(loc.Y - (-1)) > .0001)
                 {
                     // Bug Fix: Issue #54, make sure that the initial window location is
                     // always fully within the virtual screen bounds.
                     // Unfortunately may not preserve window location when primary display is not left most
                     // but it eliminates the missing window problem in most situations.
-                    this.Left = Math.Max(0, Math.Min(loc.X, 
-                        SystemParameters.VirtualScreenWidth - this.ActualWidth));
-                    this.Top = Math.Max(0, Math.Min(loc.Y,
-                        SystemParameters.VirtualScreenHeight - this.ActualHeight));
+                    Left = System.Math.Max(0,
+                        System.Math.Min(loc.X, System.Windows.SystemParameters.VirtualScreenWidth - ActualWidth));
+                    Top = System.Math.Max(0,
+                        System.Math.Min(loc.Y, System.Windows.SystemParameters.VirtualScreenHeight - ActualHeight));
                 }
 
-                if (size.Width != 0 && size.Height != 0)
+                if (System.Math.Abs(size.Width) > .0001 && System.Math.Abs(size.Height) > .0001)
                 {
-                    this.Width = size.Width;
-                    this.Height = size.Height;
+                    Width = size.Width;
+                    Height = size.Height;
                 }
             }
 
             _mainWindow = this;
         }
 
-        public static CommandLineOptions _clo;
+        public static CommandLineOptions Clo;
+
         public static void SetCommandLine(CommandLineOptions clo)
         {
-            _clo = clo;
+            Clo = clo;
         }
 
         public void DoCommandLine()
         {
-            if (_clo.SkipTrack)
+            if (Clo.SkipTrack)
             {
                 SkipTrack(null, null);
             }
 
-            if (_clo.TogglePlayPause)
+            if (Clo.TogglePlayPause)
             {
                 PlayPauseToggled(null, null);
             }
 
-            if (_clo.DoThumbsUp)
+            if (Clo.DoThumbsUp)
             {
                 ExecuteThumbsUp(null, null);
             }
 
-            if (_clo.DoThumbsDown)
+            if (Clo.DoThumbsDown)
             {
                 ExecuteThumbsDown(null, null);
             }
 
-            if (_clo.StationToLoad != null)
+            if (Clo.StationToLoad != null)
             {
-                LoadStation(_clo.StationToLoad);
+                LoadStation(Clo.StationToLoad);
             }
         }
 
-        static void ShowHelp(OptionSet p)
+        private static void ShowHelp(Util.OptionSet p)
         {
-            Console.WriteLine("Usage: Elpis [OPTIONS]");
-            Console.WriteLine("Greet a list of individuals with an optional message.");
-            Console.WriteLine("If no message is specified, a generic greeting is used.");
-            Console.WriteLine();
-            Console.WriteLine("Options:");
-            p.WriteOptionDescriptions(Console.Out);
+            System.Console.WriteLine(@"Usage: Elpis [OPTIONS]");
+            System.Console.WriteLine(@"Greet a list of individuals with an optional message.");
+            System.Console.WriteLine(@"If no message is specified, a generic greeting is used.");
+            System.Console.WriteLine();
+            System.Console.WriteLine(@"Options:");
+            p.WriteOptionDescriptions(System.Console.Out);
         }
 
-#region Setups
+        protected override void OnActivated(System.EventArgs e)
+        {
+            _isActiveWindow = true;
+            base.OnActivated(e);
+        }
+
+        protected override void OnDeactivated(System.EventArgs e)
+        {
+            _isActiveWindow = false;
+            base.OnDeactivated(e);
+        }
+
+        #region Globals
+
+        private readonly Pages.ErrorPage _errorPage;
+        private HotKeyHost _keyHost;
+        private readonly Pages.LoadingPage _loadingPage;
+
+        private readonly System.Windows.Forms.ToolStripSeparator _notifyMenuBreakSong =
+            new System.Windows.Forms.ToolStripSeparator();
+
+        private readonly System.Windows.Forms.ToolStripSeparator _notifyMenuBreakStation =
+            new System.Windows.Forms.ToolStripSeparator();
+
+        private readonly System.Windows.Forms.ToolStripSeparator _notifyMenuBreakVote =
+            new System.Windows.Forms.ToolStripSeparator();
+
+        private readonly System.Windows.Forms.ToolStripSeparator _notifyMenuBreakExit =
+            new System.Windows.Forms.ToolStripSeparator();
+
+        private Pages.About _aboutPage;
+
+        private readonly Config _config;
+
+        private bool _finalComplete;
+        private bool _initComplete;
+        private Pages.LoginPage _loginPage;
+
+        private System.Windows.Forms.NotifyIcon _notify;
+        private System.Windows.Forms.ContextMenuStrip _notifyMenu;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuAlbum;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuArtist;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuNext;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuPlayPause;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuStations;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuTitle;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuUpVote;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuDownVote;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuTired;
+        private System.Windows.Forms.ToolStripMenuItem _notifyMenuExit;
+        private System.Threading.Timer _notifyDoubleClickTimer;
+        private static bool _notifyDoubleClicked;
+        public static PandoraSharpPlayer.Player Player;
+        public static Pages.PlaylistPage PlaylistPage;
+        private static MainWindow _mainWindow;
+        private System.Windows.Controls.UserControl _prevPage;
+        private Pages.Search _searchPage;
+        private Pages.Settings _settingsPage;
+        private bool _showingError;
+        private bool _stationLoaded;
+
+        private SearchMode _searchMode = SearchMode.NewStation;
+
+        private readonly bool _configError;
+
+        private bool _forceClose;
+
+        private Pages.StationList _stationPage;
+        private Pages.QuickMixPage _quickMixPage;
+        private readonly UpdateSystem.UpdateCheck _update;
+#pragma warning disable 169
+        private Pages.UpdatePage _updatePage;
+#pragma warning restore 169
+        private Pages.RestartPage _restartPage;
+        private Pages.LastFmAuthPage _lastFmPage;
+
+        private Util.ErrorCodes _lastError = Util.ErrorCodes.Success;
+        private System.Exception _lastException;
+
+        private PandoraSharpScrobbler.PandoraSharpScrobbler _scrobbler;
+
+        private bool _isActiveWindow;
+
+        private static System.DateTime _lastTimeSkipped;
+
+        private WebInterface _webInterfaceObject;
+
+        private bool _restarting;
+
+        private const int PLAY = 1;
+        private const int PAUSE = 2;
+        private const int LIKE = 3;
+        private const int DISLIKE = 4;
+        private const int SKIP = 5;
+
+        #endregion
+
+        #region Release Data Values
+
+        private string _bassRegEmail = "";
+        private string _bassRegKey = "";
+
+        public string ConfigLocation { get; set; }
+
+        public string StartupStation { get; set; } = null;
+
+        public void InitReleaseData()
+        {
+            _bassRegEmail = "";
+            _bassRegKey = "";
+
+#if APP_RELEASE
+            _bassRegEmail = ReleaseData.BassRegEmail;
+            _bassRegKey = ReleaseData.BassRegKey;
+#endif
+        }
+
+        #endregion
+
+        #region Setups
 
         private void SetupLogging()
         {
@@ -271,17 +265,14 @@ namespace Elpis
             {
                 _loadingPage.UpdateStatus("Initializing logging...");
                 string logFilename = "elpis{0}.log";
-                if (_config.Fields.Debug_Timestamp)
-                    logFilename = string.Format(logFilename, DateTime.Now.ToString("_MMdd-hhmmss"));
-                else
-                    logFilename = string.Format(logFilename, "");
+                logFilename = string.Format(logFilename, _config.Fields.Debug_Timestamp ? System.DateTime.Now.ToString("_MMdd-hhmmss") : "");
 
-                string path = Path.Combine(_config.Fields.Debug_Logpath, logFilename);
+                string path = System.IO.Path.Combine(_config.Fields.Debug_Logpath, logFilename);
 
-                if (!Directory.Exists(_config.Fields.Debug_Logpath))
-                    Directory.CreateDirectory(_config.Fields.Debug_Logpath);
+                if (!System.IO.Directory.Exists(_config.Fields.Debug_Logpath))
+                    System.IO.Directory.CreateDirectory(_config.Fields.Debug_Logpath);
 
-                Log.SetLogPath(path);
+                Util.Log.SetLogPath(path);
             }
         }
 
@@ -295,11 +286,11 @@ namespace Elpis
         {
             _settingsPage.Close += CloseSettings;
             _settingsPage.Restart += _settingsPage_Restart;
-            _settingsPage.LastFMAuthRequest += _settingsPage_LastFMAuthRequest;
-            _settingsPage.LasFMDeAuthRequest += _settingsPage_LasFMDeAuthRequest;
+            _settingsPage.LastFmAuthRequest += _settingsPage_LastFMAuthRequest;
+            _settingsPage.LasFmDeAuthRequest += _settingsPage_LasFMDeAuthRequest;
             _restartPage.RestartSelectionEvent += _restartPage_RestartSelectionEvent;
-            _lastFMPage.ContinueEvent += _lastFMPage_ContinueEvent;
-            _lastFMPage.CancelEvent += _lastFMPage_CancelEvent;
+            _lastFmPage.ContinueEvent += _lastFMPage_ContinueEvent;
+            _lastFmPage.CancelEvent += _lastFMPage_CancelEvent;
             _aboutPage.Close += RestorePrevPage;
 
             _searchPage.Cancel += _searchPage_Cancel;
@@ -307,68 +298,63 @@ namespace Elpis
             _loginPage.ConnectingEvent += _loginPage_ConnectingEvent;
         }
 
-        void _settingsPage_LasFMDeAuthRequest()
+        private void _settingsPage_LasFMDeAuthRequest()
         {
             _config.Fields.LastFM_SessionKey = string.Empty;
             _config.Fields.LastFM_Scrobble = false;
             _config.SaveConfig();
         }
 
-        void _settingsPage_LastFMAuthRequest()
+        private void _settingsPage_LastFMAuthRequest()
         {
             this.BeginDispatch(() =>
+            {
+                try
                 {
-                    try
-                    {
-                        string url = _scrobbler.GetAuthUrl();
-                        _lastFMPage.SetAuthURL(url);
-                        _scrobbler.LaunchAuthPage();
+                    string url = _scrobbler.GetAuthUrl();
+                    _lastFmPage.SetAuthUrl(url);
+                    _scrobbler.LaunchAuthPage();
 
-                        transitionControl.ShowPage(_lastFMPage);
-                    }
-                    catch (Exception ex)
-                    {
-                        ShowError(ErrorCodes.ERROR_GETTING_TOKEN, ex);
-                    }
-                });
+                    transitionControl.ShowPage(_lastFmPage);
+                }
+                catch (System.Exception ex)
+                {
+                    ShowError(Util.ErrorCodes.ErrorGettingToken, ex);
+                }
+            });
         }
 
-        void _lastFMPage_CancelEvent()
+        private void _lastFMPage_CancelEvent()
         {
             transitionControl.ShowPage(_settingsPage);
         }
 
-        void _lastFMPage_ContinueEvent()
+        private void _lastFMPage_ContinueEvent()
         {
-            this.Dispatch(() => GetLastFMSessionKey());
+            this.Dispatch(GetLastFmSessionKey);
         }
 
-        void _settingsPage_Restart()
+        private void _settingsPage_Restart()
         {
             transitionControl.ShowPage(_restartPage);
         }
 
-        void DoRestart()
+        private void DoRestart()
         {
-
-            List<string> args = new List<string>();
-            var cmds = System.Environment.GetCommandLineArgs();
-            foreach (string a in cmds)
-                args.Add(a);
+            string[] cmds = System.Environment.GetCommandLineArgs();
+            System.Collections.Generic.List<string> args = Enumerable.ToList(cmds);
 
             args.RemoveAt(0);
             args.Remove("-restart");
 
-            string sArgs = string.Empty;
-            foreach(string s in args)
-                sArgs += (s + " ");
+            string sArgs = Enumerable.Aggregate(args, string.Empty, (current, s) => current + (s + " "));
 
             sArgs += " -restart";
 
-            Process.Start("Elpis.exe", sArgs);
+            System.Diagnostics.Process.Start("Elpis.exe", sArgs);
         }
 
-        void _restartPage_RestartSelectionEvent(bool status)
+        private void _restartPage_RestartSelectionEvent(bool status)
         {
             if (status)
             {
@@ -382,78 +368,78 @@ namespace Elpis
             }
         }
 
-        DateTime _lastFMStart;
-        bool _lastFMAuth = false;
+        private System.DateTime _lastFmStart;
+        private bool _lastFmAuth;
 
-        private void DoLastFMAuth()
+        private void DoLastFmAuth()
         {
             try
             {
-                _lastFMStart = DateTime.Now;
-                while ((DateTime.Now - _lastFMStart).TotalMilliseconds < 5000) Thread.Sleep(10);
+                _lastFmStart = System.DateTime.Now;
+                while ((System.DateTime.Now - _lastFmStart).TotalMilliseconds < 5000) System.Threading.Thread.Sleep(10);
 
                 string sk = _scrobbler.GetAuthSessionKey();
                 _config.Fields.LastFM_Scrobble = true;
                 _config.Fields.LastFM_SessionKey = sk;
                 _config.SaveConfig();
 
-                DoLastFMSuccess();
+                DoLastFmSuccess();
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 _config.Fields.LastFM_Scrobble = false;
                 _config.Fields.LastFM_SessionKey = string.Empty;
                 _config.SaveConfig();
 
-                DoLastFMError(ex);
+                DoLastFmError(ex);
             }
         }
 
-        private void DoLastFMSuccess()
+        private void DoLastFmSuccess()
         {
-            _lastFMStart = DateTime.Now;
+            _lastFmStart = System.DateTime.Now;
             this.BeginDispatch(() => _loadingPage.UpdateStatus("Success!"));
-            while ((DateTime.Now - _lastFMStart).TotalMilliseconds < 1500) Thread.Sleep(10);
+            while ((System.DateTime.Now - _lastFmStart).TotalMilliseconds < 1500) System.Threading.Thread.Sleep(10);
             this.BeginDispatch(() => transitionControl.ShowPage(_settingsPage));
-            _lastFMAuth = false;
+            _lastFmAuth = false;
         }
 
-        private void DoLastFMError(Exception ex)
+        private void DoLastFmError(System.Exception ex)
         {
-            _lastFMStart = DateTime.Now;
+            _lastFmStart = System.DateTime.Now;
             this.BeginDispatch(() =>
-                {
-                    _lastError = ErrorCodes.ERROR_GETTING_SESSION;
-                    //ShowError(_lastError, ex);
-                    _loadingPage.UpdateStatus("Error Fetching Last.FM Session");
-                });
-            while ((DateTime.Now - _lastFMStart).TotalMilliseconds < 3000) Thread.Sleep(10);
+            {
+                _lastError = Util.ErrorCodes.ErrorGettingSession;
+                //ShowError(_lastError, ex);
+                _loadingPage.UpdateStatus("Error Fetching Last.FM Session");
+            });
+            while ((System.DateTime.Now - _lastFmStart).TotalMilliseconds < 3000) System.Threading.Thread.Sleep(10);
             this.BeginDispatch(() => transitionControl.ShowPage(_settingsPage));
-            _lastFMAuth = false;
+            _lastFmAuth = false;
         }
 
-        private void GetLastFMSessionKey()
+        private void GetLastFmSessionKey()
         {
-            _lastFMAuth = true;
-            _lastFMStart = DateTime.Now;
+            _lastFmAuth = true;
+            _lastFmStart = System.DateTime.Now;
             _loadingPage.UpdateStatus("Fetching Last.FM Session");
             transitionControl.ShowPage(_loadingPage);
 
-            Task.Factory.StartNew(() => DoLastFMAuth());
+            System.Threading.Tasks.Task.Factory.StartNew(DoLastFmAuth);
         }
 
-        private void SetupUIEvents()
+        private void SetupUiEvents()
         {
-            _player.ConnectionEvent += _player_ConnectionEvent;
-            _player.LogoutEvent += _player_LogoutEvent;
-            _player.StationLoaded += _player_StationLoaded;
-            _player.StationsRefreshed += _player_StationsRefreshed;
-            _player.StationsRefreshing += _player_StationsRefreshing;
-            _player.ExceptionEvent += _player_ExceptionEvent;
-            _player.PlaybackStateChanged += _player_PlaybackStateChanged;
-            _player.LoginStatusEvent += _player_LoginStatusEvent;
-            _player.PlaybackStart += _player_PlaybackStart;
-            _player.StationCreated += _player_StationCreated;
+            Player.ConnectionEvent += _player_ConnectionEvent;
+            Player.LogoutEvent += _player_LogoutEvent;
+            Player.StationLoaded += _player_StationLoaded;
+            Player.StationsRefreshed += _player_StationsRefreshed;
+            Player.StationsRefreshing += _player_StationsRefreshing;
+            Player.ExceptionEvent += _player_ExceptionEvent;
+            Player.PlaybackStateChanged += _player_PlaybackStateChanged;
+            Player.LoginStatusEvent += _player_LoginStatusEvent;
+            Player.PlaybackStart += _player_PlaybackStart;
+            Player.StationCreated += _player_StationCreated;
 
             mainBar.PlayPauseClick += mainBar_PlayPauseClick;
             mainBar.NextClick += mainBar_NextClick;
@@ -474,108 +460,104 @@ namespace Elpis
             _stationPage.AddVarietyEvent += _stationPage_AddVarietyEvent;
             _quickMixPage.CancelEvent += _quickMixPage_CancelEvent;
             _quickMixPage.CloseEvent += _quickMixPage_CloseEvent;
-            _playlistPage.Loaded += _playlistPage_Loaded;
+            PlaylistPage.Loaded += _playlistPage_Loaded;
         }
 
         private void SetupPages()
         {
-            _searchPage = new Search(_player);
+            _searchPage = new Pages.Search(Player);
             transitionControl.AddPage(_searchPage);
 
-            _settingsPage = new Settings(_player, _config, _keyHost);
+            _settingsPage = new Pages.Settings(Player, _config, _keyHost);
             transitionControl.AddPage(_settingsPage);
 
-            _restartPage = new RestartPage();
+            _restartPage = new Pages.RestartPage();
             transitionControl.AddPage(_restartPage);
 
-            _aboutPage = new About();
+            _aboutPage = new Pages.About();
             transitionControl.AddPage(_aboutPage);
 
-            _stationPage = new StationList(_player);
+            _stationPage = new Pages.StationList(Player);
             transitionControl.AddPage(_stationPage);
 
-            _quickMixPage = new QuickMixPage(_player);
+            _quickMixPage = new Pages.QuickMixPage(Player);
             transitionControl.AddPage(_quickMixPage);
 
-            _loginPage = new LoginPage(_player, _config);
+            _loginPage = new Pages.LoginPage(Player, _config);
             transitionControl.AddPage(_loginPage);
 
-            _playlistPage = new PlaylistPage(_player);
-            transitionControl.AddPage(_playlistPage);
+            PlaylistPage = new Pages.PlaylistPage(Player);
+            transitionControl.AddPage(PlaylistPage);
 
-            _lastFMPage = new LastFMAuthPage();
-            transitionControl.AddPage(_lastFMPage);
+            _lastFmPage = new Pages.LastFmAuthPage();
+            transitionControl.AddPage(_lastFmPage);
         }
 
-        private void StationMenuClick(object sender, EventArgs e)
+        private static void StationMenuClick(object sender, System.EventArgs e)
         {
-            var station = (Station) ((ToolStripMenuItem) sender).Tag;
-            _player.PlayStation(station);
+            PandoraSharp.Station station = (PandoraSharp.Station) ((System.Windows.Forms.ToolStripMenuItem) sender).Tag;
+            Player.PlayStation(station);
         }
 
         private void AddStationMenuItems()
         {
-            if (_notify != null && _notifyMenu != null && _player.Stations.Count > 0)
+            if (_notify == null || _notifyMenu == null || Player.Stations.Count <= 0) return;
+            _notifyMenuStations.DropDown.Items.Clear();
+            foreach (PandoraSharp.Station s in Player.Stations)
             {
-                _notifyMenu_Stations.DropDown.Items.Clear();
-                foreach (Station s in _player.Stations)
-                {
-                    var menu = new ToolStripMenuItem(s.Name);
-                    menu.Click += StationMenuClick;
-                    menu.Tag = s;
-                    _notifyMenu_Stations.DropDown.Items.Add(menu);
-                }
+                System.Windows.Forms.ToolStripMenuItem menu = new System.Windows.Forms.ToolStripMenuItem(s.Name);
+                menu.Click += StationMenuClick;
+                menu.Tag = s;
+                _notifyMenuStations.DropDown.Items.Add(menu);
             }
         }
 
-        private void LoadNotifyDetailUrl(object sender, EventArgs e)
+        private static void LoadNotifyDetailUrl(object sender, System.EventArgs e)
         {
             try
             {
-                Process.Start((string) ((ToolStripMenuItem) sender).Tag);
+                System.Diagnostics.Process.Start((string) ((System.Windows.Forms.ToolStripMenuItem) sender).Tag);
             }
             catch
             {
+                //todo
             }
         }
 
         private void LoadNotifyMenu()
         {
-            bool showSongInfo = !_player.Stopped;
+            bool showSongInfo = !Player.Stopped;
             bool showStations = false;
-            if (_player.Stations != null)
-                showStations = _player.Stations.Count > 0;
+            if (Player.Stations != null)
+                showStations = Player.Stations.Count > 0;
 
-            _notifyMenu_Title.Visible =
-                _notifyMenu_Artist.Visible =
-                _notifyMenu_Album.Visible =
-                _notifyMenu_BreakSong.Visible =
-                _notifyMenu_DownVote.Visible =
-                _notifyMenu_UpVote.Visible =
-                _notifyMenu_Tired.Visible =
-                _notifyMenu_BreakVote.Visible = showSongInfo;
+            _notifyMenuTitle.Visible =
+                _notifyMenuArtist.Visible =
+                    _notifyMenuAlbum.Visible =
+                        _notifyMenuBreakSong.Visible =
+                            _notifyMenuDownVote.Visible =
+                                _notifyMenuUpVote.Visible =
+                                    _notifyMenuTired.Visible = _notifyMenuBreakVote.Visible = showSongInfo;
 
-            _notifyMenu_PlayPause.Enabled =
-                _notifyMenu_Next.Enabled = showSongInfo;
+            _notifyMenuPlayPause.Enabled = _notifyMenuNext.Enabled = showSongInfo;
 
             if (showSongInfo)
             {
-                _notifyMenu_Title.Text = _player.CurrentSong.SongTitle.Replace("&", "&&&");
-                _notifyMenu_Title.Tag = _player.CurrentSong.SongDetailUrl;
+                _notifyMenuTitle.Text = Player.CurrentSong.SongTitle.Replace("&", "&&&");
+                _notifyMenuTitle.Tag = Player.CurrentSong.SongDetailUrl;
 
-                _notifyMenu_Artist.Text = "by " + _player.CurrentSong.Artist.Replace("&", "&&&");
-                _notifyMenu_Artist.Tag = _player.CurrentSong.ArtistDetailUrl;
+                _notifyMenuArtist.Text = @"by " + Player.CurrentSong.Artist.Replace("&", "&&&");
+                _notifyMenuArtist.Tag = Player.CurrentSong.ArtistDetailUrl;
 
-                _notifyMenu_Album.Text = "on " + _player.CurrentSong.Album.Replace("&", "&&&");
-                _notifyMenu_Album.Tag = _player.CurrentSong.AlbumDetailUrl;
+                _notifyMenuAlbum.Text = @"on " + Player.CurrentSong.Album.Replace("&", "&&&");
+                _notifyMenuAlbum.Tag = Player.CurrentSong.AlbumDetailUrl;
 
-                _notifyMenu_PlayPause.Text = _player.Playing ? "Pause" : "Play";
+                _notifyMenuPlayPause.Text = Player.Playing ? "Pause" : "Play";
             }
 
-            _notifyMenu_BreakStation.Visible =
-                _notifyMenu_Stations.Visible = showStations;
+            _notifyMenuBreakStation.Visible = _notifyMenuStations.Visible = showStations;
 
-            _notifyMenu_BreakExit.Visible = _notifyMenu_Exit.Visible = true;
+            _notifyMenuBreakExit.Visible = _notifyMenuExit.Visible = true;
 
             if (showStations)
                 AddStationMenuItems();
@@ -583,128 +565,132 @@ namespace Elpis
 
         private void SetupNotifyIcon()
         {
-            _notifyMenu_Title = new ToolStripMenuItem("Title");
-            _notifyMenu_Title.Click += LoadNotifyDetailUrl;
-            _notifyMenu_Title.Image = Properties.Resources.menu_info;
+            _notifyMenuTitle = new System.Windows.Forms.ToolStripMenuItem("Title");
+            _notifyMenuTitle.Click += LoadNotifyDetailUrl;
+            _notifyMenuTitle.Image = Properties.Resources.menu_info;
 
-            _notifyMenu_Artist = new ToolStripMenuItem("Artist");
-            _notifyMenu_Artist.Click += LoadNotifyDetailUrl;
-            _notifyMenu_Artist.Image = Properties.Resources.menu_info;
+            _notifyMenuArtist = new System.Windows.Forms.ToolStripMenuItem("Artist");
+            _notifyMenuArtist.Click += LoadNotifyDetailUrl;
+            _notifyMenuArtist.Image = Properties.Resources.menu_info;
 
-            _notifyMenu_Album = new ToolStripMenuItem("Album");
-            _notifyMenu_Album.Click += LoadNotifyDetailUrl;
-            _notifyMenu_Album.Image = Properties.Resources.menu_info;
+            _notifyMenuAlbum = new System.Windows.Forms.ToolStripMenuItem("Album");
+            _notifyMenuAlbum.Click += LoadNotifyDetailUrl;
+            _notifyMenuAlbum.Image = Properties.Resources.menu_info;
 
-            _notifyMenu_PlayPause = new ToolStripMenuItem("Play");
-            _notifyMenu_PlayPause.Click += ((o, e) => _player.PlayPause());
+            _notifyMenuPlayPause = new System.Windows.Forms.ToolStripMenuItem("Play");
+            _notifyMenuPlayPause.Click += (o, e) => Player.PlayPause();
 
-            _notifyMenu_Next = new ToolStripMenuItem("Next Song");
-            _notifyMenu_Next.Click += ((o, e) => _player.Next());
+            _notifyMenuNext = new System.Windows.Forms.ToolStripMenuItem("Next Song");
+            _notifyMenuNext.Click += (o, e) => Player.Next();
 
-            _notifyMenu_Stations = new ToolStripMenuItem("Stations");
+            _notifyMenuStations = new System.Windows.Forms.ToolStripMenuItem("Stations");
 
-            _notifyMenu_DownVote = new ToolStripMenuItem("Dislike Song");
-            _notifyMenu_DownVote.Click += ((o, e) => _playlistPage.ThumbDownCurrent() );
+            _notifyMenuDownVote = new System.Windows.Forms.ToolStripMenuItem("Dislike Song");
+            _notifyMenuDownVote.Click += (o, e) => PlaylistPage.ThumbDownCurrent();
 
-            _notifyMenu_Tired = new ToolStripMenuItem("Tired of This Song");
-            _notifyMenu_Tired.Click += ((o, e) => _playlistPage.TiredOfCurrentSongFromSystemTray());
+            _notifyMenuTired = new System.Windows.Forms.ToolStripMenuItem("Tired of This Song");
+            _notifyMenuTired.Click += (o, e) => PlaylistPage.TiredOfCurrentSongFromSystemTray();
 
-            _notifyMenu_UpVote = new ToolStripMenuItem("Like Song");
-            _notifyMenu_UpVote.Click += ((o, e) => _playlistPage.ThumbUpCurrent() );
+            _notifyMenuUpVote = new System.Windows.Forms.ToolStripMenuItem("Like Song");
+            _notifyMenuUpVote.Click += (o, e) => PlaylistPage.ThumbUpCurrent();
 
-            _notifyMenu_Exit = new ToolStripMenuItem("Exit Elpis");
-            _notifyMenu_Exit.Click += ((o, e) => { _forceClose = true; Close(); });
+            _notifyMenuExit = new System.Windows.Forms.ToolStripMenuItem("Exit Elpis");
+            _notifyMenuExit.Click += (o, e) =>
+            {
+                _forceClose = true;
+                Close();
+            };
 
-            var menus = new ToolStripItem[]
-                            {
-                                _notifyMenu_Title,
-                                _notifyMenu_Artist,
-                                _notifyMenu_Album,
-                                _notifyMenu_BreakSong,
-                                _notifyMenu_PlayPause,
-                                _notifyMenu_Next,
-                                _notifyMenu_BreakVote,
-                                _notifyMenu_UpVote,
-                                _notifyMenu_DownVote,
-                                _notifyMenu_Tired,
-                                _notifyMenu_BreakStation,
-                                _notifyMenu_Stations,
-                                _notifyMenu_BreakExit,
-                                _notifyMenu_Exit
-                            };
+            System.Windows.Forms.ToolStripItem[] menus =
+            {
+                _notifyMenuTitle, _notifyMenuArtist, _notifyMenuAlbum,
+                _notifyMenuBreakSong, _notifyMenuPlayPause, _notifyMenuNext, _notifyMenuBreakVote,
+                _notifyMenuUpVote, _notifyMenuDownVote, _notifyMenuTired, _notifyMenuBreakStation,
+                _notifyMenuStations, _notifyMenuBreakExit, _notifyMenuExit
+            };
 
-            _notifyMenu = new ContextMenuStrip();
+            _notifyMenu = new System.Windows.Forms.ContextMenuStrip();
             _notifyMenu.Items.AddRange(menus);
 
-            _notify = new NotifyIcon()
-                          {
-                              Text = "Elpis",
-                              Icon = Properties.Resources.main_icon,
-                              ContextMenuStrip = _notifyMenu,
-                          };
+            _notify = new System.Windows.Forms.NotifyIcon
+            {
+                Text = @"Elpis",
+                Icon = Properties.Resources.main_icon,
+                ContextMenuStrip = _notifyMenu
+            };
 
             // Timer is used to distinguish between mouse single and double clicks
             _notifyDoubleClickTimer = new System.Threading.Timer(o =>
-                                        {
-                                            Thread.Sleep(SystemInformation.DoubleClickTime);
-                                            if (!_notifyDoubleClicked)
-                                            {
-                                                _player.PlayPause();
-                                            }
-                                            _notifyDoubleClicked = false;
-                                        });
+            {
+                System.Threading.Thread.Sleep(System.Windows.Forms.SystemInformation.DoubleClickTime);
+                if (!_notifyDoubleClicked)
+                {
+                    Player.PlayPause();
+                }
+                _notifyDoubleClicked = false;
+            });
 
-            _notify.MouseDoubleClick += ((o, e) =>
-                                        {
-                                            // Only process left mouse button double clicks
-                                            if (e.Button != MouseButtons.Left)
-                                            {
-                                                return;
-                                            }
+            _notify.MouseDoubleClick += (o, e) =>
+            {
+                // Only process left mouse button double clicks
+                if (e.Button != System.Windows.Forms.MouseButtons.Left)
+                {
+                    return;
+                }
 
-                                            _notifyDoubleClicked = true;
-                                            
-                                            // Hide window if it is shown; show if it is hidden
-                                            if (WindowState == WindowState.Normal)
-                                            {
-                                                WindowState = WindowState.Minimized;
-                                                this.Hide();
-                                                ShowInTaskbar = false; 
-                                            }
-                                            else
-                                            {
-                                                Microsoft.Shell.NativeMethods.ShowToFront((new WindowInteropHelper(this)).Handle);
-                                            }
-                                        });
+                _notifyDoubleClicked = true;
 
+                // Hide window if it is shown; show if it is hidden
+                if (WindowState == System.Windows.WindowState.Normal)
+                {
+                    WindowState = System.Windows.WindowState.Minimized;
+                    Hide();
+                    ShowInTaskbar = false;
+                }
+                else
+                {
+                    Microsoft.Shell.NativeMethods.ShowToFront(
+                        new System.Windows.Interop.WindowInteropHelper(this).Handle);
+                }
+            };
 
-            _notify.MouseClick += ((o, e) =>
-                                        {
-                                            if (e.Button == MouseButtons.Left)
-                                            {
-                                                // Play or pause only in the event of single click
-                                                _notifyDoubleClickTimer.Change(0, 0);
-                                            }
-                                            else if (e.Button == MouseButtons.Middle)
-                                            {
-                                                _player.Next();
-                                            }
-                                        });
+            _notify.MouseClick += (o, e) =>
+            {
+                switch (e.Button) {
+                    case System.Windows.Forms.MouseButtons.Left:
+                        // Play or pause only in the event of single click
+                        _notifyDoubleClickTimer.Change(0, 0);
+                        break;
+                    case System.Windows.Forms.MouseButtons.Middle:
+                        Player.Next();
+                        break;
+                    case System.Windows.Forms.MouseButtons.None:
+                        break;
+                    case System.Windows.Forms.MouseButtons.Right:
+                        break;
+                    case System.Windows.Forms.MouseButtons.XButton1:
+                        break;
+                    case System.Windows.Forms.MouseButtons.XButton2:
+                        break;
+                    default:
+                        throw new System.ArgumentOutOfRangeException();
+                }
+            };
 
-            _notify.ContextMenuStrip.Opening += ((o, e) => LoadNotifyMenu());
+            _notify.ContextMenuStrip.Opening += (o, e) => LoadNotifyMenu();
 
             _notify.Visible = true;
         }
 
         private bool InitLogic()
         {
-            while (transitionControl.CurrentPage != _loadingPage) Thread.Sleep(10);
+            while (!Equals(transitionControl.CurrentPage, _loadingPage)) System.Threading.Thread.Sleep(10);
             _loadingPage.UpdateStatus("Loading configuration...");
             InitReleaseData();
 
             if (_configError)
             {
-                this.BeginDispatch(() => ShowError(ErrorCodes.CONFIG_LOAD_ERROR, null));
+                this.BeginDispatch(() => ShowError(Util.ErrorCodes.ConfigLoadError, null));
                 return false;
             }
 
@@ -712,9 +698,9 @@ namespace Elpis
             {
                 SetupLogging();
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
-                ShowError(ErrorCodes.LOG_SETUP_ERROR, ex);
+                ShowError(Util.ErrorCodes.LogSetupError, ex);
                 return false;
             }
             _initComplete = true;
@@ -723,7 +709,7 @@ namespace Elpis
 
         private void FinalLoad()
         {
-            Version ver = Assembly.GetEntryAssembly().GetName().Version;
+            System.Version ver = System.Reflection.Assembly.GetEntryAssembly().GetName().Version;
             if (_config.Fields.Elpis_Version == null || _config.Fields.Elpis_Version < ver)
             {
                 _loadingPage.UpdateStatus("Running update logic...");
@@ -755,34 +741,42 @@ namespace Elpis
             _loadingPage.UpdateStatus("Loading audio engine...");
             try
             {
-                _player = new Player();
-                _player.Initialize(_bassRegEmail, _bassRegKey); //TODO - put this in the login sequence?
-                if(_config.Fields.Proxy_Address != string.Empty)
-                    _player.SetProxy(_config.Fields.Proxy_Address, _config.Fields.Proxy_Port,
-                        _config.Fields.Proxy_User, _config.Fields.Proxy_Password);
+                Player = new PandoraSharpPlayer.Player();
+                Player.Initialize(_bassRegEmail, _bassRegKey); //TODO - put this in the login sequence?
+                if (_config.Fields.Proxy_Address != string.Empty)
+                    Player.SetProxy(_config.Fields.Proxy_Address, _config.Fields.Proxy_Port, _config.Fields.Proxy_User, _config.Fields.Proxy_Password);
                 setOutputDevice(_config.Fields.System_OutputDevice);
             }
-            catch(Exception ex)
+            catch (System.Exception ex)
             {
-                ShowError(ErrorCodes.ENGINE_INIT_ERROR, ex);
+                ShowError(Util.ErrorCodes.EngineInitError, ex);
                 return;
             }
 
-            LoadLastFM();
+            LoadLastFm();
 
-            _player.AudioFormat = _config.Fields.Pandora_AudioFormat;
-            _player.SetStationSortOrder(_config.Fields.Pandora_StationSortOrder);
-            _player.Volume = _config.Fields.Elpis_Volume;
-            _player.PauseOnLock = _config.Fields.Elpis_PauseOnLock;
-            _player.MaxPlayed = _config.Fields.Elpis_MaxHistory;
+            Player.AudioFormat = _config.Fields.Pandora_AudioFormat;
+            Player.SetStationSortOrder(_config.Fields.Pandora_StationSortOrder);
+            Player.Volume = _config.Fields.Elpis_Volume;
+            Player.PauseOnLock = _config.Fields.Elpis_PauseOnLock;
+            Player.MaxPlayed = _config.Fields.Elpis_MaxHistory;
+
+            if (System.IO.Directory.Exists(_config.Fields.RipPath))
+            {
+                Player.RipPath = _config.Fields.RipPath;
+                Player.Rip = _config.Fields.RipStream;
+            }
+            else
+            {
+                Player.Rip = false;
+            }
 
             //_player.ForceSSL = _config.Fields.Misc_ForceSSL;
 
-
             _loadingPage.UpdateStatus("Setting up cache...");
-            string cachePath = Path.Combine(Config.ElpisAppData, "Cache");
-            if (!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
-            _player.ImageCachePath = cachePath;
+            string cachePath = System.IO.Path.Combine(Config.ElpisAppData, "Cache");
+            if (!System.IO.Directory.Exists(cachePath)) System.IO.Directory.CreateDirectory(cachePath);
+            Player.ImageCachePath = cachePath;
 
             _loadingPage.UpdateStatus("Starting Web Server...");
 
@@ -790,7 +784,8 @@ namespace Elpis
 
             _loadingPage.UpdateStatus("Setting up UI...");
 
-            this.Dispatch(() => {
+            this.Dispatch(() =>
+            {
                 _keyHost = new HotKeyHost(this);
                 ConfigureHotKeys();
             });
@@ -799,41 +794,39 @@ namespace Elpis
 
             this.Dispatch(SetupNotifyIcon);
 
-            this.Dispatch(() => mainBar.DataContext = _player); //To bind playstate
+            this.Dispatch(() => mainBar.DataContext = Player); //To bind playstate
 
             this.Dispatch(SetupPages);
-            this.Dispatch(SetupUIEvents);
+            this.Dispatch(SetupUiEvents);
             this.Dispatch(SetupPageEvents);
 
-            if (_config.Fields.Login_AutoLogin &&
-                (!string.IsNullOrEmpty(_config.Fields.Login_Email)) &&
-                (!string.IsNullOrEmpty(_config.Fields.Login_Password)))
+            if (_config.Fields.Login_AutoLogin && !string.IsNullOrEmpty(_config.Fields.Login_Email) && !string.IsNullOrEmpty(_config.Fields.Login_Password))
             {
-                _player.Connect(_config.Fields.Login_Email, _config.Fields.Login_Password);
+                Player.Connect(_config.Fields.Login_Email, _config.Fields.Login_Password);
             }
             else
             {
                 transitionControl.ShowPage(_loginPage);
             }
 
-            this.Dispatch(() => mainBar.Volume = _player.Volume);
+            this.Dispatch(() => mainBar.Volume = Player.Volume);
 
             _finalComplete = true;
         }
 
         private void setOutputDevice(string systemOutputDevice)
         {
-            if (!systemOutputDevice.IsNullOrEmpty()) {
-                string prevOutput = _player.OutputDevice;
+            if (!StringExtensions.IsNullOrEmpty(systemOutputDevice))
+            {
+                string prevOutput = Player.OutputDevice;
                 try
                 {
-                    _player.OutputDevice = systemOutputDevice;
+                    Player.OutputDevice = systemOutputDevice;
                 }
-                catch (BassException bEx)
+                catch (BassPlayer.BassException )
                 {
-                    _player.OutputDevice = prevOutput;
+                    Player.OutputDevice = prevOutput;
                 }
-                
             }
         }
 
@@ -842,9 +835,9 @@ namespace Elpis
             if (_config.Fields.Elpis_RemoteControlEnabled)
             {
                 _webInterfaceObject = new WebInterface();
-                Thread webInterfaceThread = new Thread(new ThreadStart(_webInterfaceObject.StartInterface));
+                System.Threading.Thread webInterfaceThread = new System.Threading.Thread(_webInterfaceObject.StartInterface);
                 webInterfaceThread.Start();
-                lastTimeSkipped = DateTime.Now;
+                _lastTimeSkipped = System.DateTime.Now;
             }
         }
 
@@ -852,83 +845,86 @@ namespace Elpis
         {
             if (_config.Fields.Elpis_RemoteControlEnabled)
             {
-                if (_webInterfaceObject != null)
-                {
-                    _webInterfaceObject.StopInterface();
-                }
+                _webInterfaceObject?.StopInterface();
             }
         }
 
         public static bool Next()
         {
-            if ((DateTime.Now - lastTimeSkipped).Seconds > 20)
+            if ((System.DateTime.Now - _lastTimeSkipped).Seconds > 20)
             {
-                System.Windows.Application.Current.Dispatcher.Invoke((Action)(() =>
+                System.Windows.Application.Current.Dispatcher.Invoke((System.Action) (() =>
                 {
-                    _mainWindow.showBalloon(SKIP);
-                    _player.Next();
+                    _mainWindow.ShowBalloon(SKIP);
+                    Player.Next();
                 }));
-                lastTimeSkipped = DateTime.Now;
+                _lastTimeSkipped = System.DateTime.Now;
                 return true;
             }
             return false;
         }
+
         public static void Pause()
         {
-            System.Windows.Application.Current.Dispatcher.Invoke((Action)(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke((System.Action) (() =>
             {
-                _mainWindow.showBalloon(PAUSE);
-                _player.Pause();
+                _mainWindow.ShowBalloon(PAUSE);
+                Player.Pause();
             }));
         }
+
         public static void Play()
         {
-            System.Windows.Application.Current.Dispatcher.Invoke((Action)(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke((System.Action) (() =>
             {
-                _mainWindow.showBalloon(PLAY);
-                _player.Play();
+                _mainWindow.ShowBalloon(PLAY);
+                Player.Play();
             }));
         }
+
         public static void PlayPauseToggle()
         {
-            System.Windows.Application.Current.Dispatcher.Invoke((Action)(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke((System.Action) (() =>
             {
-                if (_player.Paused)
+                if (Player.Paused)
                 {
-                    _mainWindow.showBalloon(PLAY);
+                    _mainWindow.ShowBalloon(PLAY);
                 }
-                if (_player.Playing)
+                if (Player.Playing)
                 {
-                    _mainWindow.showBalloon(PAUSE);
+                    _mainWindow.ShowBalloon(PAUSE);
                 }
-                _player.PlayPause();
+                Player.PlayPause();
             }));
         }
+
         public static void Like()
         {
-            System.Windows.Application.Current.Dispatcher.Invoke((Action)(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke((System.Action) (() =>
             {
-                _mainWindow.showBalloon(LIKE);
-                _playlistPage.ThumbUpCurrent();
+                _mainWindow.ShowBalloon(LIKE);
+                PlaylistPage.ThumbUpCurrent();
             }));
-
         }
+
         public static void Dislike()
         {
-            System.Windows.Application.Current.Dispatcher.Invoke((Action)(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke((System.Action) (() =>
             {
-                _mainWindow.showBalloon(DISLIKE);
-                _playlistPage.ThumbDownCurrent();
+                _mainWindow.ShowBalloon(DISLIKE);
+                PlaylistPage.ThumbDownCurrent();
             }));
         }
-        public static Song GetCurrentSong()
+
+        public static PandoraSharp.Song GetCurrentSong()
         {
-            return _player.CurrentSong;
+            return Player.CurrentSong;
         }
-        private void LoadLastFM()
+
+        private void LoadLastFm()
         {
-            string apiKey = string.Empty;
-            string apiSecret = string.Empty;
+            string apiKey;
+            string apiSecret;
 #if APP_RELEASE
                 apiKey = ReleaseData.LastFMApiKey;
                 apiSecret = ReleaseData.LastFMApiSecret;
@@ -938,27 +934,21 @@ namespace Elpis
             apiSecret = "dummy_key";
 #endif
 
-            if (!string.IsNullOrEmpty(_config.Fields.LastFM_SessionKey))
-                _scrobbler = new PandoraSharpScrobbler(apiKey, apiSecret, _config.Fields.LastFM_SessionKey);
-            else
-                _scrobbler = new PandoraSharpScrobbler(apiKey, apiSecret);
+            _scrobbler = !string.IsNullOrEmpty(_config.Fields.LastFM_SessionKey) ? new PandoraSharpScrobbler.PandoraSharpScrobbler(apiKey, apiSecret, _config.Fields.LastFM_SessionKey) : new PandoraSharpScrobbler.PandoraSharpScrobbler(apiKey, apiSecret);
 
             _scrobbler.IsEnabled = _config.Fields.LastFM_Scrobble;
 #if APP_RELEASE
 #else
             if (_config.Fields.LastFM_Scrobble && !_scrobbler.IsEnabled)
             {
-                System.Windows.MessageBox.Show("You are trying to use Last.FM Scrobbler without a LastFM API key. " +
-                                               "In order to use it while in Debug mode, edit apiKey and apiSecret in LoadLastFM() in MainWindow.xaml.cs");
+                System.Windows.MessageBox.Show("You are trying to use Last.FM Scrobbler without a LastFM API key. " + "In order to use it while in Debug mode, edit apiKey and apiSecret in LoadLastFM() in MainWindow.xaml.cs");
             }
 #endif
 
-
             if (_config.Fields.Proxy_Address != string.Empty)
-                _scrobbler.SetProxy(_config.Fields.Proxy_Address, _config.Fields.Proxy_Port,
-                        _config.Fields.Proxy_User, _config.Fields.Proxy_Password);
+                _scrobbler.SetProxy(_config.Fields.Proxy_Address, _config.Fields.Proxy_Port, _config.Fields.Proxy_User, _config.Fields.Proxy_Password);
 
-            _player.RegisterPlayerControlQuery(_scrobbler);
+            Player.RegisterPlayerControlQuery(_scrobbler);
         }
 
         private void LoadLogic()
@@ -1015,12 +1005,13 @@ namespace Elpis
             }
         }
 
-#endregion
+        #endregion
 
-#region Misc Methods
+        #region Misc Methods
+
         private bool IsOnPlaylist()
         {
-            return (IsActive && transitionControl.CurrentPage == _playlistPage);
+            return IsActive && Equals(transitionControl.CurrentPage, PlaylistPage);
         }
 
         private void SetupJumpList()
@@ -1044,27 +1035,25 @@ namespace Elpis
             //jumpList.Apply();
         }
 
-
         private void ConfigureHotKeys()
         {
-
-            foreach(HotKey h in _config.Fields.Elpis_HotKeys.Values)
+            foreach (HotkeyConfig h in _config.Fields.Elpis_HotKeys.Values)
             {
                 _keyHost.AddHotKey(h);
             }
-            if(new List<HotKey>(_config.Fields.Elpis_HotKeys.Values).Count==0)
+            if (new System.Collections.Generic.List<HotKey>(_config.Fields.Elpis_HotKeys.Values).Count == 0)
             {
-                _keyHost.AddHotKey(new HotKey(PlayerCommands.PlayPause, Key.MediaPlayPause, ModifierKeys.None, true, true));
+                _keyHost.AddHotKey(new HotKey(PlayerCommands.PlayPause, System.Windows.Input.Key.MediaPlayPause, System.Windows.Input.ModifierKeys.None, true));
 
-                _keyHost.AddHotKey(new HotKey(PlayerCommands.Next, Key.MediaNextTrack, ModifierKeys.None, true, true));
+                _keyHost.AddHotKey(new HotKey(PlayerCommands.Next, System.Windows.Input.Key.MediaNextTrack, System.Windows.Input.ModifierKeys.None, true));
 
-                _keyHost.AddHotKey(new HotKey(PlayerCommands.ThumbsUp, Key.MediaPlayPause, ModifierKeys.Control, true, true));
+                _keyHost.AddHotKey(new HotKey(PlayerCommands.ThumbsUp, System.Windows.Input.Key.MediaPlayPause, System.Windows.Input.ModifierKeys.Control, true));
 
-                _keyHost.AddHotKey(new HotKey(PlayerCommands.ThumbsDown, Key.MediaStop, ModifierKeys.Control, true, true));
+                _keyHost.AddHotKey(new HotKey(PlayerCommands.ThumbsDown, System.Windows.Input.Key.MediaStop, System.Windows.Input.ModifierKeys.Control, true));
             }
 
-            Dictionary<int, HotkeyConfig> keys = new Dictionary<int, HotkeyConfig>();
-            foreach (KeyValuePair<int, HotKey> pair in _keyHost.HotKeys)
+            System.Collections.Generic.Dictionary<int, HotkeyConfig> keys = new System.Collections.Generic.Dictionary<int, HotkeyConfig>();
+            foreach (System.Collections.Generic.KeyValuePair<int, HotKey> pair in _keyHost.HotKeys)
             {
                 keys.Add(pair.Key, new HotkeyConfig(pair.Value));
             }
@@ -1075,39 +1064,39 @@ namespace Elpis
 
         public void ShowStationList()
         {
-            _stationPage.Stations = _player.Stations;
-            transitionControl.ShowPage(_stationPage, PageTransitionType.Next);
+            _stationPage.Stations = Player.Stations;
+            transitionControl.ShowPage(_stationPage, PageTransition.PageTransitionType.Next);
         }
 
         private void RestorePrevPage()
         {
-            transitionControl.ShowPage(_prevPage, PageTransitionType.Next);
+            transitionControl.ShowPage(_prevPage, PageTransition.PageTransitionType.Next);
             _prevPage = null;
         }
 
-        private void ShowErrorPage(ErrorCodes code, Exception ex)
+        private void ShowErrorPage(Util.ErrorCodes code, System.Exception ex)
         {
             if (!_showingError)
             {
                 _showingError = true;
 
                 _prevPage = transitionControl.CurrentPage;
-                _errorPage.SetError(Errors.GetErrorMessage(code), Errors.IsHardFail(code), ex);
+                _errorPage.SetError(Util.Errors.GetErrorMessage(code), Util.Errors.IsHardFail(code), ex);
                 transitionControl.ShowPage(_errorPage);
             }
         }
 
-        private void ShowError(ErrorCodes code, Exception ex, bool showLast = false)
+        private void ShowError(Util.ErrorCodes code, System.Exception ex, bool showLast = false)
         {
-            if (transitionControl.CurrentPage != _errorPage)
+            if (!Equals(transitionControl.CurrentPage, _errorPage))
             {
-                if(showLast && _lastError != ErrorCodes.SUCCESS)
+                if (showLast && _lastError != Util.ErrorCodes.Success)
                 {
                     ShowErrorPage(_lastError, _lastException);
                 }
-                else if (code != ErrorCodes.SUCCESS && ex != null)
+                else if (code != Util.ErrorCodes.Success && ex != null)
                 {
-                    if(Errors.IsHardFail(code))
+                    if (Util.Errors.IsHardFail(code))
                     {
                         ShowErrorPage(code, ex);
                     }
@@ -1115,36 +1104,23 @@ namespace Elpis
                     {
                         _lastError = code;
                         _lastException = ex;
-                        mainBar.ShowError(Errors.GetErrorMessage(code));
+                        mainBar.ShowError(Util.Errors.GetErrorMessage(code));
 
-                        if (transitionControl.CurrentPage == _loadingPage && !_lastFMAuth)
-                        {
-                            _loginPage.LoginFailed = true;
-                            transitionControl.ShowPage(_loginPage);
-                        }
+                        if (!Equals(transitionControl.CurrentPage, _loadingPage) || _lastFmAuth) return;
+                        _loginPage.LoginFailed = true;
+                        transitionControl.ShowPage(_loginPage);
                     }
                 }
             }
         }
-#endregion
 
-        protected override void OnActivated(EventArgs e)
+        #endregion
+
+        #region Event Handlers
+
+        private void mainBar_ErrorClicked()
         {
-            _isActiveWindow = true;
-            base.OnActivated(e);
-        }
-
-        protected override void OnDeactivated(EventArgs e)
-        {
-            _isActiveWindow = false;
-            base.OnDeactivated(e);
-        }
-
-#region Event Handlers
-
-        void mainBar_ErrorClicked()
-        {
-            ShowError(ErrorCodes.SUCCESS, null, true);
+            ShowError(Util.ErrorCodes.Success, null, true);
         }
 
         private void _player_StationsRefreshing(object sender)
@@ -1154,7 +1130,7 @@ namespace Elpis
 
         private void _loginPage_ConnectingEvent()
         {
-            this.BeginDispatch(() => transitionControl.ShowPage(_loadingPage, PageTransitionType.Next));
+            this.BeginDispatch(() => transitionControl.ShowPage(_loadingPage, PageTransition.PageTransitionType.Next));
         }
 
         private void _errorPage_ErrorClose(bool hardFail)
@@ -1163,7 +1139,7 @@ namespace Elpis
                 Close();
             else
             {
-                _lastError = ErrorCodes.SUCCESS;
+                _lastError = Util.ErrorCodes.Success;
                 _lastException = null;
                 RestorePrevPage();
                 _showingError = false;
@@ -1183,71 +1159,71 @@ namespace Elpis
             }
         }
 
-        private void _player_StationCreated(object sender, Station station)
+        private void _player_StationCreated(object sender, PandoraSharp.Station station)
         {
-            _player.RefreshStations();
-            this.BeginDispatch(() => _player.PlayStation(station));
+            Player.RefreshStations();
+            this.BeginDispatch(() => Player.PlayStation(station));
         }
 
         private void _searchPage_Cancel(object sender)
         {
             this.BeginDispatch(() =>
-                                   {
-                                       if (_searchMode == SearchMode.AddVariety)
-                                           ShowStationList();
-                                       else
-                                       {
-                                           if (_prevPage == _stationPage)
-                                               ShowStationList();
-                                           else
-                                               RestorePrevPage();
-                                           //transitionControl.ShowPage(_playlistPage);
-                                       }
-                                   });
+            {
+                if (_searchMode == SearchMode.AddVariety)
+                    ShowStationList();
+                else
+                {
+                    if (Equals(_prevPage, _stationPage))
+                        ShowStationList();
+                    else
+                        RestorePrevPage();
+                    //transitionControl.ShowPage(_playlistPage);
+                }
+            });
         }
 
-        void _searchPage_AddVariety(object sender)
+        private void _searchPage_AddVariety(object sender)
         {
             ShowStationList();
         }
 
         private void _player_PlaybackStart(object sender, double duration)
         {
+            this.BeginDispatch(() => { ShowBalloon(PLAY, 5000); });
+        }
+
+        private void _player_PlaybackStateChanged(object sender, BassPlayer.BassAudioEngine.PlayState oldState, BassPlayer.BassAudioEngine.PlayState newState)
+        {
             this.BeginDispatch(() =>
             {
-                showBalloon(PLAY, 5000);
+                switch (newState) {
+                    case BassPlayer.BassAudioEngine.PlayState.Playing:
+                        string title = "Elpis | " + Player.CurrentSong.Artist + " / " + Player.CurrentSong.SongTitle;
+
+                        _notify.Text = Util.StringExtensions.StringEllipses(title.Replace("&", "&&&"), 63);
+                        //notify text cannot be more than 63 chars
+                        Title = title;
+                        break;
+                    case BassPlayer.BassAudioEngine.PlayState.Paused:
+                        Title = _notify.Text = @"Elpis";
+                        break;
+                    case BassPlayer.BassAudioEngine.PlayState.Stopped:
+                        mainBar.SetPlaying(false);
+                        Title = _notify.Text = @"Elpis";
+                        if (Player.LoggedIn)
+                            ShowStationList();
+                        break;
+                    case BassPlayer.BassAudioEngine.PlayState.Init:
+                        break;
+                    case BassPlayer.BassAudioEngine.PlayState.Ended:
+                        break;
+                    default:
+                        throw new System.ArgumentOutOfRangeException(nameof(newState), newState, null);
+                }
             });
         }
 
-        private void _player_PlaybackStateChanged(object sender, BassAudioEngine.PlayState oldState,
-                                                  BassAudioEngine.PlayState newState)
-        {
-            this.BeginDispatch(() =>
-                                   {
-                                       if (newState == BassAudioEngine.PlayState.Playing)
-                                       {
-                                           string title = "Elpis | " + _player.CurrentSong.Artist + " / " +
-                                                          _player.CurrentSong.SongTitle;
-
-                                           _notify.Text = title.Replace("&", "&&&").StringEllipses(63);
-                                               //notify text cannot be more than 63 chars
-                                           Title = title;
-                                       }
-                                       else if (newState == BassAudioEngine.PlayState.Paused)
-                                       {
-                                           Title = _notify.Text = "Elpis";
-                                       }
-                                       else if (newState == BassAudioEngine.PlayState.Stopped)
-                                       {
-                                           mainBar.SetPlaying(false);
-                                           Title = _notify.Text = "Elpis";
-                                           if(_player.LoggedIn)
-                                              ShowStationList();
-                                       }
-                                   });
-        }
-
-        private void _player_ExceptionEvent(object sender, ErrorCodes code, Exception ex)
+        private void _player_ExceptionEvent(object sender, Util.ErrorCodes code, System.Exception ex)
         {
             ShowError(code, ex);
         }
@@ -1257,77 +1233,77 @@ namespace Elpis
             _loadingPage.UpdateStatus(status);
         }
 
-        void _stationPage_EditQuickMixEvent()
+        private void _stationPage_EditQuickMixEvent()
         {
             transitionControl.ShowPage(_quickMixPage);
         }
 
-        void _stationPage_AddVarietyEvent(Station station)
+        private void _stationPage_AddVarietyEvent(PandoraSharp.Station station)
         {
             _searchPage.SearchMode = _searchMode = SearchMode.AddVariety;
             _searchPage.VarietyStation = station;
             transitionControl.ShowPage(_searchPage);
         }
 
-        void _quickMixPage_CloseEvent()
+        private void _quickMixPage_CloseEvent()
         {
             ShowStationList();
         }
 
-        void _quickMixPage_CancelEvent()
+        private void _quickMixPage_CancelEvent()
         {
             ShowStationList();
         }
 
-        private void _playlistPage_Loaded(object sender, RoutedEventArgs e)
+        private void _playlistPage_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            Log.O("Show Playlist");
+            Util.Log.O("Show Playlist");
             mainBar.SetModePlayList();
         }
 
-        private void _stationPage_Loaded(object sender, RoutedEventArgs e)
+        private void _stationPage_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            Log.O("Show Stations");
-            mainBar.SetModeStationList(_player.CurrentStation != null);
+            Util.Log.O("Show Stations");
+            mainBar.SetModeStationList(Player.CurrentStation != null);
         }
 
-        private void _searchPage_Loaded(object sender, RoutedEventArgs e)
+        private void _searchPage_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            Log.O("Show Search");
+            Util.Log.O("Show Search");
             mainBar.SetModeSearch();
         }
 
-        void _settingsPage_Logout()
+        private void _settingsPage_Logout()
         {
-            if (_player.LoggedIn)
-                _player.Logout();
+            if (Player.LoggedIn)
+                Player.Logout();
         }
 
-        private void _settingsPage_Loaded(object sender, RoutedEventArgs e)
+        private void _settingsPage_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            Log.O("Show Settings");
+            Util.Log.O("Show Settings");
             mainBar.SetModeSettings();
         }
 
-        private void _aboutPage_Loaded(object sender, RoutedEventArgs e)
+        private void _aboutPage_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            Log.O("Show About");
+            Util.Log.O("Show About");
             mainBar.SetModeAbout();
         }
 
-        private void _loginPage_Loaded(object sender, RoutedEventArgs e)
+        private void _loginPage_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            Log.O("Show Login");
+            Util.Log.O("Show Login");
             mainBar.SetModeLogin();
         }
 
         private void mainBar_stationPageClick()
         {
             //_prevPage = transitionControl.CurrentPage;
-            if (transitionControl.CurrentPage == _stationPage || transitionControl.CurrentPage == _quickMixPage)
+            if (Equals(transitionControl.CurrentPage, _stationPage) || Equals(transitionControl.CurrentPage, _quickMixPage))
             {
                 if (_stationLoaded)
-                    transitionControl.ShowPage(_playlistPage);
+                    transitionControl.ShowPage(PlaylistPage);
             }
             else
             {
@@ -1339,12 +1315,12 @@ namespace Elpis
         {
             _prevPage = transitionControl.CurrentPage;
             _searchPage.SearchMode = _searchMode = SearchMode.NewStation;
-            transitionControl.ShowPage(_searchPage, PageTransitionType.Previous);
+            transitionControl.ShowPage(_searchPage, PageTransition.PageTransitionType.Previous);
         }
 
-        private void mainBar_VolumeChanged(double vol)
+        private static void mainBar_VolumeChanged(double vol)
         {
-            _player.Volume = (int)vol;
+            Player.Volume = (int) vol;
         }
 
         private void mainBar_SettingsClick()
@@ -1352,10 +1328,10 @@ namespace Elpis
             if (_prevPage == null)
                 _prevPage = transitionControl.CurrentPage;
 
-            if (transitionControl.CurrentPage == _settingsPage)
+            if (Equals(transitionControl.CurrentPage, _settingsPage))
                 RestorePrevPage();
             else
-                transitionControl.ShowPage(_settingsPage, PageTransitionType.Previous);
+                transitionControl.ShowPage(_settingsPage, PageTransition.PageTransitionType.Previous);
         }
 
         private void mainBar_AboutClick()
@@ -1363,73 +1339,71 @@ namespace Elpis
             if (_prevPage == null)
                 _prevPage = transitionControl.CurrentPage;
 
-            if (transitionControl.CurrentPage == _aboutPage)
+            if (Equals(transitionControl.CurrentPage, _aboutPage))
                 RestorePrevPage();
             else
-                transitionControl.ShowPage(_aboutPage, PageTransitionType.Previous);
+                transitionControl.ShowPage(_aboutPage, PageTransition.PageTransitionType.Previous);
         }
 
         private void _player_StationsRefreshed(object sender)
         {
-            _stationPage.Stations = _player.Stations;
+            _stationPage.Stations = Player.Stations;
         }
 
         private void mainBar_NextClick()
         {
             //if (transitionControl.CurrentPage == _playlistPage)
-            _player.Next();
+            Player.Next();
 
-            transitionControl.ShowPage(_playlistPage);
+            transitionControl.ShowPage(PlaylistPage);
         }
 
         private void mainBar_PlayPauseClick()
         {
             //if (transitionControl.CurrentPage == _playlistPage)
-            _player.PlayPause();
+            Player.PlayPause();
 
-            transitionControl.ShowPage(_playlistPage);
+            transitionControl.ShowPage(PlaylistPage);
         }
 
-        private void _player_StationLoaded(object sender, Station station)
+        private void _player_StationLoaded(object sender, PandoraSharp.Station station)
         {
             this.BeginDispatch(() =>
-                                   {
-                                       mainBar.SetModePlayList();
-                                       transitionControl.ShowPage(_playlistPage,
-                                                                  PageTransitionType.Next);
-                                       if (_config.Fields.Pandora_AutoPlay)
-                                       {
-                                           _config.Fields.Pandora_LastStationID = station.ID;
-                                           _config.SaveConfig();
-                                       }
+            {
+                mainBar.SetModePlayList();
+                transitionControl.ShowPage(PlaylistPage, PageTransition.PageTransitionType.Next);
+                if (_config.Fields.Pandora_AutoPlay)
+                {
+                    _config.Fields.Pandora_LastStationID = station.Id;
+                    _config.SaveConfig();
+                }
 
-                                       _stationLoaded = true;
-                                   }
-                );
+                _stationLoaded = true;
+            });
         }
 
-        void _player_LogoutEvent(object sender)
+        private void _player_LogoutEvent(object sender)
         {
             transitionControl.ShowPage(_loginPage);
         }
 
-        private void _player_ConnectionEvent(object sender, bool state, ErrorCodes code)
+        private void _player_ConnectionEvent(object sender, bool state, Util.ErrorCodes code)
         {
             if (state)
             {
                 if (_config.Fields.Pandora_AutoPlay)
                 {
-                    Station s = null;
+                    PandoraSharp.Station s = null;
                     if (StartupStation != null)
-                        s = _player.GetStationFromString(StartupStation);
+                        s = Player.GetStationFromString(StartupStation);
                     if (s == null)
                     {
-                        s = _player.GetStationFromID(_config.Fields.Pandora_LastStationID);
+                        s = Player.GetStationFromId(_config.Fields.Pandora_LastStationID);
                     }
                     if (s != null)
                     {
-                        _loadingPage.UpdateStatus("Loading Station:" + Environment.NewLine + s.Name);
-                        _player.PlayStation(s);
+                        _loadingPage.UpdateStatus("Loading Station:" + System.Environment.NewLine + s.Name);
+                        Player.PlayStation(s);
                     }
                     else
                     {
@@ -1447,23 +1421,23 @@ namespace Elpis
             }
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void Window_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            Task.Factory.StartNew(LoadLogic);
+            System.Threading.Tasks.Task.Factory.StartNew(LoadLogic);
         }
 
-        private void transitionControl_CurrentPageSet(UserControl page)
+        private void transitionControl_CurrentPageSet(System.Windows.Controls.UserControl page)
         {
-            if (page == _loadingPage && _initComplete && !_finalComplete)
-                Task.Factory.StartNew(FinalLoad);
+            if (Equals(page, _loadingPage) && _initComplete && !_finalComplete)
+                System.Threading.Tasks.Task.Factory.StartNew(FinalLoad);
         }
 
-        private void Window_Closing(object sender, CancelEventArgs e)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (!_forceClose && _config.Fields.Elpis_MinimizeToTray && !_restarting)
             {
-                WindowState = WindowState.Minimized;
-                this.Hide();
+                WindowState = System.Windows.WindowState.Minimized;
+                Hide();
                 ShowInTaskbar = false;
 
                 e.Cancel = true;
@@ -1478,120 +1452,123 @@ namespace Elpis
 
             if (_config != null)
             {
-                _config.Fields.Elpis_StartupLocation = new Point(this.Left, this.Top);
-                _config.Fields.Elpis_StartupSize = new Size(this.Width, this.Height);
-                if(_player != null)
-                    _config.Fields.Elpis_Volume = _player.Volume;
+                _config.Fields.Elpis_StartupLocation = new System.Windows.Point(Left, Top);
+                _config.Fields.Elpis_StartupSize = new System.Windows.Size(Width, Height);
+                if (Player != null)
+                    _config.Fields.Elpis_Volume = Player.Volume;
                 _config.SaveConfig();
             }
             StopWebServer();
         }
 
-        private void Window_StateChanged(object sender, EventArgs e)
+        private void Window_StateChanged(object sender, System.EventArgs e)
         {
-            if (WindowState == WindowState.Minimized && _config.Fields.Elpis_MinimizeToTray)
+            if (WindowState == System.Windows.WindowState.Minimized && _config.Fields.Elpis_MinimizeToTray)
             {
-                this.Hide();
+                Hide();
                 ShowInTaskbar = false;
             }
             else
             {
-                this.Show();
+                Show();
                 ShowInTaskbar = true;
             }
         }
 
         public void LoadStation(string station)
         {
-            Station s = _player.GetStationFromString(station);
-            if(s != null)
+            PandoraSharp.Station s = Player.GetStationFromString(station);
+            if (s != null)
             {
-                _player.PlayStation(s);
+                Player.PlayStation(s);
             }
         }
 
-        public void PlayPauseToggled(object sender, ExecutedRoutedEventArgs e)
+        public void PlayPauseToggled(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
         {
             //this is inverse because of being applied before action is taken
-            if (!_player.Paused)
-            {
-                showBalloon(PAUSE);
-            }
-            else
-            {
-                showBalloon(PLAY);
-            }
-            _player.PlayPause();
+            ShowBalloon(!Player.Paused ? PAUSE : PLAY);
+            Player.PlayPause();
         }
 
-        public void SkipTrack(object sender, ExecutedRoutedEventArgs e)
+        public void SkipTrack(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
         {
-            showBalloon(SKIP);
-            _player.Next();
+            ShowBalloon(SKIP);
+            Player.Next();
         }
 
-        private void showBalloon(int option, int duration = 3000)
+        private void ShowBalloon(int option, int duration = 3000)
         {
-            if (_config.Fields.Elpis_ShowTrayNotifications)
+            if (!_config.Fields.Elpis_ShowTrayNotifications) return;
+            if (WindowState != System.Windows.WindowState.Minimized) return;
+            switch (option)
             {
-                if (WindowState == System.Windows.WindowState.Minimized)
+                case PLAY:
                 {
-                    switch (option)
-                    {
-                        case PLAY:
-                            {
-                                string tipText = _player.CurrentSong.SongTitle;
-                                _notify.BalloonTipTitle = "Playing: " + tipText;
-                                _notify.BalloonTipText = " by " + _player.CurrentSong.Artist;
-                                break;
-                            }
-                        case PAUSE:
-                            {
-                                _notify.BalloonTipTitle = "Paused";
-                                _notify.BalloonTipText = " ";
-                                break;
-                            }
-                        case LIKE:
-                            {
-                                //this is inverse because of being applied before action is taken
-                                if (!GetCurrentSong().Loved)
-                                    _notify.BalloonTipTitle = "Song Liked";
-                                else
-                                    _notify.BalloonTipTitle = "Song Unliked";
-                                _notify.BalloonTipText = " ";
-                                break;
-                            }
-                        case DISLIKE:
-                            {
-                                _notify.BalloonTipTitle = "Song Disliked";
-                                _notify.BalloonTipText = " ";
-                                break;
-                            }
-                        case SKIP:
-                            {
-                                _notify.BalloonTipTitle = "Song Skipped";
-                                _notify.BalloonTipText = " ";
-                                break;
-                            }
-                        default:
-                            {
-                                return;
-                            }
-                    }
-                    _notify.ShowBalloonTip(3000);
+                    string tipText = Player.CurrentSong.SongTitle;
+                    _notify.BalloonTipTitle = @"Playing: " + tipText;
+                    _notify.BalloonTipText = @" by " + Player.CurrentSong.Artist;
+                    break;
+                }
+                case PAUSE:
+                {
+                    _notify.BalloonTipTitle = @"Paused";
+                    _notify.BalloonTipText = @" ";
+                    break;
+                }
+                case LIKE:
+                {
+                    //this is inverse because of being applied before action is taken
+                    _notify.BalloonTipTitle = !GetCurrentSong().Loved ? "Song Liked" : "Song Unliked";
+                    _notify.BalloonTipText = @" ";
+                    break;
+                }
+                case DISLIKE:
+                {
+                    _notify.BalloonTipTitle = @"Song Disliked";
+                    _notify.BalloonTipText = @" ";
+                    break;
+                }
+                case SKIP:
+                {
+                    _notify.BalloonTipTitle = @"Song Skipped";
+                    _notify.BalloonTipText = @" ";
+                    break;
+                }
+                default:
+                {
+                    return;
                 }
             }
+            _notify.ShowBalloonTip(3000);
         }
 
-        private void CanExecutePlayPauseSkip(object sender, CanExecuteRoutedEventArgs e)
+        private void CanExecutePlayPauseSkip(object sender, System.Windows.Input.CanExecuteRoutedEventArgs e)
         {
-            if (!_isActiveWindow)
+            e.CanExecute = !_isActiveWindow || IsOnPlaylist();
+        }
+
+        public void ExecuteThumbsUp(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            ShowBalloon(LIKE);
+            PlaylistPage.ThumbUpCurrent();
+        }
+
+        public void ExecuteThumbsDown(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            ShowBalloon(DISLIKE);
+            PlaylistPage.ThumbDownCurrent();
+        }
+
+        private void CanExecuteThumbsUpDown(object sender, System.Windows.Input.CanExecuteRoutedEventArgs e)
+        {
+            if (!_isActiveWindow && Player.CurrentSong != null)
             {
                 e.CanExecute = true;
             }
             else
             {
-                if (IsOnPlaylist())
+                if (IsOnPlaylist() && Player.CurrentSong != null)
                 {
                     e.CanExecute = true;
                 }
@@ -1602,40 +1579,6 @@ namespace Elpis
             }
         }
 
-        public void ExecuteThumbsUp(object sender, ExecutedRoutedEventArgs e)
-        {
-            showBalloon(LIKE);
-            _playlistPage.ThumbUpCurrent();
-        }
-
-
-        public void ExecuteThumbsDown(object sender, ExecutedRoutedEventArgs e)
-        {
-            showBalloon(DISLIKE);
-            _playlistPage.ThumbDownCurrent();
-        }
-
-        private void CanExecuteThumbsUpDown(object sender, CanExecuteRoutedEventArgs e)
-        {
-            if (!_isActiveWindow&& _player.CurrentSong != null)
-            {
-                e.CanExecute = true;
-            }
-            else
-            {
-                if (IsOnPlaylist() && _player.CurrentSong != null)
-                {
-                    e.CanExecute = true;
-                }
-                else
-                {
-                    e.CanExecute = false;
-                }
-            }
-        }
-
-#endregion
-
-
+        #endregion
     }
 }

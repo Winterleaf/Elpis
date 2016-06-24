@@ -1,112 +1,100 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Enumerable = System.Linq.Enumerable;
 
 namespace Kayak.Http
 {
-    class DataSubject : IDataProducer, IDataConsumer
+    internal class DataSubject : Net.IDataProducer, Net.IDataConsumer
     {
-        IDataConsumer channel;
-        readonly Func<IDisposable> disposable;
-
-        bool gotEnd;
-        Exception error;
-        DataBuffer buffer;
-
-        public DataSubject(Func<IDisposable> disposable)
+        public DataSubject(System.Func<System.IDisposable> disposable)
         {
-            this.disposable = disposable;
+            _disposable = disposable;
         }
 
-        public IDisposable Connect(IDataConsumer channel)
+        private readonly System.Func<System.IDisposable> _disposable;
+        private DataBuffer _buffer;
+        private Net.IDataConsumer _channel;
+
+        private System.Action _continuation;
+        private System.Exception _error;
+
+        private bool _gotEnd;
+
+        public void OnError(System.Exception e)
         {
-            this.channel = channel;
-
-            if (buffer != null)
-            {
-                buffer.Each(d => channel.OnData(new ArraySegment<byte>(d), null));
-
-                // XXX this maybe is kinda wrong.
-                if (continuation != null)
-                    continuation();
-            }
-
-            if (error != null)
-                channel.OnError(error);
-
-            if (gotEnd)
-                channel.OnEnd();
-
-            return disposable();
-        }
-
-        public void OnError(Exception e)
-        {
-            if (channel == null)
-                error = e;
+            if (_channel == null)
+                _error = e;
             else
-                channel.OnError(e);
+                _channel.OnError(e);
         }
 
-        Action continuation;
-
-        public bool OnData(ArraySegment<byte> data, Action ack)
+        public bool OnData(System.ArraySegment<byte> data, System.Action ack)
         {
-            if (channel == null)
-            {
-                if (buffer == null)
-                    buffer = new DataBuffer();
+            if (_channel != null) return _channel.OnData(data, ack);
+            if (_buffer == null)
+                _buffer = new DataBuffer();
 
-                buffer.Add(data);
+            _buffer.Add(data);
 
-                if (ack != null)
-                {
-                    this.continuation = ack;
-                    return true;
-                }
-
-                return false;
-            }
-            else
-                return channel.OnData(data, ack);
+            if (ack == null) return false;
+            _continuation = ack;
+            return true;
         }
 
         public void OnEnd()
         {
-            if (channel == null)
-                gotEnd = true;
+            if (_channel == null)
+                _gotEnd = true;
             else
+                _channel.OnEnd();
+        }
+
+        public System.IDisposable Connect(Net.IDataConsumer channel)
+        {
+            _channel = channel;
+
+            if (_buffer != null)
+            {
+                _buffer.Each(d => channel.OnData(new System.ArraySegment<byte>(d), null));
+
+                // XXX this maybe is kinda wrong.
+                _continuation?.Invoke();
+            }
+
+            if (_error != null)
+                channel.OnError(_error);
+
+            if (_gotEnd)
                 channel.OnEnd();
+
+            return _disposable();
         }
     }
 
-    class DataBuffer
+    internal class DataBuffer
     {
-        List<byte[]> buffer = new List<byte[]>();
+        private readonly System.Collections.Generic.List<byte[]> _buffer = new System.Collections.Generic.List<byte[]>();
 
         public string GetString()
         {
-            return buffer.Aggregate("", (acc, next) => acc + Encoding.UTF8.GetString(next));
+            return Enumerable.Aggregate(_buffer, "", (acc, next) => acc + System.Text.Encoding.UTF8.GetString(next));
         }
 
         public int GetCount()
         {
-            return buffer.Aggregate(0, (c, d) => c + d.Length);
+            return Enumerable.Aggregate(_buffer, 0, (c, d) => c + d.Length);
         }
 
-        public void Add(ArraySegment<byte> d)
+        public void Add(System.ArraySegment<byte> d)
         {
             // XXX maybe we should have our own allocator? i don't know. maybe the runtime is good
             // about this in awesome ways.
             byte[] b = new byte[d.Count];
             System.Buffer.BlockCopy(d.Array, d.Offset, b, 0, d.Count);
-            buffer.Add(b);
+            _buffer.Add(b);
         }
 
-        public void Each(Action<byte[]> each)
+        public void Each(System.Action<byte[]> each)
         {
-            buffer.ForEach(each);
+            _buffer.ForEach(each);
         }
     }
 }

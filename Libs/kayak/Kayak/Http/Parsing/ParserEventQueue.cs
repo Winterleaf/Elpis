@@ -1,68 +1,56 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Kayak.Http
+﻿namespace Kayak.Http.Parsing
 {
-    struct ParserEvent
+    internal struct ParserEvent
     {
         public ParserEventType Type;
-        public HttpRequestHeaders Request;
+        public Parsing.HttpRequestHeaders Request;
         public bool KeepAlive;
-        public ArraySegment<byte> Data;
+        public System.ArraySegment<byte> Data;
     }
 
-    enum ParserEventType
+    internal enum ParserEventType
     {
         RequestHeaders,
         RequestBody,
         RequestEnded
     }
 
-    class ParserEventQueue : IHighLevelParserDelegate
+    internal class ParserEventQueue : Parsing.IHighLevelParserDelegate
     {
-        List<ParserEvent> events;
-
-        public bool HasEvents { get { return events.Count > 0; } }
-
-        public ParserEvent Dequeue()
-        {
-            var e = events[0];
-            events.RemoveAt(0);
-            return e;
-        }
-
         public ParserEventQueue()
         {
-            events = new List<ParserEvent>();
+            _events = new System.Collections.Generic.List<ParserEvent>();
         }
 
-        public void OnRequestBegan(HttpRequestHeaders request, bool shouldKeepAlive)
+        public bool HasEvents => _events.Count > 0;
+
+        private readonly System.Collections.Generic.List<ParserEvent> _events;
+
+        public void OnRequestBegan(Parsing.HttpRequestHeaders request, bool shouldKeepAlive)
         {
-            events.Add(new ParserEvent()
+            _events.Add(new ParserEvent
             {
                 Type = ParserEventType.RequestHeaders,
                 KeepAlive = shouldKeepAlive,
-                Request = request,
+                Request = request
             });
         }
 
-        public void OnRequestBody(ArraySegment<byte> data)
+        public void OnRequestBody(System.ArraySegment<byte> data)
         {
-            events.Add(new ParserEvent()
-            {
-                Type = ParserEventType.RequestBody,
-                Data = data
-            });
+            _events.Add(new ParserEvent {Type = ParserEventType.RequestBody, Data = data});
         }
 
         public void OnRequestEnded()
         {
-            events.Add(new ParserEvent()
-            {
-                Type = ParserEventType.RequestEnded
-            });
+            _events.Add(new ParserEvent {Type = ParserEventType.RequestEnded});
+        }
+
+        public ParserEvent Dequeue()
+        {
+            ParserEvent e = _events[0];
+            _events.RemoveAt(0);
+            return e;
         }
     }
 }

@@ -16,33 +16,27 @@
  * You should have received a copy of the GNU General Public License
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Diagnostics;
-using System.Net;
-using Kayak;
-using Kayak.Http;
-using PandoraSharp;
-using System.Web.Script.Serialization;
+
+
 
 namespace Elpis
 {
-    class WebInterface
+    internal class WebInterface
     {
-        private IScheduler _scheduler;
+        private Kayak.Net.IScheduler _scheduler;
+
         public void StartInterface()
         {
 #if DEBUG
-            Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
-            Debug.AutoFlush = true;
+            System.Diagnostics.Debug.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(System.Console.Out));
+            System.Diagnostics.Debug.AutoFlush = true;
 #endif
 
-            _scheduler = KayakScheduler.Factory.Create(new SchedulerDelegate());
-            var server = KayakServer.Factory.CreateHttp(new RequestDelegate(), _scheduler);
+            _scheduler = Kayak.Net.KayakScheduler.Factory.Create(new SchedulerDelegate());
+            Kayak.Net.IServer server = Kayak.Http.HttpServerExtensions.CreateHttp(Kayak.Net.KayakServer.Factory, new RequestDelegate(),
+                _scheduler);
 
-            using (server.Listen(new IPEndPoint(IPAddress.Any, 35747)))
+            using (server.Listen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, 35747)))
             {
                 // runs scheduler on calling thread. this method will block until
                 // someone calls Stop() on the scheduler.
@@ -54,23 +48,22 @@ namespace Elpis
         {
             _scheduler.Stop();
         }
-        class SchedulerDelegate : ISchedulerDelegate
+
+        private class SchedulerDelegate : Kayak.Net.ISchedulerDelegate
         {
-            public void OnException(IScheduler scheduler, Exception e)
+            public void OnException(Kayak.Net.IScheduler scheduler, System.Exception e)
             {
-                Debug.WriteLine("Error on scheduler.");
-                e.DebugStackTrace();
+                System.Diagnostics.Debug.WriteLine("Error on scheduler.");
+                Kayak.Extensions.Extensions.DebugStackTrace(e);
             }
 
-            public void OnStop(IScheduler scheduler)
-            {
-
-            }
+            public void OnStop(Kayak.Net.IScheduler scheduler) {}
         }
 
-        class RequestDelegate : IHttpRequestDelegate
+        private class RequestDelegate : Kayak.Http.IHttpRequestDelegate
         {
-            public void OnRequest(HttpRequestHead request, IDataProducer requestBody, IHttpResponseDelegate response)
+            public void OnRequest(Kayak.Http.HttpRequestHead request, Kayak.Net.IDataProducer requestBody,
+                Kayak.Http.IHttpResponseDelegate response)
             {
                 if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/next"))
                 {
@@ -79,192 +72,190 @@ namespace Elpis
                     // expecting it.
                     bool ret = MainWindow.Next();
 
-                    var body = ret ? "Successfully skipped." : "You have to wait for 20 seconds to skip again.";
+                    string body = ret ? "Successfully skipped." : "You have to wait for 20 seconds to skip again.";
 
-                    var headers = new HttpResponseHead()
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "200 OK",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", body.Length.ToString() },
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", body.Length.ToString()}
+                            }
                     };
                     response.OnResponse(headers, new BufferedProducer(body));
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/pause"))
                 {
                     MainWindow.Pause();
-                    var body = "Paused.";
+                    const string body = "Paused.";
 
-                    var headers = new HttpResponseHead()
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "200 OK",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", body.Length.ToString() },
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", body.Length.ToString()}
+                            }
                     };
                     response.OnResponse(headers, new BufferedProducer(body));
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/play"))
                 {
                     MainWindow.Play();
-                    var body = "Playing.";
+                    const string body = "Playing.";
 
-                    var headers = new HttpResponseHead()
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "200 OK",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", body.Length.ToString() },
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", body.Length.ToString()}
+                            }
                     };
                     response.OnResponse(headers, new BufferedProducer(body));
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/toggleplaypause"))
                 {
-                    var body = "";
-                    if (MainWindow._player.Playing)
-                    {
-                        body = "Paused.";
-                    }
-                    else
-                    {
-                        body = "Playing.";
-                    }
+                    string body = MainWindow.Player.Playing ? "Paused." : "Playing.";
                     MainWindow.PlayPauseToggle();
 
-                    var headers = new HttpResponseHead()
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "200 OK",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", body.Length.ToString() },
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", body.Length.ToString()}
+                            }
                     };
                     response.OnResponse(headers, new BufferedProducer(body));
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/like"))
                 {
                     MainWindow.Like();
-                    var body = "Like";
+                    string body = "Like";
                     if (MainWindow.GetCurrentSong().Loved)
                         body = "Liked";
 
-                    var headers = new HttpResponseHead()
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "200 OK",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", body.Length.ToString() },
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", body.Length.ToString()}
+                            }
                     };
                     response.OnResponse(headers, new BufferedProducer(body));
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/dislike"))
                 {
                     MainWindow.Dislike();
-                    var body = "Disliked.";
+                    string body = "Disliked.";
 
-                    var headers = new HttpResponseHead()
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "200 OK",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", body.Length.ToString() },
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", body.Length.ToString()}
+                            }
                     };
                     response.OnResponse(headers, new BufferedProducer(body));
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/currentsong"))
                 {
-                    Song s = MainWindow.GetCurrentSong();
-                    var body = new JavaScriptSerializer().Serialize(s);
+                    PandoraSharp.Song s = MainWindow.GetCurrentSong();
+                    string body = new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(s);
 
-                    var headers = new HttpResponseHead()
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "200 OK",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", body.Length.ToString() },
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", body.Length.ToString()}
+                            }
                     };
                     response.OnResponse(headers, new BufferedProducer(body));
                 }
                 else if (request.Method.ToUpperInvariant() == "GET" && request.Uri.StartsWith("/connect"))
                 {
-                    var body = "true";
+                    const string body = "true";
 
-                    var headers = new HttpResponseHead()
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "200 OK",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", body.Length.ToString() },
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", body.Length.ToString()}
+                            }
                     };
                     response.OnResponse(headers, new BufferedProducer(body));
                 }
                 else if (request.Uri.StartsWith("/"))
                 {
-                    var body = string.Format(
-                        "Hello world.\r\nHello.\r\n\r\nUri: {0}\r\nPath: {1}\r\nQuery:{2}\r\nFragment: {3}\r\n",
-                        request.Uri,
-                        request.Path,
-                        request.QueryString,
-                        request.Fragment);
+                    string body = $"Hello world.\r\nHello.\r\n\r\nUri: {request.Uri}\r\nPath: {request.Path}\r\nQuery:{request.QueryString}\r\nFragment: {request.Fragment}\r\n";
 
-                    var headers = new HttpResponseHead()
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "200 OK",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", body.Length.ToString() },
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", body.Length.ToString()}
+                            }
                     };
                     response.OnResponse(headers, new BufferedProducer(body));
                 }
                 else
                 {
-                    var responseBody = "The resource you requested ('" + request.Uri + "') could not be found.";
-                    var headers = new HttpResponseHead()
+                    string responseBody = "The resource you requested ('" + request.Uri + "') could not be found.";
+                    Kayak.Http.HttpResponseHead headers = new Kayak.Http.HttpResponseHead
                     {
                         Status = "404 Not Found",
-                        Headers = new Dictionary<string, string>()
-                    {
-                        { "Content-Type", "text/plain" },
-                        { "Content-Length", responseBody.Length.ToString() }
-                    }
+                        Headers =
+                            new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                {"Content-Type", "text/plain"},
+                                {"Content-Length", responseBody.Length.ToString()}
+                            }
                     };
-                    var body = new BufferedProducer(responseBody);
+                    BufferedProducer body = new BufferedProducer(responseBody);
 
                     response.OnResponse(headers, body);
                 }
             }
         }
 
-        class BufferedProducer : IDataProducer
+        private class BufferedProducer : Kayak.Net.IDataProducer
         {
-            ArraySegment<byte> data;
+            public BufferedProducer(string data) : this(data, System.Text.Encoding.UTF8) {}
+            public BufferedProducer(string data, System.Text.Encoding encoding) : this(encoding.GetBytes(data)) {}
+            public BufferedProducer(byte[] data) : this(new System.ArraySegment<byte>(data)) {}
 
-            public BufferedProducer(string data) : this(data, Encoding.UTF8) { }
-            public BufferedProducer(string data, Encoding encoding) : this(encoding.GetBytes(data)) { }
-            public BufferedProducer(byte[] data) : this(new ArraySegment<byte>(data)) { }
-            public BufferedProducer(ArraySegment<byte> data)
+            public BufferedProducer(System.ArraySegment<byte> data)
             {
                 this.data = data;
             }
 
-            public IDisposable Connect(IDataConsumer channel)
+            private readonly System.ArraySegment<byte> data;
+
+            public System.IDisposable Connect(Kayak.Net.IDataConsumer channel)
             {
                 // null continuation, consumer must swallow the data immediately.
                 channel.OnData(data, null);
@@ -273,19 +264,21 @@ namespace Elpis
             }
         }
 
-        class BufferedConsumer : IDataConsumer
+        private class BufferedConsumer : Kayak.Net.IDataConsumer
         {
-            List<ArraySegment<byte>> buffer = new List<ArraySegment<byte>>();
-            Action<string> resultCallback;
-            Action<Exception> errorCallback;
-
-            public BufferedConsumer(Action<string> resultCallback,
-        Action<Exception> errorCallback)
+            public BufferedConsumer(System.Action<string> resultCallback, System.Action<System.Exception> errorCallback)
             {
-                this.resultCallback = resultCallback;
-                this.errorCallback = errorCallback;
+                _resultCallback = resultCallback;
+                _errorCallback = errorCallback;
             }
-            public bool OnData(ArraySegment<byte> data, Action continuation)
+
+            private readonly System.Collections.Generic.List<System.ArraySegment<byte>> buffer =
+                new System.Collections.Generic.List<System.ArraySegment<byte>>();
+
+            private readonly System.Action<System.Exception> _errorCallback;
+            private readonly System.Action<string> _resultCallback;
+
+            public bool OnData(System.ArraySegment<byte> data, System.Action continuation)
             {
                 // since we're just buffering, ignore the continuation.
                 // TODO: place an upper limit on the size of the buffer.
@@ -293,9 +286,10 @@ namespace Elpis
                 buffer.Add(data);
                 return false;
             }
-            public void OnError(Exception error)
+
+            public void OnError(System.Exception error)
             {
-                errorCallback(error);
+                _errorCallback(error);
             }
 
             public void OnEnd()
@@ -306,16 +300,17 @@ namespace Elpis
                 // this step and make the result callback accept
                 // List<ArraySegment<byte>> or whatever)
                 //
-                var str = "";
+                string str = "";
                 if (buffer.Count > 0)
                 {
-                    str = buffer
-                    .Select(b => Encoding.UTF8.GetString(b.Array, b.Offset, b.Count))
-                    .Aggregate((result, next) => result + next);
+                    str =
+                        System.Linq.Enumerable.Aggregate(
+                            System.Linq.Enumerable.Select(buffer,
+                                b => System.Text.Encoding.UTF8.GetString(b.Array, b.Offset, b.Count)),
+                            (result, next) => result + next);
                 }
 
-
-                resultCallback(str);
+                _resultCallback(str);
             }
         }
     }

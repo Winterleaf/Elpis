@@ -17,39 +17,30 @@
  * along with PandoraSharp. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using Util;
-
 namespace PandoraSharp.Exceptions
 {
-    public class PandoraException : Exception
+    public class PandoraException : System.Exception
     {
-        public PandoraException(ErrorCodes fault, Exception innerException) :
-            base(Errors.GetErrorMessage(fault), innerException)
+        public PandoraException(Util.ErrorCodes fault, System.Exception innerException)
+            : base(Util.Errors.GetErrorMessage(fault), innerException)
         {
             Fault = fault;
         }
 
-        public PandoraException(ErrorCodes fault)
-            : base(Errors.GetErrorMessage(fault))
+        public PandoraException(Util.ErrorCodes fault) : base(Util.Errors.GetErrorMessage(fault))
         {
             Fault = fault;
         }
 
-        public ErrorCodes Fault { get; set; }
-        public string FaultMessage { get { return Errors.GetErrorMessage(Fault); } }
+        public Util.ErrorCodes Fault { get; set; }
+
+        public string FaultMessage => Util.Errors.GetErrorMessage(Fault);
     }
 
-    public class XmlRPCException : Exception
+    public class XmlRpcException : System.Exception
     {
-        public XmlRPCException(string msg, Exception innerException)
-            : base(msg, innerException)
-        {
-        }
+        public XmlRpcException(string msg, System.Exception innerException) : base(msg, innerException) {}
 
-        public XmlRPCException(string msg)
-            : base(msg)
-        {
-        }
+        public XmlRpcException(string msg) : base(msg) {}
     }
 }

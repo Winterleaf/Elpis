@@ -1,7 +1,4 @@
-﻿using System.Text;
-using System;
-
-namespace Util.Web
+﻿namespace Util
 {
     public sealed class HttpUtility
     {
@@ -9,15 +6,15 @@ namespace Util.Web
         {
             if ((h >= '0') && (h <= '9'))
             {
-                return (h - '0');
+                return h - '0';
             }
             if ((h >= 'a') && (h <= 'f'))
             {
-                return ((h - 'a') + 10);
+                return h - 'a' + 10;
             }
             if ((h >= 'A') && (h <= 'F'))
             {
-                return ((h - 'A') + 10);
+                return h - 'A' + 10;
             }
             return -1;
         }
@@ -26,26 +23,27 @@ namespace Util.Web
         {
             if (n <= 9)
             {
-                return (char)(n + 0x30);
+                return (char) (n + 0x30);
             }
-            return (char)((n - 10) + 0x61);
+            return (char) (n - 10 + 0x61);
         }
 
         private static bool IsNonAsciiByte(byte b)
         {
             if (b < 0x7f)
             {
-                return (b < 0x20);
+                return b < 0x20;
             }
             return true;
         }
 
         internal static bool IsSafe(char ch)
         {
-            if ((((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z'))) || ((ch >= '0') && (ch <= '9')))
+            if (((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')) || ((ch >= '0') && (ch <= '9')))
             {
                 return true;
             }
+            // ReSharper disable once SwitchStatementMissingSomeCases
             switch (ch)
             {
                 case '\'':
@@ -63,32 +61,20 @@ namespace Util.Web
 
         public static string UrlDecode(string str)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlDecode(str, Encoding.UTF8);
+            return str == null ? null : UrlDecode(str, System.Text.Encoding.UTF8);
         }
 
-        public static string UrlDecode(byte[] bytes, Encoding e)
+        public static string UrlDecode(byte[] bytes, System.Text.Encoding e)
         {
-            if (bytes == null)
-            {
-                return null;
-            }
-            return UrlDecode(bytes, 0, bytes.Length, e);
+            return bytes == null ? null : UrlDecode(bytes, 0, bytes.Length, e);
         }
 
-        public static string UrlDecode(string str, Encoding e)
+        public static string UrlDecode(string str, System.Text.Encoding e)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlDecodeStringFromStringInternal(str, e);
+            return str == null ? null : UrlDecodeStringFromStringInternal(str, e);
         }
 
-        public static string UrlDecode(byte[] bytes, int offset, int count, Encoding e)
+        public static string UrlDecode(byte[] bytes, int offset, int count, System.Text.Encoding e)
         {
             if ((bytes == null) && (count == 0))
             {
@@ -96,15 +82,15 @@ namespace Util.Web
             }
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes");
+                throw new System.ArgumentNullException(nameof(bytes));
             }
             if ((offset < 0) || (offset > bytes.Length))
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new System.ArgumentOutOfRangeException(nameof(offset));
             }
-            if ((count < 0) || ((offset + count) > bytes.Length))
+            if ((count < 0) || (offset + count > bytes.Length))
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new System.ArgumentOutOfRangeException(nameof(count));
             }
             return UrlDecodeStringFromBytesInternal(bytes, offset, count, e);
         }
@@ -121,28 +107,26 @@ namespace Util.Web
                 {
                     num4 = 0x20;
                 }
-                else if ((num4 == 0x25) && (i < (count - 2)))
+                else if ((num4 == 0x25) && (i < count - 2))
                 {
-                    int num5 = HexToInt((char)buf[index + 1]);
-                    int num6 = HexToInt((char)buf[index + 2]);
+                    int num5 = HexToInt((char) buf[index + 1]);
+                    int num6 = HexToInt((char) buf[index + 2]);
                     if ((num5 >= 0) && (num6 >= 0))
                     {
-                        num4 = (byte)((num5 << 4) | num6);
+                        num4 = (byte) ((num5 << 4) | num6);
                         i += 2;
                     }
                 }
                 sourceArray[length++] = num4;
             }
-            if (length < sourceArray.Length)
-            {
-                byte[] destinationArray = new byte[length];
-                Array.Copy(sourceArray, destinationArray, length);
-                sourceArray = destinationArray;
-            }
+            if (length >= sourceArray.Length) return sourceArray;
+            byte[] destinationArray = new byte[length];
+            System.Array.Copy(sourceArray, destinationArray, length);
+            sourceArray = destinationArray;
             return sourceArray;
         }
 
-        private static string UrlDecodeStringFromBytesInternal(byte[] buf, int offset, int count, Encoding e)
+        private static string UrlDecodeStringFromBytesInternal(byte[] buf, int offset, int count, System.Text.Encoding e)
         {
             UrlDecoder decoder = new UrlDecoder(count, e);
             for (int i = 0; i < count; i++)
@@ -153,38 +137,38 @@ namespace Util.Web
                 {
                     b = 0x20;
                 }
-                else if ((b == 0x25) && (i < (count - 2)))
+                else if ((b == 0x25) && (i < count - 2))
                 {
-                    if ((buf[index + 1] == 0x75) && (i < (count - 5)))
+                    if ((buf[index + 1] == 0x75) && (i < count - 5))
                     {
-                        int num4 = HexToInt((char)buf[index + 2]);
-                        int num5 = HexToInt((char)buf[index + 3]);
-                        int num6 = HexToInt((char)buf[index + 4]);
-                        int num7 = HexToInt((char)buf[index + 5]);
-                        if (((num4 < 0) || (num5 < 0)) || ((num6 < 0) || (num7 < 0)))
+                        int num4 = HexToInt((char) buf[index + 2]);
+                        int num5 = HexToInt((char) buf[index + 3]);
+                        int num6 = HexToInt((char) buf[index + 4]);
+                        int num7 = HexToInt((char) buf[index + 5]);
+                        if ((num4 < 0) || (num5 < 0) || (num6 < 0) || (num7 < 0))
                         {
                             goto Label_00DA;
                         }
-                        char ch = (char)((((num4 << 12) | (num5 << 8)) | (num6 << 4)) | num7);
+                        char ch = (char) ((num4 << 12) | (num5 << 8) | (num6 << 4) | num7);
                         i += 5;
                         decoder.AddChar(ch);
                         continue;
                     }
-                    int num8 = HexToInt((char)buf[index + 1]);
-                    int num9 = HexToInt((char)buf[index + 2]);
+                    int num8 = HexToInt((char) buf[index + 1]);
+                    int num9 = HexToInt((char) buf[index + 2]);
                     if ((num8 >= 0) && (num9 >= 0))
                     {
-                        b = (byte)((num8 << 4) | num9);
+                        b = (byte) ((num8 << 4) | num9);
                         i += 2;
                     }
                 }
-            Label_00DA:
+                Label_00DA:
                 decoder.AddByte(b);
             }
             return decoder.GetString();
         }
 
-        private static string UrlDecodeStringFromStringInternal(string s, Encoding e)
+        private static string UrlDecodeStringFromStringInternal(string s, System.Text.Encoding e)
         {
             int length = s.Length;
             UrlDecoder decoder = new UrlDecoder(length, e);
@@ -195,19 +179,19 @@ namespace Util.Web
                 {
                     ch = ' ';
                 }
-                else if ((ch == '%') && (i < (length - 2)))
+                else if ((ch == '%') && (i < length - 2))
                 {
-                    if ((s[i + 1] == 'u') && (i < (length - 5)))
+                    if ((s[i + 1] == 'u') && (i < length - 5))
                     {
                         int num3 = HexToInt(s[i + 2]);
                         int num4 = HexToInt(s[i + 3]);
                         int num5 = HexToInt(s[i + 4]);
                         int num6 = HexToInt(s[i + 5]);
-                        if (((num3 < 0) || (num4 < 0)) || ((num5 < 0) || (num6 < 0)))
+                        if ((num3 < 0) || (num4 < 0) || (num5 < 0) || (num6 < 0))
                         {
                             goto Label_0106;
                         }
-                        ch = (char)((((num3 << 12) | (num4 << 8)) | (num5 << 4)) | num6);
+                        ch = (char) ((num3 << 12) | (num4 << 8) | (num5 << 4) | num6);
                         i += 5;
                         decoder.AddChar(ch);
                         continue;
@@ -216,16 +200,16 @@ namespace Util.Web
                     int num8 = HexToInt(s[i + 2]);
                     if ((num7 >= 0) && (num8 >= 0))
                     {
-                        byte b = (byte)((num7 << 4) | num8);
+                        byte b = (byte) ((num7 << 4) | num8);
                         i += 2;
                         decoder.AddByte(b);
                         continue;
                     }
                 }
-            Label_0106:
+                Label_0106:
                 if ((ch & 0xff80) == 0)
                 {
-                    decoder.AddByte((byte)ch);
+                    decoder.AddByte((byte) ch);
                 }
                 else
                 {
@@ -237,29 +221,17 @@ namespace Util.Web
 
         public static byte[] UrlDecodeToBytes(byte[] bytes)
         {
-            if (bytes == null)
-            {
-                return null;
-            }
-            return UrlDecodeToBytes(bytes, 0, (bytes != null) ? bytes.Length : 0);
+            return bytes == null ? null : UrlDecodeToBytes(bytes, 0, bytes.Length);
         }
 
         public static byte[] UrlDecodeToBytes(string str)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlDecodeToBytes(str, Encoding.UTF8);
+            return str == null ? null : UrlDecodeToBytes(str, System.Text.Encoding.UTF8);
         }
 
-        public static byte[] UrlDecodeToBytes(string str, Encoding e)
+        public static byte[] UrlDecodeToBytes(string str, System.Text.Encoding e)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlDecodeToBytes(e.GetBytes(str));
+            return str == null ? null : UrlDecodeToBytes(e.GetBytes(str));
         }
 
         public static byte[] UrlDecodeToBytes(byte[] bytes, int offset, int count)
@@ -270,63 +242,47 @@ namespace Util.Web
             }
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes");
+                throw new System.ArgumentNullException(nameof(bytes));
             }
             if ((offset < 0) || (offset > bytes.Length))
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new System.ArgumentOutOfRangeException(nameof(offset));
             }
-            if ((count < 0) || ((offset + count) > bytes.Length))
+            if ((count < 0) || (offset + count > bytes.Length))
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new System.ArgumentOutOfRangeException(nameof(count));
             }
             return UrlDecodeBytesFromBytesInternal(bytes, offset, count);
         }
 
         public static string UrlEncode(byte[] bytes)
         {
-            if (bytes == null)
-            {
-                return null;
-            }
-            return Encoding.ASCII.GetString(UrlEncodeToBytes(bytes));
+            return bytes == null ? null : System.Text.Encoding.ASCII.GetString(UrlEncodeToBytes(bytes));
         }
 
         public static string UrlEncode(string str)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlEncode(str, Encoding.UTF8);
+            return str == null ? null : UrlEncode(str, System.Text.Encoding.UTF8);
         }
 
-        public static string UrlEncode(string str, Encoding e)
+        public static string UrlEncode(string str, System.Text.Encoding e)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return Encoding.ASCII.GetString(UrlEncodeToBytes(str, e));
+            return str == null ? null : System.Text.Encoding.ASCII.GetString(UrlEncodeToBytes(str, e));
         }
 
         public static string UrlEncode(byte[] bytes, int offset, int count)
         {
-            if (bytes == null)
-            {
-                return null;
-            }
-            return Encoding.ASCII.GetString(UrlEncodeToBytes(bytes, offset, count));
+            return bytes == null ? null : System.Text.Encoding.ASCII.GetString(UrlEncodeToBytes(bytes, offset, count));
         }
 
         private static byte[] UrlEncodeBytesToBytesInternal(byte[] bytes, int offset, int count,
-                                                            bool alwaysCreateReturnValue)
+            bool alwaysCreateReturnValue)
         {
             int num = 0;
             int num2 = 0;
             for (int i = 0; i < count; i++)
             {
-                char ch = (char)bytes[offset + i];
+                char ch = (char) bytes[offset + i];
                 if (ch == ' ')
                 {
                     num++;
@@ -336,16 +292,16 @@ namespace Util.Web
                     num2++;
                 }
             }
-            if ((!alwaysCreateReturnValue && (num == 0)) && (num2 == 0))
+            if (!alwaysCreateReturnValue && (num == 0) && (num2 == 0))
             {
                 return bytes;
             }
-            byte[] buffer = new byte[count + (num2 * 2)];
+            byte[] buffer = new byte[count + num2*2];
             int num4 = 0;
             for (int j = 0; j < count; j++)
             {
                 byte num6 = bytes[offset + j];
-                char ch2 = (char)num6;
+                char ch2 = (char) num6;
                 if (IsSafe(ch2))
                 {
                     buffer[num4++] = num6;
@@ -357,15 +313,15 @@ namespace Util.Web
                 else
                 {
                     buffer[num4++] = 0x25;
-                    buffer[num4++] = (byte)IntToHex((num6 >> 4) & 15);
-                    buffer[num4++] = (byte)IntToHex(num6 & 15);
+                    buffer[num4++] = (byte) IntToHex((num6 >> 4) & 15);
+                    buffer[num4++] = (byte) IntToHex(num6 & 15);
                 }
             }
             return buffer;
         }
 
         private static byte[] UrlEncodeBytesToBytesInternalNonAscii(byte[] bytes, int offset, int count,
-                                                                    bool alwaysCreateReturnValue)
+            bool alwaysCreateReturnValue)
         {
             int num = 0;
             for (int i = 0; i < count; i++)
@@ -379,7 +335,7 @@ namespace Util.Web
             {
                 return bytes;
             }
-            byte[] buffer = new byte[count + (num * 2)];
+            byte[] buffer = new byte[count + num*2];
             int num3 = 0;
             for (int j = 0; j < count; j++)
             {
@@ -387,8 +343,8 @@ namespace Util.Web
                 if (IsNonAsciiByte(b))
                 {
                     buffer[num3++] = 0x25;
-                    buffer[num3++] = (byte)IntToHex((b >> 4) & 15);
-                    buffer[num3++] = (byte)IntToHex(b & 15);
+                    buffer[num3++] = (byte) IntToHex((b >> 4) & 15);
+                    buffer[num3++] = (byte) IntToHex(b & 15);
                 }
                 else
                 {
@@ -398,7 +354,7 @@ namespace Util.Web
             return buffer;
         }
 
-        internal static string UrlEncodeNonAscii(string str, Encoding e)
+        internal static string UrlEncodeNonAscii(string str, System.Text.Encoding e)
         {
             if (string.IsNullOrEmpty(str))
             {
@@ -406,11 +362,11 @@ namespace Util.Web
             }
             if (e == null)
             {
-                e = Encoding.UTF8;
+                e = System.Text.Encoding.UTF8;
             }
             byte[] bytes = e.GetBytes(str);
             bytes = UrlEncodeBytesToBytesInternalNonAscii(bytes, 0, bytes.Length, false);
-            return Encoding.ASCII.GetString(bytes);
+            return System.Text.Encoding.ASCII.GetString(bytes);
         }
 
         internal static string UrlEncodeSpaces(string str)
@@ -424,23 +380,15 @@ namespace Util.Web
 
         public static byte[] UrlEncodeToBytes(string str)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlEncodeToBytes(str, Encoding.UTF8);
+            return str == null ? null : UrlEncodeToBytes(str, System.Text.Encoding.UTF8);
         }
 
         public static byte[] UrlEncodeToBytes(byte[] bytes)
         {
-            if (bytes == null)
-            {
-                return null;
-            }
-            return UrlEncodeToBytes(bytes, 0, bytes.Length);
+            return bytes == null ? null : UrlEncodeToBytes(bytes, 0, bytes.Length);
         }
 
-        public static byte[] UrlEncodeToBytes(string str, Encoding e)
+        public static byte[] UrlEncodeToBytes(string str, System.Text.Encoding e)
         {
             if (str == null)
             {
@@ -458,32 +406,28 @@ namespace Util.Web
             }
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes");
+                throw new System.ArgumentNullException(nameof(bytes));
             }
             if ((offset < 0) || (offset > bytes.Length))
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new System.ArgumentOutOfRangeException(nameof(offset));
             }
-            if ((count < 0) || ((offset + count) > bytes.Length))
+            if ((count < 0) || (offset + count > bytes.Length))
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new System.ArgumentOutOfRangeException(nameof(count));
             }
             return UrlEncodeBytesToBytesInternal(bytes, offset, count, true);
         }
 
         public static string UrlEncodeUnicode(string str)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlEncodeUnicodeStringToStringInternal(str, false);
+            return str == null ? null : UrlEncodeUnicodeStringToStringInternal(str, false);
         }
 
         private static string UrlEncodeUnicodeStringToStringInternal(string s, bool ignoreAscii)
         {
             int length = s.Length;
-            StringBuilder builder = new StringBuilder(length);
+            System.Text.StringBuilder builder = new System.Text.StringBuilder(length);
             for (int i = 0; i < length; i++)
             {
                 char ch = s[i];
@@ -518,11 +462,7 @@ namespace Util.Web
 
         public static byte[] UrlEncodeUnicodeToBytes(string str)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return Encoding.ASCII.GetBytes(UrlEncodeUnicode(str));
+            return str == null ? null : System.Text.Encoding.ASCII.GetBytes(UrlEncodeUnicode(str));
         }
 
         public static string UrlPathEncode(string str)
@@ -534,29 +474,29 @@ namespace Util.Web
             int index = str.IndexOf('?');
             if (index >= 0)
             {
-                return (UrlPathEncode(str.Substring(0, index)) + str.Substring(index));
+                return UrlPathEncode(str.Substring(0, index)) + str.Substring(index);
             }
-            return UrlEncodeSpaces(UrlEncodeNonAscii(str, Encoding.UTF8));
+            return UrlEncodeSpaces(UrlEncodeNonAscii(str, System.Text.Encoding.UTF8));
         }
 
         // Nested Types
         private class UrlDecoder
         {
-            // Fields
-            private int _bufferSize;
-            private byte[] _byteBuffer;
-            private char[] _charBuffer;
-            private Encoding _encoding;
-            private int _numBytes;
-            private int _numChars;
-
             // Methods
-            internal UrlDecoder(int bufferSize, Encoding encoding)
+            internal UrlDecoder(int bufferSize, System.Text.Encoding encoding)
             {
                 _bufferSize = bufferSize;
                 _encoding = encoding;
                 _charBuffer = new char[bufferSize];
             }
+
+            // Fields
+            private readonly int _bufferSize;
+            private byte[] _byteBuffer;
+            private readonly char[] _charBuffer;
+            private readonly System.Text.Encoding _encoding;
+            private int _numBytes;
+            private int _numChars;
 
             internal void AddByte(byte b)
             {
@@ -578,11 +518,9 @@ namespace Util.Web
 
             private void FlushBytes()
             {
-                if (_numBytes > 0)
-                {
-                    _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
-                    _numBytes = 0;
-                }
+                if (_numBytes <= 0) return;
+                _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
+                _numBytes = 0;
             }
 
             internal string GetString()
@@ -591,11 +529,7 @@ namespace Util.Web
                 {
                     FlushBytes();
                 }
-                if (_numChars > 0)
-                {
-                    return new string(_charBuffer, 0, _numChars);
-                }
-                return string.Empty;
+                return _numChars > 0 ? new string(_charBuffer, 0, _numChars) : string.Empty;
             }
         }
     }

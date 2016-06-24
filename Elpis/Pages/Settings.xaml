@@ -1,8 +1,10 @@
-﻿<UserControl x:Class="Elpis.Settings" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<UserControl x:Class="Elpis.Pages.Settings" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:config="clr-namespace:Elpis" mc:Ignorable="d"
-             xmlns:Controls="clr-namespace:Elpis.Controls" xmlns:Hotkeys="clr-namespace:Elpis.Hotkeys"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:config="clr-namespace:Elpis"
+             mc:Ignorable="d"
+             xmlns:Controls="clr-namespace:Elpis.Controls"
+             xmlns:pages="clr-namespace:Elpis.Pages"
              d:DesignHeight="479" d:DesignWidth="442" Loaded="UserControl_Loaded" Unloaded="UserControl_Unloaded">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -15,8 +17,9 @@
             </ResourceDictionary.MergedDictionaries>
             <x:Array x:Key="AudioFormats" Type="{x:Type config:ConfigDropDownItem}">
                 <config:ConfigDropDownItem Display="AAC Plus" Value="aacplus" />
-                <config:ConfigDropDownItem Display="MP3 (128kbps)" Value="mp3" />
-                <config:ConfigDropDownItem Display="MP3 HiFi (192kbps) - Requires Pandora One" Value="mp3-hifi" />
+                <config:ConfigDropDownItem Display="MP3 (128kbps) (Recordable)" Value="mp3" />
+                <config:ConfigDropDownItem Display="MP3 HiFi (192kbps) (Recordable)- Requires Pandora One"
+                                           Value="mp3-hifi" />
             </x:Array>
             <x:Array x:Key="StationSortOrder" Type="{x:Type config:ConfigDropDownItem}">
                 <config:ConfigDropDownItem Display="Date Ascending" Value="DateAsc" />
@@ -34,7 +37,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                  Style="{StaticResource FadeScroller}">
+                      Style="{StaticResource FadeScroller}">
             <StackPanel Grid.Row="0" VerticalAlignment="Stretch">
                 <!-- Due to a bug in the VS2010 Designer, the contents of expanders are not visible at design time when using custom styles.
                      In order to see the contents while designing, add Style="" to the main expander tag section of each. Then remove when done. -->
@@ -45,16 +48,16 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <CheckBox Grid.Column="0" Margin="4" Name="chkAutoLogin"
-                      IsChecked="True"
-                      Content="Automatically Login" />
+                                  IsChecked="True"
+                                  Content="Automatically Login" />
                         <Button Grid.Column="1" Name="btnLogout" Content="Logout" HorizontalAlignment="Right"
-                    Click="btnLogout_Click">
+                                Click="btnLogout_Click">
                             <Button.ToolTip>
                                 <TextBlock FontSize="14">
                                     Logs out off the current session
-                                    <LineBreak/>
+                                    <LineBreak />
                                     and clears the account information.
-                                    <LineBreak/>
+                                    <LineBreak />
                                     Any playing station will be stopped.
                                 </TextBlock>
                             </Button.ToolTip>
@@ -73,28 +76,40 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Label Grid.Row="0" Grid.Column="0" Content="Audio Format" FontSize="16" />
                         <ComboBox Name="cmbAudioFormat" Grid.Row="0" Grid.Column="1" Margin="3"
-                      ItemsSource="{StaticResource AudioFormats}" DisplayMemberPath="Display" SelectedValuePath="Value">
+                                  ItemsSource="{StaticResource AudioFormats}" DisplayMemberPath="Display"
+                                  SelectedValuePath="Value">
                             <ComboBox.ToolTip>
                                 <TextBlock FontSize="14">
-                  AAC Plus (Low bitrate, best for slow connections)
-                  <LineBreak />
-                  MP3 (Standard bitrate)
-                  <LineBreak />
-                  MP3 HiFi (CD Quality) - Requires Pandora One
+                                    AAC Plus (Low bitrate, best for slow connections)
+                                    <LineBreak />
+                                    MP3 (Standard bitrate)(Can Record)
+                                    <LineBreak />
+                                    MP3 HiFi (CD Quality)(Can Record) - Requires Pandora One
                                 </TextBlock>
                             </ComboBox.ToolTip>
                         </ComboBox>
                         <Label Grid.Row="1" Grid.Column="0" Content="Station Sort Order" FontSize="16" />
                         <ComboBox Name="cmbStationSort" Grid.Row="1" Grid.Column="1" Margin="3"
-                      ItemsSource="{StaticResource StationSortOrder}" DisplayMemberPath="Display" SelectedValuePath="Value" />
+                                  ItemsSource="{StaticResource StationSortOrder}" DisplayMemberPath="Display"
+                                  SelectedValuePath="Value" />
                         <Label Grid.Row="2" Grid.Column="0" Content="Output Device" FontSize="16" />
                         <ComboBox Name="cmbOutputDevice" Grid.Row="2" Grid.Column="1" Margin="3" />
-                        <CheckBox Name="chkAutoPlay" Grid.Row="3" Grid.ColumnSpan="2" Margin="4"
-                      IsChecked="True"
-                      Content="Automatically Play Last Station" />
+                        <CheckBox Name="chkAutoPlay" Grid.Row="3" Grid.ColumnSpan="2" Grid.Column="0" Margin="4"
+                                  IsChecked="True"
+                                  Content="Automatically Play Last Station" />
+                        <DockPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" LastChildFill="True"
+                                   HorizontalAlignment="Stretch">
+                            <Label>Rip:</Label>
+                            <CheckBox Name="chkRipStream" IsChecked="False" />
+                            <Label>Save To:</Label>
+                            <TextBox Name="txtRipPath" Width="auto" HorizontalAlignment="Stretch">Save Location</TextBox>
+                        </DockPanel>
+
+
                     </Grid>
                 </Expander>
                 <Expander Header="General" Margin="5" IsExpanded="True">
@@ -110,50 +125,54 @@
                             <ColumnDefinition Width="45*" />
                         </Grid.ColumnDefinitions>
                         <CheckBox Name="chkCheckUpdates" Grid.Row="0" Margin="4"
-                      IsChecked="True"
-                      Content="Check for Updates" />
+                                  IsChecked="True"
+                                  Content="Check for Updates" />
                         <CheckBox Name="chkTrayMinimize" Grid.Row="1" Grid.Column="0" Margin="4"
-                      IsChecked="True" ToolTip="Exit option in tray menu must be used to fully close."
-                      Content="Minimize / Close to Tray" />
+                                  IsChecked="True" ToolTip="Exit option in tray menu must be used to fully close."
+                                  Content="Minimize / Close to Tray" />
                         <CheckBox Name="chkShowNotify" Grid.Row="1" Grid.Column="1" Margin="4"
-                                IsChecked="True"
-                                Content="Show Notifications"
-                                ToolTip="Display notificationsin toolbar on each new song"/>
+                                  IsChecked="True"
+                                  Content="Show Notifications"
+                                  ToolTip="Display notificationsin toolbar on each new song" />
                         <CheckBox Name="chkRemoteControlEnabled" Grid.Row="2" Grid.Column="1" Margin="4"
-                                IsChecked="True"
-                                Content="Remote Control"
-                                ToolTip="Open TCP port to listen for commands from ElpisRemote app"/>
+                                  IsChecked="True"
+                                  Content="Remote Control"
+                                  ToolTip="Open TCP port to listen for commands from ElpisRemote app" />
                         <CheckBox Name="chkPauseOnLock" Grid.Row="0" Grid.Column="2" Margin="4"
                                   IsChecked="False" Content="Pause on SystemLock"
                                   ToolTip="Elpis will pause when the system is locked and resume when unlocked." />
                         <CheckBox Name="chkCheckBetaUpdates" Grid.Row="2" Grid.Column="0" Margin="4"
                                   IsChecked="False" Content="Check for Beta Updates"
                                   ToolTip="These updates are experimental and are prone to break. Use it only if you want to test unstable code." />
-                        <Label Content="Your local IP Address: " HorizontalAlignment="Left" Margin="30,1,0,-1" Grid.Row="3"/>
-                        <ListBox PreviewKeyDown="txtIPAddress_PreviewKeyDown" Name="txtIPAddress" HorizontalAlignment="Center" Margin="207,1,23,-27" Width="174" Height="45"
-                                 Grid.Row="3" Grid.ColumnSpan="2" IsEnabled="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Hidden"/>
+                        <Label Content="Your local IP Address: " HorizontalAlignment="Left" Margin="30,1,0,-1"
+                               Grid.Row="3" />
+                        <ListBox PreviewKeyDown="txtIPAddress_PreviewKeyDown" Name="txtIPAddress"
+                                 HorizontalAlignment="Center" Margin="207,1,23,-27" Width="174" Height="45"
+                                 Grid.Row="3" Grid.ColumnSpan="2" IsEnabled="True"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden" />
                         <!--TextBox Name="txtIPAddress" HorizontalAlignment="Center" Height="23" Margin="220,3,10,3" TextWrapping="Wrap" Text="TextBox" Width="174"
                                  Grid.Row="3" Grid.ColumnSpan="2" IsEnabled="False"/-->
                     </Grid>
                 </Expander>
-                <Expander Header="Global Hotkeys" IsExpanded="True" Margin="5" >
+                <Expander Header="Global Hotkeys" IsExpanded="True" Margin="5">
                     <StackPanel Orientation="Vertical" Margin="0 2 0 5">
                         <Grid Name="HotKeyGrid">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="5*" />
-                                <ColumnDefinition Width="5*"  />
-                                <ColumnDefinition Width="1*"  />
-                                <ColumnDefinition Width="1*"  />
-                                <ColumnDefinition Width="3*"  />
+                                <ColumnDefinition Width="5*" />
+                                <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="3*" />
                             </Grid.ColumnDefinitions>
                             <Label Content="Command" Grid.Column="0" HorizontalContentAlignment="Left" />
                             <Label Content="Hotkey" Grid.Column="1" HorizontalContentAlignment="Left" />
-                            <Label Grid.Row="0" Grid.Column="2" Content="Global" HorizontalContentAlignment="Center"/>
-                            <Label Grid.Row="0" Grid.Column="3" Content="Enabled" HorizontalContentAlignment="Center"/>
-                            <Label Grid.Row="0" Grid.Column="4" Content="Remove" HorizontalContentAlignment="Center"/>
+                            <Label Grid.Row="0" Grid.Column="2" Content="Global" HorizontalContentAlignment="Center" />
+                            <Label Grid.Row="0" Grid.Column="3" Content="Enabled" HorizontalContentAlignment="Center" />
+                            <Label Grid.Row="0" Grid.Column="4" Content="Remove" HorizontalContentAlignment="Center" />
                         </Grid>
 
                         <ItemsControl Name="HotKeyItems">
@@ -162,17 +181,19 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="5*" />
-                                            <ColumnDefinition Width="5*"  />
-                                            <ColumnDefinition Width="1*"  />
-                                            <ColumnDefinition Width="1*"  />
-                                            <ColumnDefinition Width="3*"  />
+                                            <ColumnDefinition Width="5*" />
+                                            <ColumnDefinition Width="1*" />
+                                            <ColumnDefinition Width="1*" />
+                                            <ColumnDefinition Width="3*" />
                                         </Grid.ColumnDefinitions>
-                                        <ComboBox Grid.Column="0" ItemsSource="{Binding Source={x:Static Hotkeys:PlayerCommands.AllCommands}}"
-                                                  DisplayMemberPath="Name" SelectedItem="{Binding Path=Value.Command}" Margin="0 0 5 0" />
-                                        <config:HotKeyBox Grid.Column="1" IsReadOnly="True"
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{Binding Source={x:Static config:PlayerCommands.AllCommands}}"
+                                                  DisplayMemberPath="Name" SelectedItem="{Binding Path=Value.Command}"
+                                                  Margin="0 0 5 0" />
+                                        <pages:HotKeyBox Grid.Column="1" IsReadOnly="True"
                                                           Text="{Binding Path=Value.KeysString, Mode=OneWay}"
-                                                          Margin="0 0 5 0"  >
-                                            <config:HotKeyBox.ToolTip>
+                                                          Margin="0 0 5 0">
+                                            <pages:HotKeyBox.ToolTip>
                                                 <TextBlock>
                                                     Only set Alphanumeric or Space keys as Global
                                                     <LineBreak />
@@ -184,9 +205,10 @@
                                                     <LineBreak />
                                                     hotkey or close Elpis.
                                                 </TextBlock>
-                                            </config:HotKeyBox.ToolTip>
-                                        </config:HotKeyBox>
-                                        <CheckBox Grid.Column="2" IsChecked="{Binding Path=Value.Global}" HorizontalAlignment="Center">
+                                            </pages:HotKeyBox.ToolTip>
+                                        </pages:HotKeyBox>
+                                        <CheckBox Grid.Column="2" IsChecked="{Binding Path=Value.Global}"
+                                                  HorizontalAlignment="Center">
                                             <CheckBox.ToolTip>
                                                 <TextBlock>
                                                     Only set Alphanumeric or Space keys as Global
@@ -201,15 +223,17 @@
                                                 </TextBlock>
                                             </CheckBox.ToolTip>
                                         </CheckBox>
-                                        <CheckBox Grid.Column="3" IsChecked="{Binding Path=Value.Enabled}" HorizontalAlignment="Center"/>
+                                        <CheckBox Grid.Column="3" IsChecked="{Binding Path=Value.Enabled}"
+                                                  HorizontalAlignment="Center" />
                                         <TextBlock Grid.Column="4" Text="r" FontFamily="Webdings" FontSize="16"
                                                    Margin="3" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                    MouseDown="RemoveHotkey_MouseDown">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Style.Triggers>
-                                                        <Trigger Property ="IsMouseOver" Value="True">
-                                                            <Setter Property= "Foreground" Value="{StaticResource ShadeMediumBrush}"/>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter Property="Foreground"
+                                                                    Value="{StaticResource ShadeMediumBrush}" />
                                                         </Trigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -219,7 +243,10 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <Button Name="btnAddHotKey" Click="btnAddHotKey_Click" HorizontalAlignment="Right" Width="80" Height="30" Padding="2 2 2 2" Margin="0 4 4 5">Add New</Button>
+                        <Button Name="btnAddHotKey" Click="btnAddHotKey_Click" HorizontalAlignment="Right" Width="80"
+                                Height="30" Padding="2 2 2 2" Margin="0 4 4 5">
+                            Add New
+                        </Button>
                     </StackPanel>
                 </Expander>
                 <Expander Header="Proxy - Changes Require Restarting Elpis"
@@ -233,39 +260,39 @@
                             <RowDefinition />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Label Grid.Row="0" Grid.Column="0" Content="Address" FontSize="16" />
                         <TextBox Grid.Row="0" Grid.Column="1" Text="" Margin="3"
                                  FontSize="16" TextAlignment="Center"
-                                    Name="txtProxyAddress"/>
+                                 Name="txtProxyAddress" />
 
                         <Label Grid.Row="0" Grid.Column="2" Content="Port" FontSize="16" />
                         <TextBox Grid.Row="0" Grid.Column="3" Text="" Width="55"
                                  FontSize="16"
                                  HorizontalAlignment="Left" Margin="3" TextAlignment="Center"
                                  PreviewTextInput="txtProxyPort_PreviewTextInput"
-                                 Name="txtProxyPort"/>
+                                 Name="txtProxyPort" />
 
 
                         <Label Grid.Row="2" Grid.Column="0" Content="Username" FontSize="16" />
                         <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
                                  Text=""
-                            FontSize="16"
-                            TextAlignment="Center" Margin="3"
-                            Name="txtProxyUser"/>
+                                 FontSize="16"
+                                 TextAlignment="Center" Margin="3"
+                                 Name="txtProxyUser" />
 
                         <Label Grid.Row="3" Grid.Column="0" Content="Password" FontSize="16" />
                         <PasswordBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Margin="3"
-                                    HorizontalContentAlignment="Center"
-                                    FontSize="16"
-                                    Name="txtProxyPassword"/>
+                                     HorizontalContentAlignment="Center"
+                                     FontSize="16"
+                                     Name="txtProxyPassword" />
                     </Grid>
                 </Expander>
-                <Expander Header="Last.FM Scrobbler"  IsExpanded="False" Margin="5" >
+                <Expander Header="Last.FM Scrobbler" IsExpanded="False" Margin="5">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition />
@@ -274,16 +301,16 @@
                         <CheckBox Name="chkEnableScrobbler" Grid.Column="0"
                                   Content="Enable Scrobbler" Margin="4"
                                   ToolTip="Enable Elpis to Scrobble to Last.FM - Must authenticate after enabling"
-                                  Click="chkEnableScrobbler_Click"/>
+                                  Click="chkEnableScrobbler_Click" />
                         <Button Name="btnLastFMAuth" Grid.Column="1"
                                 Content="Authenticate Account"
                                 ToolTip="Authenticate and allow Elpis to access Last.FM"
-                                Click="btnLastFMAuth_Click"/>
+                                Click="btnLastFMAuth_Click" />
                         <Button Name="btnLastFMDisable" Grid.Column="1"
                                 Visibility="Hidden"
                                 Content="De-Authenticate Account"
                                 ToolTip="Remove Last.FM Authentication"
-                                Click="btnLastFMDisable_Click"/>
+                                Click="btnLastFMDisable_Click" />
                     </Grid>
                 </Expander>
 

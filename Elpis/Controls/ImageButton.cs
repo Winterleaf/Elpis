@@ -17,41 +17,37 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Windows;
-using System.Windows.Controls;
-
 namespace Elpis.Controls
 {
-    public class ImageButton : Button
+    public class ImageButton : System.Windows.Controls.Button
     {
-        public static readonly DependencyProperty ActiveImageUriProperty =
-            DependencyProperty.RegisterAttached("ActiveImageUri", typeof (Uri), typeof (ImageButton),
-                                                new PropertyMetadata(null));
-
-        public static readonly DependencyProperty InactiveImageUriProperty =
-            DependencyProperty.RegisterAttached("InactiveImageUri", typeof (Uri), typeof (ImageButton),
-                                                new PropertyMetadata(null));
-
-        public static readonly DependencyProperty IsActiveProperty =
-            DependencyProperty.RegisterAttached("IsActive", typeof (bool), typeof (ImageButton),
-                                                new PropertyMetadata(false));
-
-        public ImageButton() : base()
+        public ImageButton()
         {
             //Do not want any of these buttons to respond to Space select, do this for all
-            this.PreviewKeyDown += ((o, e) => e.Handled = true);
+            PreviewKeyDown += (o, e) => e.Handled = true;
         }
 
-        public Uri ActiveImageUri
+        public static readonly System.Windows.DependencyProperty ActiveImageUriProperty =
+            System.Windows.DependencyProperty.RegisterAttached("ActiveImageUri", typeof (System.Uri),
+                typeof (ImageButton), new System.Windows.PropertyMetadata(null));
+
+        public static readonly System.Windows.DependencyProperty InactiveImageUriProperty =
+            System.Windows.DependencyProperty.RegisterAttached("InactiveImageUri", typeof (System.Uri),
+                typeof (ImageButton), new System.Windows.PropertyMetadata(null));
+
+        public static readonly System.Windows.DependencyProperty IsActiveProperty =
+            System.Windows.DependencyProperty.RegisterAttached("IsActive", typeof (bool), typeof (ImageButton),
+                new System.Windows.PropertyMetadata(false));
+
+        public System.Uri ActiveImageUri
         {
-            get { return (Uri) GetValue(ActiveImageUriProperty); }
+            get { return (System.Uri) GetValue(ActiveImageUriProperty); }
             set { SetValue(ActiveImageUriProperty, value); }
         }
 
-        public Uri InactiveImageUri
+        public System.Uri InactiveImageUri
         {
-            get { return (Uri) GetValue(InactiveImageUriProperty); }
+            get { return (System.Uri) GetValue(InactiveImageUriProperty); }
             set { SetValue(InactiveImageUriProperty, value); }
         }
 

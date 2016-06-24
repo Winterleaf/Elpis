@@ -1,97 +1,81 @@
-﻿using System;
-using System.Diagnostics;
-
-namespace Kayak
+﻿namespace Kayak.Net.Socket
 {
-    class KayakSocketState
+    internal class KayakSocketState
     {
-        [Flags]
-        enum State : int
-        {
-            NotConnected = 1,
-            Connecting = 1 << 1,
-            Connected = 1 << 2,
-            WriteEnded = 1 << 3,
-            ReadEnded = 1 << 4,
-            Closed = 1 << 5,
-            Disposed = 1 << 6,
-            BufferIsNotEmpty = 1 << 7
-        }
-
-        State state;
-
         public KayakSocketState(bool connected)
         {
-            state = connected ? State.NotConnected : State.Connected;
+            _state = connected ? State.NotConnected : State.Connected;
         }
+
+        private State _state;
 
         public void SetConnecting()
         {
-            if ((state & State.Disposed) > 0)
-                throw new ObjectDisposedException(typeof(KayakSocket).Name);
+            if ((_state & State.Disposed) > 0)
+                throw new System.ObjectDisposedException(typeof (KayakSocket).Name);
 
-            if ((state & State.Connected) > 0)
-                throw new InvalidOperationException("The socket was connected.");
+            if ((_state & State.Connected) > 0)
+                throw new System.InvalidOperationException("The socket was connected.");
 
-            if ((state & State.Connecting) > 0)
-                throw new InvalidOperationException("The socket was connecting.");
+            if ((_state & State.Connecting) > 0)
+                throw new System.InvalidOperationException("The socket was connecting.");
 
-            state |= State.Connecting;
+            _state |= State.Connecting;
         }
 
         public void SetConnected()
         {
             // these checks should never pass; they are here for safety.
-            if ((state & State.Disposed) > 0)
-                throw new ObjectDisposedException(typeof(KayakSocket).Name);
+            if ((_state & State.Disposed) > 0)
+                throw new System.ObjectDisposedException(typeof (KayakSocket).Name);
 
-            if ((state & State.Connecting) == 0)
-                throw new Exception("The socket was not connecting.");
+            if ((_state & State.Connecting) == 0)
+                throw new System.Exception("The socket was not connecting.");
 
-            state ^= State.Connecting;
-            state |= State.Connected;
+            _state ^= State.Connecting;
+            _state |= State.Connected;
         }
 
         public void BeginWrite(bool nonZeroData)
         {
-            if ((state & State.Disposed) > 0)
-                throw new ObjectDisposedException("KayakSocket");
+            if ((_state & State.Disposed) > 0)
+                throw new System.ObjectDisposedException("KayakSocket");
 
-            if ((state & State.Connected) == 0)
-                throw new InvalidOperationException("The socket was not connected.");
+            if ((_state & State.Connected) == 0)
+                throw new System.InvalidOperationException("The socket was not connected.");
 
-            if ((state & State.WriteEnded) > 0)
-                throw new InvalidOperationException("The socket was previously ended.");
+            if ((_state & State.WriteEnded) > 0)
+                throw new System.InvalidOperationException("The socket was previously ended.");
 
             if (nonZeroData)
-                state |= State.BufferIsNotEmpty;
+                _state |= State.BufferIsNotEmpty;
         }
 
-
-        void CanShutdownAndClose(out bool shutdownSocket, out bool raiseClosed)
+        private void CanShutdownAndClose(out bool shutdownSocket, out bool raiseClosed)
         {
-            bool bufferIsEmpty = (state & State.BufferIsNotEmpty) == 0;
-            bool readEnded = (state & State.ReadEnded) > 0;
-            bool writeEnded = (state & State.WriteEnded) > 0;
+            bool bufferIsEmpty = (_state & State.BufferIsNotEmpty) == 0;
+            bool readEnded = (_state & State.ReadEnded) > 0;
+            bool writeEnded = (_state & State.WriteEnded) > 0;
 
-            Debug.WriteLine("KayakSocketState: CanShutdownAndClose (readEnded = " + readEnded +
-                ", writeEnded = " + writeEnded +
-                ", bufferIsEmpty = " + bufferIsEmpty + ")");
+            System.Diagnostics.Debug.WriteLine("KayakSocketState: CanShutdownAndClose (readEnded = " + readEnded +
+                                               ", writeEnded = " + writeEnded + ", bufferIsEmpty = " + bufferIsEmpty +
+                                               ")");
 
             shutdownSocket = writeEnded && bufferIsEmpty;
 
             if (readEnded && shutdownSocket)
             {
-                state |= State.Closed;
+                _state |= State.Closed;
                 raiseClosed = true;
             }
             else
                 raiseClosed = false;
         }
+
         public void EndWrite(bool bufferIsEmpty, out bool shutdownSocket, out bool raiseClosed)
         {
             if (bufferIsEmpty)
-                state ^= State.BufferIsNotEmpty;
+                _state ^= State.BufferIsNotEmpty;
 
             CanShutdownAndClose(out shutdownSocket, out raiseClosed);
         }
@@ -104,22 +88,19 @@ namespace Kayak
         // socket was never connected...well, that's an error, bro.
         public bool CanRead()
         {
-            if ((state & State.Connected) == 0)
-                throw new InvalidOperationException("The socket was not connected.");
+            if ((_state & State.Connected) == 0)
+                throw new System.InvalidOperationException("The socket was not connected.");
 
-            if ((state & State.ReadEnded) > 0)
-                return false;
-
-            return true;
+            return (_state & State.ReadEnded) <= 0;
         }
 
         public void SetReadEnded(out bool raiseClosed)
         {
-            state |= State.ReadEnded;
+            _state |= State.ReadEnded;
 
-            if ((state & State.WriteEnded) > 0 && (state & State.BufferIsNotEmpty) == 0)
+            if ((_state & State.WriteEnded) > 0 && (_state & State.BufferIsNotEmpty) == 0)
             {
-                state |= State.Closed;
+                _state |= State.Closed;
                 raiseClosed = true;
             }
             else
@@ -128,27 +109,27 @@ namespace Kayak
 
         public void SetEnded(out bool shutdownSocket, out bool raiseClosed)
         {
-            if ((state & State.Disposed) > 0)
-                throw new ObjectDisposedException(typeof(KayakSocket).Name);
+            if ((_state & State.Disposed) > 0)
+                throw new System.ObjectDisposedException(typeof (KayakSocket).Name);
 
-            if ((state & State.Connected) == 0)
-                throw new InvalidOperationException("The socket was not connected.");
+            if ((_state & State.Connected) == 0)
+                throw new System.InvalidOperationException("The socket was not connected.");
 
-            if ((state & State.WriteEnded) > 0)
-                throw new InvalidOperationException("The socket was previously ended.");
+            if ((_state & State.WriteEnded) > 0)
+                throw new System.InvalidOperationException("The socket was previously ended.");
 
-            state |= State.WriteEnded;
+            _state |= State.WriteEnded;
 
             CanShutdownAndClose(out shutdownSocket, out raiseClosed);
         }
 
         public void SetError()
         {
-            if ((state & State.Disposed) > 0)
-                throw new ObjectDisposedException(typeof(KayakSocket).Name);
+            if ((_state & State.Disposed) > 0)
+                throw new System.ObjectDisposedException(typeof (KayakSocket).Name);
 
-            state ^= State.Connecting | State.Connected;
-            state |= State.Closed;
+            _state ^= State.Connecting | State.Connected;
+            _state |= State.Closed;
         }
 
         public void SetDisposed()
@@ -156,7 +137,20 @@ namespace Kayak
             //if ((state & State.Disposed) > 0)
             //    throw new ObjectDisposedException(typeof(KayakSocket).Name);
 
-            state |= State.Disposed;
+            _state |= State.Disposed;
+        }
+
+        [System.Flags]
+        private enum State
+        {
+            NotConnected = 1,
+            Connecting = 1 << 1,
+            Connected = 1 << 2,
+            WriteEnded = 1 << 3,
+            ReadEnded = 1 << 4,
+            Closed = 1 << 5,
+            Disposed = 1 << 6,
+            BufferIsNotEmpty = 1 << 7
         }
     }
 }

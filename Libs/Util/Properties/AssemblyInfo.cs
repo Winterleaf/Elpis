@@ -1,28 +1,25 @@
-﻿using System.Reflection;
-using System.Runtime.InteropServices;
-
-// General Information about an assembly is controlled through the following 
+﻿ // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 
-[assembly: AssemblyTitle("Util")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Adam Haile")]
-[assembly: AssemblyProduct("Util")]
-[assembly: AssemblyCopyright("Copyright © Adam Haile 2012")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
+[assembly: System.Reflection.AssemblyTitle("Util")]
+[assembly: System.Reflection.AssemblyDescription("")]
+[assembly: System.Reflection.AssemblyConfiguration("")]
+[assembly: System.Reflection.AssemblyCompany("Adam Haile")]
+[assembly: System.Reflection.AssemblyProduct("Util")]
+[assembly: System.Reflection.AssemblyCopyright("Copyright © Adam Haile 2012")]
+[assembly: System.Reflection.AssemblyTrademark("")]
+[assembly: System.Reflection.AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
 // to COM components.  If you need to access a type in this assembly from 
 // COM, set the ComVisible attribute to true on that type.
 
-[assembly: ComVisible(false)]
+[assembly: System.Runtime.InteropServices.ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 
-[assembly: Guid("3ece2aab-e1da-45c0-89bb-777850c0918c")]
+[assembly: System.Runtime.InteropServices.Guid("3ece2aab-e1da-45c0-89bb-777850c0918c")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -35,5 +32,5 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 
-[assembly: AssemblyVersion("1.1.*")]
+[assembly: System.Reflection.AssemblyVersion("1.1.*")]
 //[assembly: AssemblyFileVersion("1.0.*")]

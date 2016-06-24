@@ -1,84 +1,79 @@
-﻿using System;
-using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
-
-namespace Kayak
+﻿namespace Kayak.Net.Socket
 {
-    class DefaultKayakSocket : ISocket
+    internal class DefaultKayakSocket : ISocket
     {
-        internal ISocketDelegate del;
-
-        public int id;
-        static int nextId;
-
-        public IPEndPoint RemoteEndPoint { get { return (IPEndPoint)socket.RemoteEndPoint; } }
-
-        OutputBuffer buffer;
-
-        byte[] inputBuffer;
-
-        KayakSocketState state;
-
-        ISocketWrapper socket;
-        Action continuation;
-        IScheduler scheduler;
-
         internal DefaultKayakSocket(ISocketDelegate del, IScheduler scheduler)
         {
-            this.scheduler = scheduler;
-            this.del = del;
-            state = new KayakSocketState(true);
+            _scheduler = scheduler;
+            Del = del;
+            _state = new KayakSocketState(true);
         }
 
         internal DefaultKayakSocket(ISocketWrapper socket, IScheduler scheduler)
         {
-            this.id = nextId++;
-            this.socket = socket;
-            this.scheduler = scheduler;
-            state = new KayakSocketState(false);
+            Id = _nextId++;
+            _socket = socket;
+            _scheduler = scheduler;
+            _state = new KayakSocketState(false);
         }
 
-        public void Connect(IPEndPoint ep)
-		{
-            state.SetConnecting();
+        private static int _nextId;
 
-            Debug.WriteLine("KayakSocket: connecting to " + ep);
-            this.socket = new SocketWrapper(ep.Address.AddressFamily);
-			
-            socket.BeginConnect(ep, iasr => 
+        private OutputBuffer _buffer;
+        private System.Action _continuation;
+        internal ISocketDelegate Del;
+
+        public int Id;
+
+        private byte[] _inputBuffer;
+        private readonly IScheduler _scheduler;
+
+        private ISocketWrapper _socket;
+
+        private readonly KayakSocketState _state;
+
+        public System.Net.IPEndPoint RemoteEndPoint => _socket.RemoteEndPoint;
+
+        public void Connect(System.Net.IPEndPoint ep)
+        {
+            _state.SetConnecting();
+
+            System.Diagnostics.Debug.WriteLine("KayakSocket: connecting to " + ep);
+            _socket = new SocketWrapper(ep.Address.AddressFamily);
+
+            _socket.BeginConnect(ep, iasr =>
             {
-            	Debug.WriteLine("KayakSocket: connected to " + ep);
-                Exception error = null;
+                System.Diagnostics.Debug.WriteLine("KayakSocket: connected to " + ep);
+                System.Exception error = null;
 
                 try
                 {
-                    socket.EndConnect(iasr);
+                    _socket.EndConnect(iasr);
                 }
-                catch (Exception e)
+                catch (System.Exception e)
                 {
                     error = e;
                 }
-                
-                scheduler.Post(() =>
+
+                _scheduler.Post(() =>
                 {
-                    if (error is ObjectDisposedException)
+                    if (error is System.ObjectDisposedException)
                         return;
 
                     if (error != null)
                     {
-                        state.SetError();
+                        _state.SetError();
 
-                        Debug.WriteLine("KayakSocket: error while connecting to " + ep);
+                        System.Diagnostics.Debug.WriteLine("KayakSocket: error while connecting to " + ep);
                         RaiseError(error);
                     }
                     else
                     {
-                        state.SetConnected();
+                        _state.SetConnected();
 
-                        Debug.WriteLine("KayakSocket: connected to " + ep);
+                        System.Diagnostics.Debug.WriteLine("KayakSocket: connected to " + ep);
 
-                        del.OnConnected(this);
+                        Del.OnConnected(this);
 
                         BeginRead();
                     }
@@ -86,36 +81,104 @@ namespace Kayak
             });
         }
 
+        public bool Write(System.ArraySegment<byte> data, System.Action continuation)
+        {
+            _state.BeginWrite(data.Count > 0);
+
+            if (data.Count == 0) return false;
+
+            if (_continuation != null)
+                throw new System.InvalidOperationException("Write was pending.");
+
+            if (_buffer == null)
+                _buffer = new OutputBuffer();
+
+            int bufferSize = _buffer.Size;
+
+            // XXX copy! could optimize here?
+            _buffer.Add(data);
+            System.Diagnostics.Debug.WriteLine("KayakSocket: added " + data.Count + " bytes to buffer, buffer size was " +
+                                               bufferSize + ", buffer size is " + _buffer.Size);
+
+            if (bufferSize > 0)
+            {
+                // we're between an async beginsend and endsend,
+                // and user did not provide continuation
+
+                if (continuation == null) return false;
+                _continuation = continuation;
+                return true;
+            }
+            bool result = BeginSend();
+
+            // tricky: potentially throwing away fact that send will complete async
+            if (continuation == null)
+                result = false;
+
+            if (result)
+                _continuation = continuation;
+
+            return result;
+        }
+
+        public void End()
+        {
+            System.Diagnostics.Debug.WriteLine("KayakSocket: end");
+
+            bool shutdownSocket;
+            bool raiseClosed;
+
+            _state.SetEnded(out shutdownSocket, out raiseClosed);
+
+            if (shutdownSocket)
+            {
+                System.Diagnostics.Debug.WriteLine("KayakSocket: shutting down socket on End.");
+                _socket.Shutdown();
+            }
+
+            if (raiseClosed)
+            {
+                RaiseClosed();
+            }
+        }
+
+        public void Dispose()
+        {
+            _state.SetDisposed();
+
+            _socket?.Dispose();
+        }
+
         internal void BeginRead()
         {
-            if (inputBuffer == null)
-                inputBuffer = new byte[1024 * 4];
+            if (_inputBuffer == null)
+                _inputBuffer = new byte[1024*4];
 
             while (true)
             {
-                if (!state.CanRead()) return;
+                if (!_state.CanRead()) return;
 
                 int read;
-                Exception error;
-                IAsyncResult ar0 = null;
+                System.Exception error;
+                System.IAsyncResult ar0;
 
-                Debug.WriteLine("KayakSocket: reading.");
+                System.Diagnostics.Debug.WriteLine("KayakSocket: reading.");
 
                 try
                 {
-                    ar0 = socket.BeginReceive(inputBuffer, 0, inputBuffer.Length, ar =>
+                    ar0 = _socket.BeginReceive(_inputBuffer, 0, _inputBuffer.Length, ar =>
                     {
                         if (ar.CompletedSynchronously) return;
 
                         read = EndRead(ar, out error);
-						
-						// small optimization
-                        if (error is ObjectDisposedException)
+
+                        // small optimization
+                        if (error is System.ObjectDisposedException)
                             return;
 
-                        scheduler.Post(() =>
+                        _scheduler.Post(() =>
                         {
-                            Debug.WriteLine("KayakSocket: receive completed async");
+                            System.Diagnostics.Debug.WriteLine("KayakSocket: receive completed async");
 
                             if (error != null)
                             {
@@ -129,7 +192,7 @@ namespace Kayak
                         });
                     });
                 }
-                catch (Exception e)
+                catch (System.Exception e)
                 {
                     HandleReadError(e);
                     break;
@@ -138,7 +201,7 @@ namespace Kayak
                 if (!ar0.CompletedSynchronously)
                     break;
 
-                Debug.WriteLine("KayakSocket: receive completed sync");
+                System.Diagnostics.Debug.WriteLine("KayakSocket: receive completed sync");
                 read = EndRead(ar0, out error);
 
                 if (error != null)
@@ -146,126 +209,71 @@ namespace Kayak
                     HandleReadError(error);
                     break;
                 }
-                else
-                {
-                    if (HandleReadResult(read, true))
-                        break;
-                }
+                if (HandleReadResult(read, true))
+                    break;
             }
         }
 
-        int EndRead(IAsyncResult ar, out Exception error)
+        private int EndRead(System.IAsyncResult ar, out System.Exception error)
         {
             error = null;
             try
             {
-                return socket.EndReceive(ar);
+                return _socket.EndReceive(ar);
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 error = e;
                 return -1;
             }
         }
 
-        bool HandleReadResult(int read, bool sync)
+        private bool HandleReadResult(int read, bool sync)
         {
-            Debug.WriteLine("KayakSocket: " + (sync ? "" : "a") + "sync read " + read);
+            System.Diagnostics.Debug.WriteLine("KayakSocket: " + (sync ? "" : "a") + "sync read " + read);
 
-            if (read == 0)
-            {
-                PeerHungUp();
-                return false;
-            }
-            else
-            {
-                return del.OnData(this, new ArraySegment<byte>(inputBuffer, 0, read), BeginRead);
-            }
+            if (read != 0) return Del.OnData(this, new System.ArraySegment<byte>(_inputBuffer, 0, read), BeginRead);
+            PeerHungUp();
+            return false;
         }
 
-        void HandleReadError(Exception e)
+        private void HandleReadError(System.Exception e)
         {
-            if (e is ObjectDisposedException)
+            if (e is System.ObjectDisposedException)
                 return;
 
-            Debug.WriteLine("KayakSocket: read error");
+            System.Diagnostics.Debug.WriteLine("KayakSocket: read error");
 
-            if (e is SocketException)
+            if (e is System.Net.Sockets.SocketException)
             {
-                var socketException = e as SocketException;
+                System.Net.Sockets.SocketException socketException = e as System.Net.Sockets.SocketException;
 
                 if (socketException.ErrorCode == 10053 || socketException.ErrorCode == 10054)
                 {
-                    Debug.WriteLine("KayakSocket: peer reset (" + socketException.ErrorCode + ")");
+                    System.Diagnostics.Debug.WriteLine("KayakSocket: peer reset (" + socketException.ErrorCode + ")");
                     PeerHungUp();
                     return;
                 }
             }
 
-            state.SetError();
+            _state.SetError();
 
-            RaiseError(new Exception("Error while reading.", e));
+            RaiseError(new System.Exception("Error while reading.", e));
         }
 
-        void PeerHungUp()
+        private void PeerHungUp()
         {
-            Debug.WriteLine("KayakSocket: peer hung up.");
-            bool raiseClosed = false;
-            state.SetReadEnded(out raiseClosed);
+            System.Diagnostics.Debug.WriteLine("KayakSocket: peer hung up.");
+            bool raiseClosed;
+            _state.SetReadEnded(out raiseClosed);
 
-            del.OnEnd(this);
+            Del.OnEnd(this);
 
             if (raiseClosed)
                 RaiseClosed();
         }
 
-        public bool Write(ArraySegment<byte> data, Action continuation)
-        {
-            state.BeginWrite(data.Count > 0);
-
-            if (data.Count == 0) return false;
-
-            if (this.continuation != null) 
-                throw new InvalidOperationException("Write was pending.");
-
-            if (buffer == null)
-                buffer = new OutputBuffer();
-
-            var bufferSize = buffer.Size;
-
-            // XXX copy! could optimize here?
-            buffer.Add(data);
-            Debug.WriteLine("KayakSocket: added " + data.Count + " bytes to buffer, buffer size was " + bufferSize + ", buffer size is " + buffer.Size);
-
-            if (bufferSize > 0)
-            {
-                // we're between an async beginsend and endsend,
-                // and user did not provide continuation
-
-                if (continuation != null)
-                {
-                    this.continuation = continuation;
-                    return true;
-                }
-                else
-                    return false;
-            }
-            else
-            {
-                var result = BeginSend();
-
-                // tricky: potentially throwing away fact that send will complete async
-                if (continuation == null)
-                    result = false;
-
-                if (result)
-                    this.continuation = continuation;
-
-                return result;
-            }
-        }
-
-        bool BeginSend()
+        private bool BeginSend()
         {
             while (true)
             {
@@ -273,39 +281,37 @@ namespace Kayak
                     break;
 
                 int written = 0;
-                Exception error;
-                IAsyncResult ar0;
+                System.Exception error;
+                System.IAsyncResult ar0;
 
                 try
                 {
-                    ar0 = socket.BeginSend(buffer.Data, ar =>
+                    ar0 = _socket.BeginSend(_buffer.Data, ar =>
                     {
                         if (ar.CompletedSynchronously)
                             return;
 
                         written = EndSend(ar, out error);
-						
-						// small optimization
-                        if (error is ObjectDisposedException)
+
+                        // small optimization
+                        if (error is System.ObjectDisposedException)
                             return;
 
-                        scheduler.Post(() =>
+                        _scheduler.Post(() =>
                         {
                             if (error != null)
                                 HandleSendError(error);
                             else
                                 HandleSendResult(written, false);
 
-                            if (!BeginSend() && continuation != null)
-                            {
-                                var c = continuation;
-                                continuation = null;
-                                c();
-                            }
+                            if (BeginSend() || _continuation == null) return;
+                            System.Action c = _continuation;
+                            _continuation = null;
+                            c();
                         });
                     });
                 }
-                catch (Exception e)
+                catch (System.Exception e)
                 {
                     HandleSendError(e);
                     break;
@@ -321,102 +327,73 @@ namespace Kayak
                     HandleSendError(error);
                     break;
                 }
-                else
-                    HandleSendResult(written, true);
+                HandleSendResult(written, true);
             }
 
             return false;
         }
 
-        int EndSend(IAsyncResult ar, out Exception error)
+        private int EndSend(System.IAsyncResult ar, out System.Exception error)
         {
             error = null;
             try
             {
-                return socket.EndSend(ar);
+                return _socket.EndSend(ar);
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 error = e;
                 return -1;
             }
         }
 
-        void HandleSendResult(int written, bool sync)
+        private void HandleSendResult(int written, bool sync)
         {
-            buffer.Remove(written);
+            _buffer.Remove(written);
 
-            Debug.WriteLine("KayakSocket: Wrote " + written + " " + (sync ? "" : "a") + "sync, buffer size is " + buffer.Size);
+            System.Diagnostics.Debug.WriteLine("KayakSocket: Wrote " + written + " " + (sync ? "" : "a") +
+                                               "sync, buffer size is " + _buffer.Size);
 
-            bool shutdownSocket = false;
-            bool raiseClosed = false;
+            bool shutdownSocket;
+            bool raiseClosed;
 
-            state.EndWrite(BufferIsEmpty(), out shutdownSocket, out raiseClosed);
+            _state.EndWrite(BufferIsEmpty(), out shutdownSocket, out raiseClosed);
 
             if (shutdownSocket)
             {
-                Debug.WriteLine("KayakSocket: shutting down socket after send.");
-                socket.Shutdown();
+                System.Diagnostics.Debug.WriteLine("KayakSocket: shutting down socket after send.");
+                _socket.Shutdown();
             }
 
             if (raiseClosed)
                 RaiseClosed();
         }
 
-        void HandleSendError(Exception error)
+        private void HandleSendError(System.Exception error)
         {
-			if (error is ObjectDisposedException) return;
-			
-            state.SetError();
-            RaiseError(new Exception("Exception on write.", error));
+            if (error is System.ObjectDisposedException) return;
+
+            _state.SetError();
+            RaiseError(new System.Exception("Exception on write.", error));
         }
 
-        public void End()
+        private bool BufferIsEmpty()
         {
-            Debug.WriteLine("KayakSocket: end");
-
-            bool shutdownSocket = false;
-            bool raiseClosed = false;
-            
-            state.SetEnded(out shutdownSocket, out raiseClosed);
-
-            if (shutdownSocket)
-            {
-                Debug.WriteLine("KayakSocket: shutting down socket on End.");
-                socket.Shutdown();
-            }
-
-            if (raiseClosed)
-            {
-                RaiseClosed();
-            }
+            return _socket != null && (_buffer == null || _buffer.Size == 0);
         }
 
-        public void Dispose()
+        private void RaiseError(System.Exception e)
         {
-            state.SetDisposed();
-
-            if (socket != null) // i. e., never connected
-                socket.Dispose();
-        }
-
-        bool BufferIsEmpty()
-        {
-            return socket != null && (buffer == null || buffer.Size == 0);
-        }
-
-        void RaiseError(Exception e)
-        {
-            Debug.WriteLine("KayakSocket: raising OnError");
-            del.OnError(this, e);
+            System.Diagnostics.Debug.WriteLine("KayakSocket: raising OnError");
+            Del.OnError(this, e);
 
             RaiseClosed();
         }
 
-        void RaiseClosed()
+        private void RaiseClosed()
         {
-            Debug.WriteLine("KayakSocket: raising OnClose");
-            del.OnClose(this);
+            System.Diagnostics.Debug.WriteLine("KayakSocket: raising OnClose");
+            Del.OnClose(this);
         }
     }
 }

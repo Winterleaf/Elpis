@@ -1,25 +1,21 @@
-﻿using System;
-using PandoraSharp;
-
-namespace PandoraSharpTest
+﻿namespace PandoraSharpTest
 {
     internal class Program
     {
         private static void Main(string[] args)
         {
-            var p = new Pandora();
+            PandoraSharp.Pandora p = new PandoraSharp.Pandora();
 
             try
             {
                 //p.Sync();
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
-                Console.WriteLine(ex);
+                System.Console.WriteLine(ex);
             }
 
-
-            Console.WriteLine("testing");
+            System.Console.WriteLine("testing");
         }
     }
 }

@@ -1,48 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Diagnostics;
-
-namespace Kayak
+﻿namespace Kayak.Net.Server
 {
-    class KayakServerState
+    internal class KayakServerState
     {
-        [Flags]
-        enum State : int
-        {
-            None = 0,
-            Listening = 1,
-            Closing = 1 << 1,
-            Closed = 1 << 2,
-            Disposed = 1 << 3
-        }
-
-        State state;
-        int connections;
-
         public KayakServerState()
         {
-            state = State.None;
+            _state = State.None;
         }
+
+        private int _connections;
+
+        private State _state;
 
         public void SetListening()
         {
             lock (this)
             {
-                if ((state & State.Disposed) > 0)
-                    throw new ObjectDisposedException(typeof(KayakServer).Name);
+                if ((_state & State.Disposed) > 0)
+                    throw new System.ObjectDisposedException(typeof (KayakServer).Name);
 
-                if ((state & State.Listening) > 0)
-                    throw new InvalidOperationException("The server was already listening.");
+                if ((_state & State.Listening) > 0)
+                    throw new System.InvalidOperationException("The server was already listening.");
 
-                if ((state & State.Closing) > 0)
-                    throw new InvalidOperationException("The server was closing.");
+                if ((_state & State.Closing) > 0)
+                    throw new System.InvalidOperationException("The server was closing.");
 
-                if ((state & State.Closed) > 0)
-                    throw new InvalidOperationException("The server was closed.");
+                if ((_state & State.Closed) > 0)
+                    throw new System.InvalidOperationException("The server was closed.");
 
-                state |= State.Listening;
+                _state |= State.Listening;
             }
         }
 
@@ -50,7 +35,7 @@ namespace Kayak
         {
             lock (this)
             {
-                connections++;
+                _connections++;
             }
         }
 
@@ -58,16 +43,12 @@ namespace Kayak
         {
             lock (this)
             {
-                connections--;
+                _connections--;
 
-                if (connections == 0 && (state & State.Closing) > 0)
-                {
-                    state ^= State.Closing;
-                    state |= State.Closed;
-                    return true;
-                }
-
-                return false;
+                if (_connections != 0 || (_state & State.Closing) <= 0) return false;
+                _state ^= State.Closing;
+                _state |= State.Closed;
+                return true;
             }
         }
 
@@ -75,30 +56,27 @@ namespace Kayak
         {
             lock (this)
             {
-                if ((state & State.Disposed) > 0)
-                    throw new ObjectDisposedException(typeof(KayakServer).Name);
+                if ((_state & State.Disposed) > 0)
+                    throw new System.ObjectDisposedException(typeof (KayakServer).Name);
 
-                if (state == State.None)
-                    throw new InvalidOperationException("The server was not listening.");
+                if (_state == State.None)
+                    throw new System.InvalidOperationException("The server was not listening.");
 
-                if ((state & State.Listening) == 0)
-                    throw new InvalidOperationException("The server was not listening.");
+                if ((_state & State.Listening) == 0)
+                    throw new System.InvalidOperationException("The server was not listening.");
 
-                if ((state & State.Closing) > 0)
-                    throw new InvalidOperationException("The server was closing.");
+                if ((_state & State.Closing) > 0)
+                    throw new System.InvalidOperationException("The server was closing.");
 
-                if ((state & State.Closed) > 0)
-                    throw new InvalidOperationException("The server was closed.");
+                if ((_state & State.Closed) > 0)
+                    throw new System.InvalidOperationException("The server was closed.");
 
-                if (connections == 0)
+                if (_connections == 0)
                 {
-                    state |= State.Closed;
+                    _state |= State.Closed;
                     return true;
                 }
-                else
-                {
-                    state |= State.Closing;
-                }
+                _state |= State.Closing;
 
                 return true;
             }
@@ -108,7 +86,7 @@ namespace Kayak
         {
             lock (this)
             {
-                state = State.Closed;
+                _state = State.Closed;
             }
         }
 
@@ -116,11 +94,21 @@ namespace Kayak
         {
             lock (this)
             {
-                if ((state & State.Disposed) > 0)
-                    throw new ObjectDisposedException(typeof(KayakServer).Name);
+                if ((_state & State.Disposed) > 0)
+                    throw new System.ObjectDisposedException(typeof (KayakServer).Name);
 
-                state |= State.Disposed;
+                _state |= State.Disposed;
             }
+        }
+
+        [System.Flags]
+        private enum State
+        {
+            None = 0,
+            Listening = 1,
+            Closing = 1 << 1,
+            Closed = 1 << 2,
+            Disposed = 1 << 3
         }
     }
 }

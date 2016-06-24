@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using Enumerable = System.Linq.Enumerable;
 
 namespace Kayak.Http
 {
@@ -12,62 +9,59 @@ namespace Kayak.Http
         public string Path;
         public string QueryString;
         public string Fragment;
-        public Version Version;
-        public IDictionary<string, string> Headers;
+        public System.Version Version;
+        public System.Collections.Generic.IDictionary<string, string> Headers;
 
         public override string ToString()
         {
-            return string.Format("{0} {1}\r\n{2}\r\n", Method, Uri, 
-                Headers != null 
-                    ? Headers.Aggregate("", (acc, kv) => acc += string.Format("{0}: {1}\r\n", kv.Key, kv.Value))
-                    : "");
+            return $"{Method} {Uri}\r\n{(Headers != null ? Enumerable.Aggregate(Headers, "", (acc, kv) => acc + $"{kv.Key}: {kv.Value}\r\n") : "")}\r\n";
         }
     }
 
     public struct HttpResponseHead
     {
         public string Status;
-        public IDictionary<string, string> Headers;
+        public System.Collections.Generic.IDictionary<string, string> Headers;
 
         public override string ToString()
         {
-            return string.Format("{0}\r\n{1}\r\n", Status,
-                Headers != null
-                    ? Headers.Aggregate("", (acc, kv) => acc += string.Format("{0}: {1}\r\n", kv.Key, kv.Value))
-                    : "");
+            return $"{Status}\r\n{(Headers != null ? Enumerable.Aggregate(Headers, "", (acc, kv) => acc + $"{kv.Key}: {kv.Value}\r\n") : "")}\r\n";
         }
     }
 
     public interface IHttpServerFactory
     {
-        IServer Create(IHttpRequestDelegate del, IScheduler scheduler);
+        Net.IServer Create(IHttpRequestDelegate del, Net.IScheduler scheduler);
     }
 
     public interface IHttpRequestDelegate
     {
-        void OnRequest(HttpRequestHead head, IDataProducer body, IHttpResponseDelegate response);
+        void OnRequest(HttpRequestHead head, Net.IDataProducer body, IHttpResponseDelegate response);
     }
 
     public interface IHttpResponseDelegate
     {
-        void OnResponse(HttpResponseHead head, IDataProducer body);
+        void OnResponse(HttpResponseHead head, Net.IDataProducer body);
     }
 
-    interface IHttpServerTransaction : IDisposable
+    internal interface IHttpServerTransaction : System.IDisposable
     {
-        IPEndPoint RemoteEndPoint { get; }
+        System.Net.IPEndPoint RemoteEndPoint { get; }
         void OnResponse(HttpResponseHead response);
-        bool OnResponseData(ArraySegment<byte> data, Action continuation);
+        bool OnResponseData(System.ArraySegment<byte> data, System.Action continuation);
         void OnResponseEnd();
         void OnEnd();
     }
 
-    interface IHttpServerTransactionDelegate
+    internal interface IHttpServerTransactionDelegate
     {
         void OnRequest(IHttpServerTransaction transaction, HttpRequestHead request, bool shouldKeepAlive);
-        bool OnRequestData(IHttpServerTransaction transaction, ArraySegment<byte> data, Action continuation);
+
+        bool OnRequestData(IHttpServerTransaction transaction, System.ArraySegment<byte> data,
+            System.Action continuation);
+
         void OnRequestEnd(IHttpServerTransaction transaction);
-        void OnError(IHttpServerTransaction transaction, Exception e);
+        void OnError(IHttpServerTransaction transaction, System.Exception e);
         void OnEnd(IHttpServerTransaction transaction);
         void OnClose(IHttpServerTransaction transaction);
     }

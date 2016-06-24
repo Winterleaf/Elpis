@@ -1,36 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.Win32;
-
-namespace Util
+﻿namespace Util
 {
     public class SystemSessionState
     {
-        public delegate void SystemLockedEvent();
-        public event SystemLockedEvent SystemLocked;
-
-        public delegate void SystemUnlockedEvent();
-        public event SystemUnlockedEvent SystemUnlocked;
-
         public SystemSessionState()
         {
-            SystemEvents.SessionSwitch += new SessionSwitchEventHandler(SystemEvents_SessionSwitch);
+            Microsoft.Win32.SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
         }
 
-        void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
+        public delegate void SystemLockedEvent();
+
+        public delegate void SystemUnlockedEvent();
+
+        public event SystemLockedEvent SystemLocked;
+        public event SystemUnlockedEvent SystemUnlocked;
+
+        private void SystemEvents_SessionSwitch(object sender, Microsoft.Win32.SessionSwitchEventArgs e)
         {
-            switch(e.Reason)
+            switch (e.Reason)
             {
-                case SessionSwitchReason.SessionLock:
-                    if (SystemLocked != null) SystemLocked();
+                case Microsoft.Win32.SessionSwitchReason.SessionLock:
+                    SystemLocked?.Invoke();
                     break;
-                case SessionSwitchReason.SessionUnlock:
-                    if (SystemUnlocked != null) SystemUnlocked();
+                case Microsoft.Win32.SessionSwitchReason.SessionUnlock:
+                    SystemUnlocked?.Invoke();
                     break;
             }
         }
     }
 }
-

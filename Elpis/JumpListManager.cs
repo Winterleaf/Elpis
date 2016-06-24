@@ -1,28 +1,26 @@
-using System.IO;
-using System.Reflection;
-using System.Windows.Input;
-using System.Windows.Shell;
-using PandoraSharp;
-
 namespace Elpis
 {
     public static class JumpListManager
     {
-        public static JumpTask createJumpTask(string title, string description, string commandArg, int iconIndex)
+        public static System.Windows.Shell.JumpTask createJumpTask(string title, string description, string commandArg,
+            int iconIndex)
         {
-            var task = new JumpTask();
-            task.Title = title;
-            task.Description = description;
-            task.ApplicationPath = Assembly.GetEntryAssembly().Location;
-            task.Arguments = commandArg;
+            System.Windows.Shell.JumpTask task = new System.Windows.Shell.JumpTask
+            {
+                Title = title,
+                Description = description,
+                ApplicationPath = System.Reflection.Assembly.GetEntryAssembly().Location,
+                Arguments = commandArg
+            };
             task.IconResourcePath = task.ApplicationPath;
             task.IconResourceIndex = iconIndex;
             return task;
         }
 
-        public static JumpTask createJumpTask(RoutedUICommand command, string commandArg, int iconIndex)
+        public static System.Windows.Shell.JumpTask createJumpTask(System.Windows.Input.RoutedUICommand command,
+            string commandArg, int iconIndex)
         {
-            return createJumpTask(command.Name,command.Text,commandArg,iconIndex);
+            return createJumpTask(command.Name, command.Text, commandArg, iconIndex);
         }
     }
 }

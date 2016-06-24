@@ -17,10 +17,7 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+using System.Linq;
 
 namespace Util
 {
@@ -42,78 +39,75 @@ namespace Util
             Default = defaultValue;
         }
 
-        public string Key { get; private set; }
-        public object Default { get; private set; }
+        public string Key { get; }
+        public object Default { get; }
     }
 
     public class MapConfig
     {
-        private readonly Dictionary<string, object> _map;
-
-        private const string _cryptCheck = "*_a3fc756b42_*";
-        private readonly string _cryptPass = SystemInfo.GetUniqueHash();
-
         public MapConfig(string configPath = "")
         {
             ConfigPath = configPath;
             AutoSave = false;
             AutoSetDefaults = true;
 
-            _map = new Dictionary<string, object>();
+            _map = new System.Collections.Generic.Dictionary<string, object>();
         }
 
-        private string _lastConfig = string.Empty;
-        public string LastConfig { get { return _lastConfig; } }
+        private const string CryptCheck = "*_a3fc756b42_*";
+        public string LastConfig { get; private set; } = string.Empty;
 
-        public string ConfigPath { get; private set; }
+        public string ConfigPath { get; }
 
         public bool AutoSave { get; set; }
 
         public bool AutoSetDefaults { get; set; }
+        private readonly string _cryptPass = SystemInfo.GetUniqueHash();
+        private readonly System.Collections.Generic.Dictionary<string, object> _map;
 
         public bool LoadConfig(string configData = "")
         {
-            var lines = new List<string>();
+            System.Collections.Generic.List<string> lines = new System.Collections.Generic.List<string>();
 
             bool result = true;
-            TextReader tr = null;
+            System.IO.TextReader tr = null;
             try
             {
                 if (configData == "")
                 {
                     if (ConfigPath == "") return false;
 
-                    if (!File.Exists(ConfigPath))
+                    if (!System.IO.File.Exists(ConfigPath))
                     {
-                        File.Create(ConfigPath).Close();
+                        System.IO.File.Create(ConfigPath).Close();
                         return true;
                     }
 
-                    tr = new StreamReader(ConfigPath, Encoding.Unicode);
+                    tr = new System.IO.StreamReader(ConfigPath, System.Text.Encoding.Unicode);
                 }
                 else
                 {
-                    tr = new StringReader(configData);
+                    tr = new System.IO.StringReader(configData);
                 }
                 string line = "";
                 while ((line = tr.ReadLine()) != null)
                     lines.Add(line);
 
-                _lastConfig = string.Empty;
-                foreach (var l in lines)
-                    _lastConfig += (l + "\r\n");
+                LastConfig = string.Empty;
+                foreach (string l in lines)
+                    LastConfig += l + "\r\n";
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 Log.O(ex.ToString());
                 result = false;
             }
             finally
             {
-                if (tr != null) tr.Close();
+                tr?.Close();
             }
 
-            if (result)
+            if (!result) return false;
             {
                 foreach (string line in lines)
                 {
@@ -121,51 +115,47 @@ namespace Util
                     {
                         string[] split = line.Split('|');
 
-                        if (split.Length == 2)
+                        if (split.Length != 2) continue;
+                        //Deal with our lists of config items saved out to keys that look like Key[ID]
+                        if (split[0].Contains("["))
                         {
-                            //Deal with our lists of config items saved out to keys that look like Key[ID]
-                            if(split[0].Contains("["))
+                            string[] splitList = split[0].Split(new[] {"[", "]"}, System.StringSplitOptions.None);
+                            if (!_map.ContainsKey(splitList[0]))
                             {
-                                string[] splitList = split[0].Split(new []{"[","]"}, StringSplitOptions.None);
-                                if(!_map.ContainsKey(splitList[0]))
-                                {
-                                    _map[splitList[0]] = new Dictionary<int, string>();
-                                }
-                                ((Dictionary<int,string>)_map[splitList[0]])[int.Parse(splitList[1])] = split[1];
+                                _map[splitList[0]] = new System.Collections.Generic.Dictionary<int, string>();
                             }
-                            //This is the normal stype of config entry - just a string
+                            ((System.Collections.Generic.Dictionary<int, string>) _map[splitList[0]])[
+                                int.Parse(splitList[1])] = split[1];
+                        }
+                        //This is the normal stype of config entry - just a string
+                        else
+                        {
+                            if (_map.ContainsKey(split[0]))
+                                _map[split[0]] = split[1]; //cascading style. newer values override old
                             else
-                            {
-                                if (_map.ContainsKey(split[0]))
-                                    _map[split[0]] = split[1]; //cascading style. newer values override old
-                                else
-                                    _map.Add(split[0], split[1]);
-                            }
+                                _map.Add(split[0], split[1]);
                         }
                     }
-                    catch (Exception ex)
+                    catch (System.Exception ex)
                     {
                         Log.O(ex.ToString());
                     }
                 }
             }
 
-            return result;
+            return true;
         }
 
         public bool SaveConfig()
         {
-            var configs = new List<string>();
+            System.Collections.Generic.List<string> configs = new System.Collections.Generic.List<string>();
 
-            foreach (var kvp in _map)
+            foreach (System.Collections.Generic.KeyValuePair<string, object> kvp in _map)
             {
-                Type t = kvp.Value.GetType();
+                System.Type t = kvp.Value.GetType();
                 if (t.IsGenericType)
                 {
-                    foreach (var item in (Dictionary<int, string>)kvp.Value)
-                    {
-                        configs.Add(kvp.Key + '[' + item.Key + ']' + '|' + item.Value);
-                    }
+                    configs.AddRange(from item in (System.Collections.Generic.Dictionary<int, string>) kvp.Value select kvp.Key + '[' + item.Key + ']' + '|' + item.Value);
                 }
                 else
                 {
@@ -173,33 +163,32 @@ namespace Util
                 }
             }
 
-
             bool result = true;
-            StreamWriter sw = null;
+            System.IO.StreamWriter sw = null;
             try
             {
-                sw = new StreamWriter(ConfigPath, false, Encoding.Unicode);
-                _lastConfig = string.Empty;
+                sw = new System.IO.StreamWriter(ConfigPath, false, System.Text.Encoding.Unicode);
+                LastConfig = string.Empty;
                 foreach (string line in configs.ToArray())
                 {
                     sw.WriteLine(line);
-                    _lastConfig += (line + "\r\n");
+                    LastConfig += line + "\r\n";
                 }
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 Log.O(ex.ToString());
                 result = false;
             }
             finally
             {
-                if (sw != null) sw.Close();
+                sw?.Close();
             }
 
             return result;
         }
 
-        public void SetValue(string key, Dictionary<int,string> value )
+        public void SetValue(string key, System.Collections.Generic.Dictionary<int, string> value)
         {
             if (_map.ContainsKey(key))
                 _map[key] = value;
@@ -226,7 +215,7 @@ namespace Util
 
         public void SetValue(string key, double value)
         {
-            SetValue(key, value.ToString());
+            SetValue(key, value.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
         public void SetValue(string key, bool value)
@@ -236,50 +225,54 @@ namespace Util
 
         public void SetValue(MapConfigEntry entry, object value)
         {
-            Type t = value.GetType();
-            Type dType = entry.Default.GetType();
+            System.Type t = value.GetType();
+            System.Type dType = entry.Default.GetType();
             if (t != dType && !(t.IsGenericType && t.GetGenericTypeDefinition() == dType.GetGenericTypeDefinition()))
-                throw new Exception("Value type does not equal default value type.");
+                throw new System.Exception("Value type does not equal default value type.");
 
-            if (t == typeof(string) || t == typeof(String)) SetValue(entry.Key, (string)value);
-            else if (t == typeof(int)) SetValue(entry.Key, (int)value);
-            else if (t == typeof(double)) SetValue(entry.Key, (double)value);
-            else if (t == typeof(bool) || t == typeof(Boolean)) SetValue(entry.Key, (bool)value);
-            else if (t == typeof(Dictionary<int,string>)) SetValue(entry.Key, (Dictionary<int,string>)value);
+            if (t == typeof (string) || t == typeof (string)) SetValue(entry.Key, (string) value);
+            else if (t == typeof (int)) SetValue(entry.Key, (int) value);
+            else if (t == typeof (double)) SetValue(entry.Key, (double) value);
+            else if (t == typeof (bool) || t == typeof (bool)) SetValue(entry.Key, (bool) value);
+            else if (t == typeof (System.Collections.Generic.Dictionary<int, string>))
+                SetValue(entry.Key, (System.Collections.Generic.Dictionary<int, string>) value);
             else SetValue(entry.Key, value.ToString());
         }
 
         public void SetEncryptedString(MapConfigEntry entry, string value)
         {
-            Type t = entry.Default.GetType();
-            if (!(t == typeof(string) || t == typeof(String)))
-                throw new Exception("SetEncryptedString only works on string entries.");
+            System.Type t = entry.Default.GetType();
+            if (!(t == typeof (string) || t == typeof (string)))
+                throw new System.Exception("SetEncryptedString only works on string entries.");
 
-            SetValue(entry, StringCrypt.EncryptString(_cryptCheck + value, _cryptPass));
+            SetValue(entry, StringCrypt.EncryptString(CryptCheck + value, _cryptPass));
         }
 
         public string GetValue(string key, string defValue)
         {
-            if (_map.ContainsKey(key) && _map[key] as string != null)
-               return ((string) _map[key]).Replace(@"&sep;", @"|");
+            System.Diagnostics.Debug.Assert(key != null, "key != null");    
+            if (!_map.ContainsKey(key) || (string) _map[key] == null)
+            {
+                if (AutoSetDefaults)
+                    SetValue(key, defValue);
+                return defValue;
+            }
 
-           if (AutoSetDefaults)
-               SetValue(key, defValue);
-            return defValue;
-
+            return ((string) _map[key]).Replace(@"&sep;", @"|");
         }
 
         public int GetValue(string key, int defValue)
         {
             string value = GetValue(key, defValue.ToString());
-            int result = defValue;
+            int result;
             int.TryParse(value, out result);
             return result;
         }
 
         public double GetValue(string key, double defValue)
         {
-            string value = GetValue(key, defValue.ToString());
+            string value = GetValue(key, defValue.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            // ReSharper disable once RedundantAssignment
             double result = defValue;
             double.TryParse(value, out result);
             return result;
@@ -288,15 +281,17 @@ namespace Util
         public bool GetValue(string key, bool defValue)
         {
             string value = GetValue(key, defValue.ToString());
+            // ReSharper disable once RedundantAssignment
             bool result = defValue;
             bool.TryParse(value, out result);
             return result;
         }
 
-        private Dictionary<int,string> GetValue(string key, Dictionary<int, string> defValue)
+        private System.Collections.Generic.Dictionary<int, string> GetValue(string key,
+            System.Collections.Generic.Dictionary<int, string> defValue)
         {
-             if (_map.ContainsKey(key))
-                    return (Dictionary<int,string>) _map[key];
+            if (_map.ContainsKey(key))
+                return (System.Collections.Generic.Dictionary<int, string>) _map[key];
 
             if (AutoSetDefaults)
                 SetValue(key, defValue);
@@ -306,35 +301,30 @@ namespace Util
 
         public object GetValue(MapConfigEntry entry)
         {
-            Type t = entry.Default.GetType();
+            System.Type t = entry.Default.GetType();
 
-            if (t == typeof(string) || t == typeof(String)) return GetValue(entry.Key, (string)entry.Default);
-            else if (t == typeof(int)) return GetValue(entry.Key, (int)entry.Default);
-            else if (t == typeof(double)) return GetValue(entry.Key, (double)entry.Default);
-            else if (t == typeof(bool) || t == typeof(Boolean)) return GetValue(entry.Key, (bool)entry.Default);
-            else if (t == typeof(Dictionary<int, string>))
-                return GetValue(entry.Key, ((Dictionary<int, string>) entry.Default));
-            else return GetValue(entry.Key, (string)entry.Default.ToString()); //On their own to parse it
-
-            throw new Exception("Default Type must be string, int, double, bool or Dictionary<int,string>");
+            if (t == typeof (string) || t == typeof (string)) return GetValue(entry.Key, (string) entry.Default);
+            if (t == typeof (int)) return GetValue(entry.Key, (int) entry.Default);
+            if (t == typeof (double)) return GetValue(entry.Key, (double) entry.Default);
+            if (t == typeof (bool) || t == typeof (bool)) return GetValue(entry.Key, (bool) entry.Default);
+            if (t == typeof (System.Collections.Generic.Dictionary<int, string>))
+                return GetValue(entry.Key, (System.Collections.Generic.Dictionary<int, string>) entry.Default);
+            return GetValue(entry.Key, entry.Default.ToString()); //On their own to parse it
         }
 
         public string GetEncryptedString(MapConfigEntry entry)
         {
-            Type t = entry.Default.GetType();
-            if (!(t == typeof(string) || t == typeof(String)))
-                throw new Exception("GetEncryptedString only works on string entries.");
+            System.Type t = entry.Default.GetType();
+            if (!(t == typeof (string) || t == typeof (string)))
+                throw new System.Exception("GetEncryptedString only works on string entries.");
 
-            string result = string.Empty;
+            string result;
             try
             {
-                result = StringCrypt.DecryptString((string)GetValue(entry), _cryptPass);
+                result = StringCrypt.DecryptString((string) GetValue(entry), _cryptPass);
                 if (result != string.Empty)
                 {
-                    if (result.StartsWith(_cryptCheck))
-                        result = result.Replace(_cryptCheck, string.Empty);
-                    else
-                        result = string.Empty;
+                    result = result.StartsWith(CryptCheck) ? result.Replace(CryptCheck, string.Empty) : string.Empty;
                 }
             }
             catch

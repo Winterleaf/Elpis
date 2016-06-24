@@ -17,37 +17,14 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using PandoraSharpPlayer;
-using Util;
-
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for LoginPage.xaml
+    ///     Interaction logic for LoginPage.xaml
     /// </summary>
-    public partial class LoginPage : UserControl
+    public partial class LoginPage
     {
-        #region Delegates
-
-        public delegate void ConnectingEventHandler();
-
-        #endregion
-
-        private readonly Config _config;
-        private readonly Player _player;
-        private ErrorCodes _error = ErrorCodes.SUCCESS;
-        private bool _loginFailed = false;
-
-        private const string _initEmail = "enter email address";
-        private const string _initPass = "enter password";
-
-        public ErrorCodes ErrorCode { get { return _error; } set { _error = value; } }
-
-        public bool LoginFailed { get { return _loginFailed; } set { _loginFailed = value; } }
-        public LoginPage(Player player, Config config)
+        public LoginPage(PandoraSharpPlayer.Player player, Config config)
         {
             _config = config;
 
@@ -57,59 +34,74 @@ namespace Elpis
             InitializeComponent();
         }
 
+        #region Delegates
+
+        public delegate void ConnectingEventHandler();
+
+        #endregion
+
+        private const string InitEmail = "enter email address";
+        private const string InitPass = "enter password";
+
+        public Util.ErrorCodes ErrorCode { get; set; } = Util.ErrorCodes.Success;
+
+        public bool LoginFailed { get; set; }
+
+        private readonly Config _config;
+        private readonly PandoraSharpPlayer.Player _player;
+
         public event ConnectingEventHandler ConnectingEvent;
 
         private void ShowError()
         {
             this.BeginDispatch(() =>
-                                   {
-                                       lblError.Text = Errors.GetErrorMessage(_error);
-                                       //WaitScreen.Visibility = Visibility.Hidden;
-                                   });
+            {
+                lblError.Text = Util.Errors.GetErrorMessage(ErrorCode);
+                //WaitScreen.Visibility = Visibility.Hidden;
+            });
         }
 
-        private void _player_ConnectionEvent(object sender, bool state, ErrorCodes code)
+        private void _player_ConnectionEvent(object sender, bool state, Util.ErrorCodes code)
         {
             if (!state)
             {
-                _loginFailed = true;
-                Log.O("Connection Error: {0} - {1}", code.ToString(), Errors.GetErrorMessage(code));
+                LoginFailed = true;
+                Util.Log.O("Connection Error: {0} - {1}", code.ToString(), Util.Errors.GetErrorMessage(code));
 
-                _error = code;
+                ErrorCode = code;
                 ShowError();
             }
             else
             {
                 this.BeginDispatch(() =>
-                                       {
-                                           _config.Fields.Login_Email = _player.Email;
-                                           _config.Fields.Login_Password = _player.Password;
+                {
+                    _config.Fields.Login_Email = _player.Email;
+                    _config.Fields.Login_Password = _player.Password;
 
-                                           //In case AudioFormat was changed because user does not have subscription
-                                           _config.Fields.Pandora_AudioFormat = _player.AudioFormat;
+                    //In case AudioFormat was changed because user does not have subscription
+                    _config.Fields.Pandora_AudioFormat = _player.AudioFormat;
 
-                                           _config.SaveConfig();
-                                       });
+                    _config.SaveConfig();
+                });
             }
         }
 
         public void Login()
         {
-            _loginFailed = false;
+            LoginFailed = false;
             //WaitScreen.Visibility = Visibility.Visible;
             _player.Connect(txtEmail.Text, txtPassword.Password);
-            if (ConnectingEvent != null)
-                ConnectingEvent();
+            ConnectingEvent?.Invoke();
         }
 
-        private void btnLogin_Click(object sender, RoutedEventArgs e)
+        private void btnLogin_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             Login();
         }
 
-        private void txtEmail_KeyUp(object sender, KeyEventArgs e)
+        private void txtEmail_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (e.Key == Key.Enter)
+            if (e.Key == System.Windows.Input.Key.Enter)
             {
                 HidePasswordMask();
                 txtPassword.Focus();
@@ -117,84 +109,84 @@ namespace Elpis
             }
         }
 
-        private void txtPassword_KeyUp(object sender, KeyEventArgs e)
+        private void txtPassword_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (e.Key == Key.Enter)
+            if (e.Key == System.Windows.Input.Key.Enter)
                 Login();
         }
 
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        private void UserControl_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
             txtEmail.Text = _config.Fields.Login_Email;
             if (txtEmail.Text == string.Empty)
             {
-                txtEmail.Foreground = this.Resources["ShadeMediumBrush"] as System.Windows.Media.Brush;
-                txtEmail.Text = _initEmail;
+                txtEmail.Foreground = Resources["ShadeMediumBrush"] as System.Windows.Media.Brush;
+                txtEmail.Text = InitEmail;
             }
 
             txtPassword.Password = _config.Fields.Login_Password;
             if (txtPassword.Password == string.Empty)
             {
-                txtPasswordMask.Text = _initPass;
-                txtPasswordMask.Visibility = Visibility.Visible;
+                txtPasswordMask.Text = InitPass;
+                txtPasswordMask.Visibility = System.Windows.Visibility.Visible;
             }
             else
             {
-                txtPasswordMask.Visibility = Visibility.Hidden;
+                txtPasswordMask.Visibility = System.Windows.Visibility.Hidden;
             }
 
             lblError.Text = string.Empty;
 
-
-            if (!_loginFailed && _config.Fields.Login_AutoLogin &&
-                (!string.IsNullOrEmpty(_config.Fields.Login_Email)) &&
-                (!string.IsNullOrEmpty(_config.Fields.Login_Password)))
+            if (!LoginFailed && _config.Fields.Login_AutoLogin && !string.IsNullOrEmpty(_config.Fields.Login_Email) &&
+                !string.IsNullOrEmpty(_config.Fields.Login_Password))
             {
                 Login();
             }
 
-            if (_loginFailed)
+            if (LoginFailed)
                 ShowError();
 
             txtEmail.Focus();
             txtEmail.SelectAll();
         }
 
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        private void UserControl_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            this.BeginDispatch(() => WaitScreen.Visibility = Visibility.Hidden);
+            this.BeginDispatch(() => WaitScreen.Visibility = System.Windows.Visibility.Hidden);
         }
 
         private void ClearEmail()
         {
-            if (txtEmail.Text == _initEmail)
+            if (txtEmail.Text == InitEmail)
             {
-                txtEmail.Foreground = this.Resources["MainFontBrush"] as System.Windows.Media.Brush;
+                txtEmail.Foreground = Resources["MainFontBrush"] as System.Windows.Media.Brush;
                 txtEmail.Text = string.Empty;
             }
         }
 
-        private void txtEmail_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        private void txtEmail_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ClearEmail();
         }
 
-        private void txtEmail_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void txtEmail_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             ClearEmail();
         }
 
         private void HidePasswordMask()
         {
-            if (txtPasswordMask.Visibility == Visibility.Visible) txtPasswordMask.Visibility = Visibility.Hidden;
+            if (txtPasswordMask.Visibility == System.Windows.Visibility.Visible)
+                txtPasswordMask.Visibility = System.Windows.Visibility.Hidden;
             txtPassword.Focus();
         }
-        private void txtPasswordMask_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+
+        private void txtPasswordMask_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             HidePasswordMask();
         }
 
-        private void txtPassword_GotFocus(object sender, RoutedEventArgs e)
+        private void txtPassword_GotFocus(object sender, System.Windows.RoutedEventArgs e)
         {
             HidePasswordMask();
         }

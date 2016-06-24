@@ -104,6 +104,10 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PandoraSharp\PandoraSharp.csproj">
+      <Project>{64dd2b7d-9069-41ff-a4e4-732f6df82f09}</Project>
+      <Name>PandoraSharp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Util\Util.csproj">
       <Project>{A79647D6-4A05-4382-8B6E-4FEC154C3222}</Project>
       <Name>Util</Name>

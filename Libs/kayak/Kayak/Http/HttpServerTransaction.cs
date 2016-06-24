@@ -1,60 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Net;
-
-namespace Kayak.Http
+﻿namespace Kayak.Http
 {
-    static class TransactionExtensions
+    internal static class TransactionExtensions
     {
         public static void OnContinue(this IHttpServerTransaction transaction)
         {
             // write HTTP/1.1 100 Continue
-            transaction.OnResponse(new HttpResponseHead() { Status = "100 Continue" });
+            transaction.OnResponse(new HttpResponseHead {Status = "100 Continue"});
             transaction.OnResponseEnd();
         }
     }
 
-    class HttpServerTransaction : IHttpServerTransaction
+    internal class HttpServerTransaction : IHttpServerTransaction
     {
-        ISocket socket;
-        static readonly IHeaderRenderer defaultRenderer = new HttpResponseHeaderRenderer();
-        IHeaderRenderer renderer = defaultRenderer;
-
-        public HttpServerTransaction(ISocket socket)
+        public HttpServerTransaction(Net.ISocket socket)
         {
-            this.socket = socket;
+            _socket = socket;
         }
 
-        public IPEndPoint RemoteEndPoint
-        {
-            get { return socket.RemoteEndPoint; }
-        }
+        private static readonly IHeaderRenderer DefaultRenderer = new HttpResponseHeaderRenderer();
+        private readonly IHeaderRenderer _renderer = DefaultRenderer;
+        private readonly Net.ISocket _socket;
+
+        public System.Net.IPEndPoint RemoteEndPoint => _socket.RemoteEndPoint;
 
         public void OnResponse(HttpResponseHead response)
         {
-            renderer.Render(socket, response);
+            _renderer.Render(_socket, response);
         }
 
-        public bool OnResponseData(ArraySegment<byte> data, Action continuation)
+        public bool OnResponseData(System.ArraySegment<byte> data, System.Action continuation)
         {
-            return socket.Write(data, continuation);
+            return _socket.Write(data, continuation);
         }
 
-        public void OnResponseEnd()
-        {
-        }
+        public void OnResponseEnd() {}
 
         public void OnEnd()
         {
-            socket.End();
+            _socket.End();
         }
 
         public void Dispose()
         {
-            socket.Dispose();
+            _socket.Dispose();
         }
     }
-
 }

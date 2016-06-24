@@ -17,66 +17,65 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Threading;
-
 namespace Elpis
 {
     public static class DependencyObjectExtensions
     {
-        public static T FindParent<T>(this DependencyObject child) where T : DependencyObject
+        public static T FindParent<T>(this System.Windows.DependencyObject child) where T : System.Windows.DependencyObject
         {
-            DependencyObject parent = LogicalTreeHelper.GetParent(child);
-            if (parent != null && typeof (T) != parent.GetType())
-                return parent.FindParent<T>();
-
-            return (T) parent;
+            while (true)
+            {
+                System.Windows.DependencyObject parent = System.Windows.LogicalTreeHelper.GetParent(child);
+                if (parent == null || typeof (T) == parent.GetType()) return (T) parent;
+                child = parent;
+            }
         }
 
-        public static T FindParentByName<T>(this DependencyObject child, string name) where T : DependencyObject
+        public static T FindParentByName<T>(this System.Windows.DependencyObject child, string name)
+            where T : System.Windows.DependencyObject
         {
-            DependencyObject parent = LogicalTreeHelper.GetParent(child);
+            System.Windows.DependencyObject parent = System.Windows.LogicalTreeHelper.GetParent(child);
             if (parent != null &&
                 (typeof (T) != parent.GetType() ||
-                 ((string) parent.GetValue(FrameworkElement.NameProperty)).Equals(name)))
+                 ((string) parent.GetValue(System.Windows.FrameworkElement.NameProperty)).Equals(name)))
                 return parent.FindParent<T>();
 
             return (T) parent;
         }
 
-        public static T FindSiblingByName<T>(this DependencyObject sibling, string name) where T : DependencyObject
+        public static T FindSiblingByName<T>(this System.Windows.DependencyObject sibling, string name)
+            where T : System.Windows.DependencyObject
         {
-            DependencyObject parent = VisualTreeHelper.GetParent(sibling);
+            System.Windows.DependencyObject parent = System.Windows.Media.VisualTreeHelper.GetParent(sibling);
 
             if (parent == null) return null;
 
-            int childCount = VisualTreeHelper.GetChildrenCount(parent);
+            int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
             for (int i = 0; i < childCount; i++)
             {
-                DependencyObject sib = VisualTreeHelper.GetChild(parent, i);
-                if (sib != sibling &&
-                    (typeof (T) == sib.GetType() && ((string) sib.GetValue(FrameworkElement.NameProperty)).Equals(name)))
+                System.Windows.DependencyObject sib = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (!Equals(sib, sibling) && typeof (T) == sib.GetType() &&
+                    ((string) sib.GetValue(System.Windows.FrameworkElement.NameProperty)).Equals(name))
                     return (T) sib;
             }
 
             return null;
         }
 
-        public static T FindChildByName<T>(this DependencyObject parent, string childName) where T : DependencyObject
+        public static T FindChildByName<T>(this System.Windows.DependencyObject parent, string childName)
+            where T : System.Windows.DependencyObject
         {
             // Confirm parent and childName are valid. 
             if (parent == null) return null;
 
             T foundChild = null;
 
-            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            int childrenCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
             for (int i = 0; i < childrenCount; i++)
             {
-                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                System.Windows.DependencyObject child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
                 // If the child is not of the request child type child
-                var childType = child as T;
+                T childType = child as T;
                 if (childType == null)
                 {
                     // recursively drill down the tree
@@ -87,14 +86,12 @@ namespace Elpis
                 }
                 else if (!string.IsNullOrEmpty(childName))
                 {
-                    var frameworkElement = child as FrameworkElement;
+                    System.Windows.FrameworkElement frameworkElement = child as System.Windows.FrameworkElement;
                     // If the child's name is set for search
-                    if (frameworkElement != null && frameworkElement.Name == childName)
-                    {
-                        // if the child's name is of the request name
-                        foundChild = (T) child;
-                        break;
-                    }
+                    if (frameworkElement == null || frameworkElement.Name != childName) continue;
+                    // if the child's name is of the request name
+                    foundChild = (T) child;
+                    break;
                 }
                 else
                 {
@@ -110,7 +107,8 @@ namespace Elpis
 
     public static class DispatcherExtensions
     {
-        public static TResult Dispatch<TResult>(this DispatcherObject source, Func<TResult> func)
+        public static TResult Dispatch<TResult>(this System.Windows.Threading.DispatcherObject source,
+            System.Func<TResult> func)
         {
             if (source.Dispatcher.CheckAccess())
                 return func();
@@ -118,7 +116,8 @@ namespace Elpis
             return (TResult) source.Dispatcher.Invoke(func);
         }
 
-        public static TResult Dispatch<T, TResult>(this T source, Func<T, TResult> func) where T : DispatcherObject
+        public static TResult Dispatch<T, TResult>(this T source, System.Func<T, TResult> func)
+            where T : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 return func(source);
@@ -126,8 +125,8 @@ namespace Elpis
             return (TResult) source.Dispatcher.Invoke(func, source);
         }
 
-        public static TResult Dispatch<TSource, T, TResult>(this TSource source, Func<TSource, T, TResult> func,
-                                                            T param1) where TSource : DispatcherObject
+        public static TResult Dispatch<TSource, T, TResult>(this TSource source, System.Func<TSource, T, TResult> func,
+            T param1) where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 return func(source, param1);
@@ -136,8 +135,8 @@ namespace Elpis
         }
 
         public static TResult Dispatch<TSource, T1, T2, TResult>(this TSource source,
-                                                                 Func<TSource, T1, T2, TResult> func, T1 param1,
-                                                                 T2 param2) where TSource : DispatcherObject
+            System.Func<TSource, T1, T2, TResult> func, T1 param1, T2 param2)
+            where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 return func(source, param1, param2);
@@ -146,9 +145,8 @@ namespace Elpis
         }
 
         public static TResult Dispatch<TSource, T1, T2, T3, TResult>(this TSource source,
-                                                                     Func<TSource, T1, T2, T3, TResult> func, T1 param1,
-                                                                     T2 param2, T3 param3)
-            where TSource : DispatcherObject
+            System.Func<TSource, T1, T2, T3, TResult> func, T1 param1, T2 param2, T3 param3)
+            where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 return func(source, param1, param2, param3);
@@ -156,7 +154,7 @@ namespace Elpis
             return (TResult) source.Dispatcher.Invoke(func, source, param1, param2, param3);
         }
 
-        public static void Dispatch(this DispatcherObject source, Action func)
+        public static void Dispatch(this System.Windows.Threading.DispatcherObject source, System.Action func)
         {
             if (source.Dispatcher.CheckAccess())
                 func();
@@ -164,7 +162,8 @@ namespace Elpis
                 source.Dispatcher.Invoke(func);
         }
 
-        public static void Dispatch<TSource>(this TSource source, Action<TSource> func) where TSource : DispatcherObject
+        public static void Dispatch<TSource>(this TSource source, System.Action<TSource> func)
+            where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source);
@@ -172,8 +171,8 @@ namespace Elpis
                 source.Dispatcher.Invoke(func, source);
         }
 
-        public static void Dispatch<TSource, T1>(this TSource source, Action<TSource, T1> func, T1 param1)
-            where TSource : DispatcherObject
+        public static void Dispatch<TSource, T1>(this TSource source, System.Action<TSource, T1> func, T1 param1)
+            where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source, param1);
@@ -181,8 +180,8 @@ namespace Elpis
                 source.Dispatcher.Invoke(func, source, param1);
         }
 
-        public static void Dispatch<TSource, T1, T2>(this TSource source, Action<TSource, T1, T2> func, T1 param1,
-                                                     T2 param2) where TSource : DispatcherObject
+        public static void Dispatch<TSource, T1, T2>(this TSource source, System.Action<TSource, T1, T2> func, T1 param1,
+            T2 param2) where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source, param1, param2);
@@ -190,9 +189,8 @@ namespace Elpis
                 source.Dispatcher.Invoke(func, source, param1, param2);
         }
 
-        public static void Dispatch<TSource, T1, T2, T3>(this TSource source, Action<TSource, T1, T2, T3> func,
-                                                         T1 param1, T2 param2, T3 param3)
-            where TSource : DispatcherObject
+        public static void Dispatch<TSource, T1, T2, T3>(this TSource source, System.Action<TSource, T1, T2, T3> func,
+            T1 param1, T2 param2, T3 param3) where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source, param1, param2, param3);
@@ -201,7 +199,8 @@ namespace Elpis
         }
 
         //Begin Overloads
-        public static void BeginDispatch<TResult>(this DispatcherObject source, Func<TResult> func)
+        public static void BeginDispatch<TResult>(this System.Windows.Threading.DispatcherObject source,
+            System.Func<TResult> func)
         {
             if (source.Dispatcher.CheckAccess())
                 func();
@@ -209,7 +208,8 @@ namespace Elpis
             source.Dispatcher.BeginInvoke(func);
         }
 
-        public static void BeginDispatch<T, TResult>(this T source, Func<T, TResult> func) where T : DispatcherObject
+        public static void BeginDispatch<T, TResult>(this T source, System.Func<T, TResult> func)
+            where T : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source);
@@ -217,8 +217,8 @@ namespace Elpis
             source.Dispatcher.BeginInvoke(func, source);
         }
 
-        public static void BeginDispatch<TSource, T, TResult>(this TSource source, Func<TSource, T, TResult> func,
-                                                              T param1) where TSource : DispatcherObject
+        public static void BeginDispatch<TSource, T, TResult>(this TSource source, System.Func<TSource, T, TResult> func,
+            T param1) where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source, param1);
@@ -227,8 +227,8 @@ namespace Elpis
         }
 
         public static void BeginDispatch<TSource, T1, T2, TResult>(this TSource source,
-                                                                   Func<TSource, T1, T2, TResult> func, T1 param1,
-                                                                   T2 param2) where TSource : DispatcherObject
+            System.Func<TSource, T1, T2, TResult> func, T1 param1, T2 param2)
+            where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source, param1, param2);
@@ -237,9 +237,8 @@ namespace Elpis
         }
 
         public static void BeginDispatch<TSource, T1, T2, T3, TResult>(this TSource source,
-                                                                       Func<TSource, T1, T2, T3, TResult> func,
-                                                                       T1 param1, T2 param2, T3 param3)
-            where TSource : DispatcherObject
+            System.Func<TSource, T1, T2, T3, TResult> func, T1 param1, T2 param2, T3 param3)
+            where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source, param1, param2, param3);
@@ -247,7 +246,7 @@ namespace Elpis
             source.Dispatcher.BeginInvoke(func, source, param1, param2, param3);
         }
 
-        public static void BeginDispatch(this DispatcherObject source, Action func)
+        public static void BeginDispatch(this System.Windows.Threading.DispatcherObject source, System.Action func)
         {
             if (source.Dispatcher.CheckAccess())
                 func();
@@ -255,8 +254,8 @@ namespace Elpis
                 source.Dispatcher.BeginInvoke(func);
         }
 
-        public static void BeginDispatch<TSource>(this TSource source, Action<TSource> func)
-            where TSource : DispatcherObject
+        public static void BeginDispatch<TSource>(this TSource source, System.Action<TSource> func)
+            where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source);
@@ -264,8 +263,8 @@ namespace Elpis
                 source.Dispatcher.BeginInvoke(func, source);
         }
 
-        public static void BeginDispatch<TSource, T1>(this TSource source, Action<TSource, T1> func, T1 param1)
-            where TSource : DispatcherObject
+        public static void BeginDispatch<TSource, T1>(this TSource source, System.Action<TSource, T1> func, T1 param1)
+            where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source, param1);
@@ -273,8 +272,8 @@ namespace Elpis
                 source.Dispatcher.BeginInvoke(func, source, param1);
         }
 
-        public static void BeginDispatch<TSource, T1, T2>(this TSource source, Action<TSource, T1, T2> func, T1 param1,
-                                                          T2 param2) where TSource : DispatcherObject
+        public static void BeginDispatch<TSource, T1, T2>(this TSource source, System.Action<TSource, T1, T2> func,
+            T1 param1, T2 param2) where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source, param1, param2);
@@ -282,9 +281,9 @@ namespace Elpis
                 source.Dispatcher.BeginInvoke(func, source, param1, param2);
         }
 
-        public static void BeginDispatch<TSource, T1, T2, T3>(this TSource source, Action<TSource, T1, T2, T3> func,
-                                                              T1 param1, T2 param2, T3 param3)
-            where TSource : DispatcherObject
+        public static void BeginDispatch<TSource, T1, T2, T3>(this TSource source,
+            System.Action<TSource, T1, T2, T3> func, T1 param1, T2 param2, T3 param3)
+            where TSource : System.Windows.Threading.DispatcherObject
         {
             if (source.Dispatcher.CheckAccess())
                 func(source, param1, param2, param3);

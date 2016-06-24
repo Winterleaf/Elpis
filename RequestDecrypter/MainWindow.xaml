@@ -9,7 +9,7 @@
             <RowDefinition />
         </Grid.RowDefinitions>
         <TextBox Name="txtEncrypted" Grid.Row="0" TextWrapping="Wrap" />
-        <Button Name="btnDecrypt" Grid.Row="1" 
+        <Button Name="btnDecrypt" Grid.Row="1"
                 Click="btnDecrypt_Click"
                 Content="Decrypt Request String" />
         <TextBox Name="txtDecrypted" Grid.Row="2" TextWrapping="Wrap" />

@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using PandoraSharp.ControlQuery;
-using PandoraSharp;
-
-namespace Template
+﻿namespace PlayerControlQuery
 {
     //Use this as a template for classes that inherit IPlayerControlQuery
     public class Template : IPlayerControlQuery
@@ -18,24 +11,13 @@ namespace Template
 
         public event SetSongMetaRequestEvent SetSongMetaRequest;
 
-        public void SongUpdateReceiver(QuerySong song)
-        {
+        public void SongUpdateReceiver(QuerySong song) {}
 
-        }
+        public void ProgressUpdateReciever(QueryProgress progress) {}
 
-        public void ProgressUpdateReciever(QueryProgress progress)
-        {
+        public void StatusUpdateReceiver(QueryStatus status) {}
 
-        }
-
-        public void StatusUpdateReceiver(QueryStatus status)
-        {
-
-        }
-
-        public void RatingUpdateReceiver(QuerySong song, SongRating oldRating, SongRating newRating)
-        {
-
-        }
+        public void RatingUpdateReceiver(QuerySong song, PandoraSharp.SongRating oldRating,
+            PandoraSharp.SongRating newRating) {}
     }
 }

@@ -17,28 +17,22 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Collections.Specialized;
-using System.Net;
-using System.Text;
-using System.Threading;
-
 namespace Util
 {
     public class PostSubmitter
     {
-        private readonly NameValueCollection _params;
-        private readonly string _url = string.Empty;
-
-        private bool _uploadComplete = false;
-        private string _uploadResult = string.Empty;
-
         public PostSubmitter(string url)
         {
             _url = url;
-            _url = _url + "?sync=" + DateTime.UtcNow.ToEpochTime().ToString(); //randomize URL to prevent caching
-            _params = new NameValueCollection();
+            _url = _url + "?sync=" + System.DateTime.UtcNow.ToEpochTime(); //randomize URL to prevent caching
+            _params = new System.Collections.Specialized.NameValueCollection();
         }
+
+        private readonly System.Collections.Specialized.NameValueCollection _params;
+        private readonly string _url;
+
+        private bool _uploadComplete;
+        private string _uploadResult = string.Empty;
 
         public void Add(string key, string value)
         {
@@ -47,7 +41,7 @@ namespace Util
 
         public string Send(int timeoutSec = 10)
         {
-            var wc = new WebClient();
+            System.Net.WebClient wc = new System.Net.WebClient();
             wc.UploadValuesCompleted += wc_UploadValuesCompleted;
 
             wc.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
@@ -56,23 +50,23 @@ namespace Util
             if (PRequest.Proxy != null)
                 wc.Proxy = PRequest.Proxy;
 
-            wc.UploadValuesAsync(new Uri(_url), "POST", _params);
+            wc.UploadValuesAsync(new System.Uri(_url), "POST", _params);
 
-            DateTime start = DateTime.Now;
-            while (!_uploadComplete && ((DateTime.Now - start).TotalMilliseconds < (timeoutSec * 1000)))
-                Thread.Sleep(25);
+            System.DateTime start = System.DateTime.Now;
+            while (!_uploadComplete && ((System.DateTime.Now - start).TotalMilliseconds < timeoutSec*1000))
+                System.Threading.Thread.Sleep(25);
 
             if (_uploadComplete)
                 return _uploadResult;
 
             wc.CancelAsync();
 
-            throw new Exception("Timeout waiting for POST to " + _url);
+            throw new System.Exception("Timeout waiting for POST to " + _url);
         }
 
-        void wc_UploadValuesCompleted(object sender, UploadValuesCompletedEventArgs e)
+        private void wc_UploadValuesCompleted(object sender, System.Net.UploadValuesCompletedEventArgs e)
         {
-            _uploadResult = Encoding.ASCII.GetString(e.Result);
+            _uploadResult = System.Text.Encoding.ASCII.GetString(e.Result);
             _uploadComplete = true;
         }
     }

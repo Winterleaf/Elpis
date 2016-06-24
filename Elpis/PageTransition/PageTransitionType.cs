@@ -1,4 +1,4 @@
-﻿namespace GUI.PageTransition
+﻿namespace Elpis.PageTransition
 {
     public enum PageTransitionType
     {

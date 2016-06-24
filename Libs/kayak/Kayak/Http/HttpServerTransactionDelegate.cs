@@ -1,60 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Net;
+﻿using Kayak.Http.Extensions;
 
 namespace Kayak.Http
 {
-    class HttpServerTransactionDelegate : IHttpServerTransactionDelegate
+    internal class HttpServerTransactionDelegate : IHttpServerTransactionDelegate
     {
-        IHttpRequestDelegate requestDelegate;
-        TransactionContext currentContext;
-        ITransactionSegment lastSegment;
-
         public HttpServerTransactionDelegate(IHttpRequestDelegate requestDelegate)
         {
-            this.requestDelegate = requestDelegate;
+            _requestDelegate = requestDelegate;
         }
 
-        void QueueSegment(ITransactionSegment segment)
-        {
-            if (lastSegment != null)
-                lastSegment.AttachNext(segment);
-
-            lastSegment = segment;
-        }
+        private TransactionContext _currentContext;
+        private ITransactionSegment _lastSegment;
+        private readonly IHttpRequestDelegate _requestDelegate;
 
         public void OnRequest(IHttpServerTransaction transaction, HttpRequestHead request, bool shouldKeepAlive)
         {
             AddXFF(ref request, transaction.RemoteEndPoint);
 
-            var expectContinue = request.IsContinueExpected();
-            var ignoreResponseBody = request.Method != null && request.Method.ToUpperInvariant() == "HEAD";
+            bool expectContinue = request.IsContinueExpected();
+            bool ignoreResponseBody = request.Method != null && request.Method.ToUpperInvariant() == "HEAD";
 
-            currentContext = new TransactionContext(expectContinue, ignoreResponseBody, shouldKeepAlive);
+            _currentContext = new TransactionContext(expectContinue, ignoreResponseBody, shouldKeepAlive);
 
-            if (lastSegment == null)
-                currentContext.Segment.AttachTransaction(transaction);
+            if (_lastSegment == null)
+                _currentContext.Segment.AttachTransaction(transaction);
 
-            QueueSegment(currentContext.Segment);
-            requestDelegate.OnRequest(request, currentContext.RequestBody, currentContext);
+            QueueSegment(_currentContext.Segment);
+            _requestDelegate.OnRequest(request, _currentContext.RequestBody, _currentContext);
         }
 
-        public bool OnRequestData(IHttpServerTransaction transaction, ArraySegment<byte> data, Action continuation)
+        public bool OnRequestData(IHttpServerTransaction transaction, System.ArraySegment<byte> data,
+            System.Action continuation)
         {
-            return currentContext.RequestBody.OnData(data, continuation);
+            return _currentContext.RequestBody.OnData(data, continuation);
         }
 
         public void OnRequestEnd(IHttpServerTransaction transaction)
         {
-            currentContext.RequestBody.OnEnd();
+            _currentContext.RequestBody.OnEnd();
         }
 
-        public void OnError(IHttpServerTransaction transaction, Exception e)
+        public void OnError(IHttpServerTransaction transaction, System.Exception e)
         {
-            currentContext.RequestBody.OnError(e);
+            _currentContext.RequestBody.OnError(e);
         }
 
         public void OnEnd(IHttpServerTransaction transaction)
@@ -68,32 +56,77 @@ namespace Kayak.Http
             // XXX return self to freelist
         }
 
-        class TransactionContext : IHttpResponseDelegate
+        private void QueueSegment(ITransactionSegment segment)
         {
-            public DataSubject RequestBody;
-            public ResponseSegment Segment;
-            
-            bool expectContinue, ignoreResponseBody, shouldKeepAlive;
-            bool gotConnectRequestBody, gotOnResponse;
+            _lastSegment?.AttachNext(segment);
 
+            _lastSegment = segment;
+        }
+
+        private void AddXFF(ref HttpRequestHead request, System.Net.IPEndPoint remoteEndPoint)
+        {
+            if (remoteEndPoint == null) return;
+            if (request.Headers == null)
+                request.Headers =
+                    new System.Collections.Generic.Dictionary<string, string>(
+                        System.StringComparer.InvariantCultureIgnoreCase);
+
+            if (request.Headers.ContainsKey("X-Forwarded-For"))
+            {
+                request.Headers["X-Forwarded-For"] += "," + remoteEndPoint.Address;
+            }
+            else
+            {
+                request.Headers["X-Forwarded-For"] = remoteEndPoint.Address.ToString();
+            }
+        }
+
+        private class TransactionContext : IHttpResponseDelegate
+        {
             public TransactionContext(bool expectContinue, bool ignoreResponseBody, bool shouldKeepAlive)
             {
                 RequestBody = new DataSubject(ConnectRequestBody);
                 Segment = new ResponseSegment();
 
-                this.expectContinue = expectContinue;
-                this.ignoreResponseBody = ignoreResponseBody;
-                this.shouldKeepAlive = shouldKeepAlive;
+                _expectContinue = expectContinue;
+                _ignoreResponseBody = ignoreResponseBody;
+                _shouldKeepAlive = shouldKeepAlive;
             }
 
-            IDisposable ConnectRequestBody()
+            private readonly bool _expectContinue;
+            private readonly bool _ignoreResponseBody;
+            private readonly bool _shouldKeepAlive;
+            private bool _gotConnectRequestBody;
+            public readonly DataSubject RequestBody;
+            public readonly ResponseSegment Segment;
+
+            public void OnResponse(HttpResponseHead head, Net.IDataProducer body)
             {
-                if (gotConnectRequestBody) 
-                    throw new InvalidOperationException("Request body was already connected.");
+                // XXX still need to better account for Connection: close.
+                // this should cause the queue to drop pending responses
+                // perhaps segment.Abort which disposes transation
 
-                gotConnectRequestBody = true;
+                if (!_shouldKeepAlive)
+                {
+                    if (head.Headers == null)
+                        head.Headers =
+                            new System.Collections.Generic.Dictionary<string, string>(
+                                System.StringComparer.InvariantCultureIgnoreCase);
 
-                if (expectContinue)
+                    head.Headers["Connection"] = "close";
+                }
+
+                Segment.WriteResponse(head, _ignoreResponseBody ? null : body);
+            }
+
+            private System.IDisposable ConnectRequestBody()
+            {
+                if (_gotConnectRequestBody)
+                    throw new System.InvalidOperationException("Request body was already connected.");
+
+                _gotConnectRequestBody = true;
+
+                if (_expectContinue)
                     Segment.WriteContinue();
 
                 return new Disposable(() =>
@@ -103,41 +136,6 @@ namespace Kayak.Http
                     // equivalent to a parse error
                     // dispose transaction
                 });
-            }
-
-            public void OnResponse(HttpResponseHead head, IDataProducer body)
-            {
-                // XXX still need to better account for Connection: close.
-                // this should cause the queue to drop pending responses
-                // perhaps segment.Abort which disposes transation
-
-                if (!shouldKeepAlive)
-                {
-                    if (head.Headers == null)
-                        head.Headers = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
-
-                    head.Headers["Connection"] = "close";
-                }
-
-                Segment.WriteResponse(head, ignoreResponseBody ? null : body);
-            }
-        }
-
-        void AddXFF(ref HttpRequestHead request, IPEndPoint remoteEndPoint)
-        {
-            if (remoteEndPoint != null)
-            {
-                if (request.Headers == null)
-                    request.Headers = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
-				
-                if (request.Headers.ContainsKey("X-Forwarded-For"))
-                {
-                    request.Headers["X-Forwarded-For"] += "," + remoteEndPoint.Address.ToString();
-                }
-                else
-                {
-                    request.Headers["X-Forwarded-For"] = remoteEndPoint.Address.ToString();
-                }
             }
         }
     }

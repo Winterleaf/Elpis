@@ -17,51 +17,45 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
+using Enumerable = System.Linq.Enumerable;
 
 namespace Util
 {
     public static class DateTimeExtensions
     {
-        public static int ToEpochTime(this DateTime time)
+        public static int ToEpochTime(this System.DateTime time)
         {
-            var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            System.DateTime epoch = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
             return (int) time.Subtract(epoch).TotalSeconds;
         }
     }
 
     public static class StringExtensions
     {
-        public static string SanitizeJSON(this string json)
+        public static string SanitizeJson(this string json)
         {
             return json.Replace("{", "<").Replace("}", ">");
         }
 
-        public static string MD5Hash(this string data)
+        public static string Md5Hash(this string data)
         {
             return HashHelper.GetStringHash(data);
         }
 
-        public static string ToHex(this string str)
+        public static string ToHex(this System.Collections.Generic.IEnumerable<int> str)
         {
-            string hex = "";
-            foreach (char c in str)
-            {
-                int tmp = c;
-                hex += String.Format("{0:x2}", Convert.ToUInt32(tmp.ToString()));
-            }
-            return hex;
+            return Enumerable.Aggregate(str, "", (current, tmp) => current + $"{System.Convert.ToUInt32(tmp.ToString()):x2}");
         }
 
         public static string FromHex(this string hex)
         {
             if (hex.Length%2 != 0)
-                throw new ArgumentException("Input must be hex values and have an even number of characters.");
+                throw new System.ArgumentException("Input must be hex values and have an even number of characters.");
 
             string result = string.Empty;
             for (int i = 0; i < hex.Length; i += 2)
             {
-                result += (char) Convert.ToByte(hex.Substring(i, 2), 16);
+                result += (char) System.Convert.ToByte(hex.Substring(i, 2), 16);
             }
 
             return result;
@@ -69,9 +63,8 @@ namespace Util
 
         public static string SafeSubstring(this string str, int startIndex, int length)
         {
-            if ((startIndex + length) > (str.Length - 1))
-                length = (str.Length - 1) - startIndex;
-
+            if (startIndex + length > str.Length - 1)
+                length = str.Length - 1 - startIndex;
 
             return str.Substring(startIndex, length);
         }

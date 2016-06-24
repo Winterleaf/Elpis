@@ -1,63 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Newtonsoft.Json.Linq;
-using Util;
-
-namespace PandoraSharp
+﻿namespace PandoraSharp
 {
-    public struct JSONFault
+    public struct JsonFault
     {
-        public ErrorCodes Error;
+        public Util.ErrorCodes Error;
         public string FaultString;
     }
 
-    public class JSONResult : JObject
+    public class JsonResult : Newtonsoft.Json.Linq.JObject
     {
-        public JSONResult(string data)
+        public JsonResult(string data)
         {
-            JObject r = (JObject)Newtonsoft.Json.JsonConvert.DeserializeObject(data);
-            foreach (KeyValuePair<string, JToken> kvp in r)
+            Newtonsoft.Json.Linq.JObject r =
+                (Newtonsoft.Json.Linq.JObject) Newtonsoft.Json.JsonConvert.DeserializeObject(data);
+            foreach (System.Collections.Generic.KeyValuePair<string, Newtonsoft.Json.Linq.JToken> kvp in r)
             {
-                this.Add(kvp.Key, kvp.Value);
+                Add(kvp.Key, kvp.Value);
             }
         }
 
-        public JToken Result
-        {
-            get
-            {
-                return this["result"];
-            }
-        }
+        private const string UPDATE_REQUIRED = "Your client requires an update to continue listening to Pandora.";
+
+        public Newtonsoft.Json.Linq.JToken Result => this["result"];
 
         public bool Fault
         {
             get
             {
-                JToken v;
-                if (!this.TryGetValue("stat", out v)) return false;
+                Newtonsoft.Json.Linq.JToken v;
+                if (!TryGetValue("stat", out v)) return false;
                 return v.ToString() == "fail";
             }
         }
 
-        public ErrorCodes FaultCode
+        public Util.ErrorCodes FaultCode
         {
             get
             {
                 if (!Fault)
-                    return ErrorCodes.SUCCESS;
-                int c = (this["code"].ToObject<int>());
+                    return Util.ErrorCodes.Success;
+                int c = this["code"].ToObject<int>();
 
                 try
                 {
-                    return (ErrorCodes)c;
+                    return (Util.ErrorCodes) c;
                 }
                 catch
                 {
-                    Log.O("Unknown error code: " + c);
-                    return ErrorCodes.UNKNOWN_ERROR;
+                    Util.Log.O("Unknown error code: " + c);
+                    return Util.ErrorCodes.UnknownError;
                 }
             }
         }
@@ -68,28 +58,23 @@ namespace PandoraSharp
             {
                 if (!Fault) return "Operation completed successfully.";
 
-                int c = (this["code"].ToObject<int>());
+                int c = this["code"].ToObject<int>();
 
                 string err = "[ERROR CODE " + c + "]";
 
                 try
                 {
-                    err = Enum.GetName(typeof(Errors), c).ToString();
+                    err = System.Enum.GetName(typeof (Util.Errors), c);
                 }
-                catch { }
+                catch
+                {
+                    //todo
+                }
 
-                return err + " - " + Errors.GetErrorMessage(FaultCode, this["message"].ToString());
+                return err + " - " + Util.Errors.GetErrorMessage(FaultCode, this["message"].ToString());
             }
         }
 
-        public JSONFault FaultObject
-        {
-            get
-            {
-                return new JSONFault() { Error = FaultCode, FaultString = FaultString };
-            }
-        }
-
-        const string UPDATE_REQUIRED = "Your client requires an update to continue listening to Pandora.";
+        public JsonFault FaultObject => new JsonFault {Error = FaultCode, FaultString = FaultString};
     }
 }

@@ -1,71 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using PandoraSharp.ControlQuery;
-using PandoraSharp;
-
-namespace PandoraSharpPlayer
+﻿namespace PandoraSharpPlayer
 {
-    public class SessionWatcher : IPlayerControlQuery
+    public class SessionWatcher : PlayerControlQuery.IPlayerControlQuery
     {
-        public event PlayStateRequestEvent PlayStateRequest;
-        public event PlayRequestEvent PlayRequest;
-        public event PauseRequestEvent PauseRequest;
-        public event NextRequestEvent NextRequest;
-        public event StopRequestEvent StopRequest;
-
-        public event SetSongMetaRequestEvent SetSongMetaRequest;
-
-        private Util.SystemSessionState _sessionState;
+        public SessionWatcher()
+        {
+            Util.SystemSessionState sessionState = new Util.SystemSessionState();
+            sessionState.SystemLocked += _sessionState_SystemLocked;
+            sessionState.SystemUnlocked += _sessionState_SystemUnlocked;
+        }
 
         public bool IsEnabled { get; set; }
 
-        private QueryStatusValue _oldState = QueryStatusValue.Invalid;
+        private PlayerControlQuery.QueryStatusValue _oldState =
+            PlayerControlQuery.QueryStatusValue.Invalid;
 
-        public SessionWatcher()
-        {
-            _sessionState = new Util.SystemSessionState();
-            _sessionState.SystemLocked += _sessionState_SystemLocked;
-            _sessionState.SystemUnlocked += _sessionState_SystemUnlocked;
-        }
+        public event PlayerControlQuery.PlayStateRequestEvent PlayStateRequest;
+        public event PlayerControlQuery.PlayRequestEvent PlayRequest;
+        public event PlayerControlQuery.PauseRequestEvent PauseRequest;
+        public event PlayerControlQuery.NextRequestEvent NextRequest;
+        public event PlayerControlQuery.StopRequestEvent StopRequest;
 
-        void _sessionState_SystemUnlocked()
-        {
-            if(!IsEnabled) return;
+        public event PlayerControlQuery.SetSongMetaRequestEvent SetSongMetaRequest;
 
-            if (_oldState == QueryStatusValue.Playing)
-                PlayRequest(this);
-        }
+        public void SongUpdateReceiver(PlayerControlQuery.QuerySong song) {}
 
-        void _sessionState_SystemLocked()
+        public void ProgressUpdateReciever(PlayerControlQuery.QueryProgress progress) {}
+
+        public void StatusUpdateReceiver(PlayerControlQuery.QueryStatus status) {}
+
+        public void RatingUpdateReceiver(PlayerControlQuery.QuerySong song, PandoraSharp.SongRating oldRating,
+            PandoraSharp.SongRating newRating) {}
+
+        private void _sessionState_SystemUnlocked()
         {
             if (!IsEnabled) return;
 
+            if (_oldState == PlayerControlQuery.QueryStatusValue.Playing)
+                PlayRequest?.Invoke(this);
+        }
+
+        private void _sessionState_SystemLocked()
+        {
+            if (!IsEnabled) return;
+
+            System.Diagnostics.Debug.Assert(PlayStateRequest != null, "PlayStateRequest != null");
             _oldState = PlayStateRequest(this);
-            if (_oldState == QueryStatusValue.Playing)
-                PauseRequest(this);
-        }
-
-        public void SongUpdateReceiver(QuerySong song)
-        {
-
-        }
-
-        public void ProgressUpdateReciever(QueryProgress progress)
-        {
-
-        }
-
-        public void StatusUpdateReceiver(QueryStatus status)
-        {
-
-        }
-
-        public void RatingUpdateReceiver(QuerySong song, SongRating oldRating, SongRating newRating)
-        {
-
+            if (_oldState != PlayerControlQuery.QueryStatusValue.Playing) return;
+            System.Diagnostics.Debug.Assert(PauseRequest != null, "PauseRequest != null");
+            PauseRequest(this);
         }
     }
 }
-

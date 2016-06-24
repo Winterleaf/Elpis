@@ -1,24 +1,21 @@
-﻿using System;
-using System.Windows;
-
-namespace RequestDecrypter
+﻿namespace RequestDecrypter
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    ///     Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : System.Windows.Window
     {
         public MainWindow()
         {
             InitializeComponent();
-            var unix = PandoraSharp.Time.Unix();
-            Console.WriteLine(unix);
+            int unix = PandoraSharp.Time.Unix();
+            System.Console.WriteLine(unix);
         }
 
-        private void btnDecrypt_Click(object sender, RoutedEventArgs e)
+        private void btnDecrypt_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             //txtDecrypted.Text =
-            string text = PandoraSharp.Crypto.out_key.Decrypt(txtEncrypted.Text);
+            string text = PandoraSharp.Crypto.OutKey.Decrypt(txtEncrypted.Text);
         }
     }
 }

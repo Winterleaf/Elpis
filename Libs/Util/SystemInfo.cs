@@ -17,25 +17,22 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Management;
-using System.Security.Cryptography;
-using System.Text;
-
 namespace Util
 {
     public class HashHelper
     {
         public static string HashArrayToString(byte[] hash)
         {
-            var sb = new StringBuilder();
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
             foreach (byte b in hash) sb.Append(b.ToString("X2"));
             return sb.ToString();
         }
 
         public static string GetStringHash(string data)
         {
-            byte[] hash = new MD5CryptoServiceProvider().ComputeHash(Encoding.ASCII.GetBytes(data));
+            byte[] hash =
+                new System.Security.Cryptography.MD5CryptoServiceProvider().ComputeHash(
+                    System.Text.Encoding.ASCII.GetBytes(data));
             return HashArrayToString(hash);
         }
     }
@@ -44,33 +41,73 @@ namespace Util
     {
         public static string GetUniqueHash()
         {
-            ManagementObjectCollection cpus = (new ManagementObjectSearcher("SELECT * FROM Win32_Processor")).Get();
-            string cpu_serial = "";
-            foreach (ManagementBaseObject c in cpus)
+            System.Management.ManagementObjectCollection cpus =
+                new System.Management.ManagementObjectSearcher("SELECT * FROM Win32_Processor").Get();
+            string cpuSerial = "";
+            foreach (System.Management.ManagementBaseObject c in cpus)
             {
-                cpu_serial = (string) c["ProcessorId"];
+                cpuSerial = (string) c["ProcessorId"];
                 break;
             }
 
-            ManagementObjectCollection mobos = (new ManagementObjectSearcher("SELECT * FROM Win32_BaseBoard")).Get();
+            System.Management.ManagementObjectCollection mobos =
+                new System.Management.ManagementObjectSearcher("SELECT * FROM Win32_BaseBoard").Get();
             string mobo = "";
-            foreach (ManagementBaseObject m in mobos)
+            foreach (System.Management.ManagementBaseObject m in mobos)
             {
                 mobo = (string) m["SerialNumber"];
                 break;
             }
 
-            return (cpu_serial + mobo).MD5Hash();
+            return (cpuSerial + mobo).Md5Hash();
         }
 
         public static string GetWindowsVersion()
         {
-            OperatingSystem os = Environment.OSVersion;
-            Version vs = os.Version;
+            System.OperatingSystem os = System.Environment.OSVersion;
+            System.Version vs = os.Version;
 
             string operatingSystem = "";
 
-            if (os.Platform == PlatformID.Win32Windows)
+            if (os.Platform != System.PlatformID.Win32Windows)
+            {
+                if (os.Platform == System.PlatformID.Win32NT)
+                {
+                    switch (vs.Major)
+                    {
+                        case 3:
+                            operatingSystem = "NT 3.51";
+                            break;
+                        case 4:
+                            operatingSystem = "NT 4.0";
+                            break;
+                        case 5:
+                            operatingSystem = vs.Minor == 0 ? "2000" : "XP";
+                            break;
+                        case 6:
+                            switch (vs.Minor)
+                            {
+                                case 0:
+                                    operatingSystem = "Vista";
+                                    break;
+                                case 1:
+                                    operatingSystem = "7";
+                                    break;
+                                case 2:
+                                    operatingSystem = "8";
+                                    break;
+                                default:
+                                    operatingSystem = "Future";
+                                    break;
+                            }
+                            break;
+                        default:
+                            operatingSystem = "Future";
+                            break;
+                    }
+                }
+            }
+            else
             {
                 switch (vs.Minor)
                 {
@@ -78,64 +115,26 @@ namespace Util
                         operatingSystem = "95";
                         break;
                     case 10:
-                        if (vs.Revision.ToString() == "2222A")
-                            operatingSystem = "98SE";
-                        else
-                            operatingSystem = "98";
+                        operatingSystem = vs.Revision.ToString() == "2222A" ? "98SE" : "98";
                         break;
                     case 90:
                         operatingSystem = "Me";
                         break;
-                    default:
-                        break;
                 }
             }
-            else if (os.Platform == PlatformID.Win32NT)
+            if (operatingSystem == "") return operatingSystem;
+            operatingSystem = "Windows " + operatingSystem;
+
+            if (os.ServicePack != "")
             {
-                switch (vs.Major)
-                {
-                    case 3:
-                        operatingSystem = "NT 3.51";
-                        break;
-                    case 4:
-                        operatingSystem = "NT 4.0";
-                        break;
-                    case 5:
-                        if (vs.Minor == 0)
-                            operatingSystem = "2000";
-                        else
-                            operatingSystem = "XP";
-                        break;
-                    case 6:
-                        if (vs.Minor == 0)
-                            operatingSystem = "Vista";
-                        else if (vs.Minor == 1)
-                            operatingSystem = "7";
-                        else if (vs.Minor == 2)
-                            operatingSystem = "8";
-                        else
-                            operatingSystem = "Future";
-                        break;
-                    default:
-                        operatingSystem = "Future";
-                        break;
-                }
+                operatingSystem += " " + os.ServicePack;
             }
-            if (operatingSystem != "")
-            {
-                operatingSystem = "Windows " + operatingSystem;
 
-                if (os.ServicePack != "")
-                {
-                    operatingSystem += " " + os.ServicePack;
-                }
+            string pa = System.Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE",
+                System.EnvironmentVariableTarget.Machine);
+            int osArch = string.IsNullOrEmpty(pa) || string.Compare(pa, 0, "x86", 0, 3, true) == 0 ? 32 : 64;
 
-                string pa = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE",
-                                                               EnvironmentVariableTarget.Machine);
-                int osArch = ((String.IsNullOrEmpty(pa) || String.Compare(pa, 0, "x86", 0, 3, true) == 0) ? 32 : 64);
-
-                operatingSystem += " " + osArch + "-bit";
-            }
+            operatingSystem += " " + osArch + "-bit";
 
             return operatingSystem;
         }

@@ -17,82 +17,37 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-
 namespace Elpis.Controls
 {
     /// <summary>
-    /// Simple control providing content spinning capability
+    ///     Simple control providing content spinning capability
     /// </summary>
-    public class ContentSpinner : ContentControl
+    public class ContentSpinner : System.Windows.Controls.ContentControl
     {
-        private const string ANIMATION = "AnimatedRotateTransform";
-
-        #region Fields
-
-        private FrameworkElement _content;
-        private bool _running;
-        private Storyboard _storyboard;
-
-        #endregion
-
-        #region Dependency properties
-
-        public static DependencyProperty NumberOfFramesProperty =
-            DependencyProperty.Register("NumberOfFrames",
-                                        typeof (int),
-                                        typeof (ContentSpinner),
-                                        new FrameworkPropertyMetadata(16, OnPropertyChange),
-                                        ValidateNumberOfFrames);
-
-        public static DependencyProperty RevolutionsPerSecondProperty =
-            DependencyProperty.Register("RevolutionsPerSecond",
-                                        typeof (double),
-                                        typeof (ContentSpinner),
-                                        new PropertyMetadata(1.0, OnPropertyChange),
-                                        ValidateRevolutionsPerSecond);
-
-        public static DependencyProperty ContentScaleProperty =
-            DependencyProperty.Register("ContentScale",
-                                        typeof (double),
-                                        typeof (ContentSpinner),
-                                        new PropertyMetadata(1.0, OnPropertyChange),
-                                        ValidateContentScale);
-
-        public static DependencyProperty AutoStartProperty =
-            DependencyProperty.Register("AutoStart",
-                                        typeof (bool),
-                                        typeof (ContentSpinner),
-                                        new PropertyMetadata(true, OnPropertyChange));
-
-        #endregion
-
         static ContentSpinner()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof (ContentSpinner),
-                                                     new FrameworkPropertyMetadata(typeof (ContentSpinner)));
+                new System.Windows.FrameworkPropertyMetadata(typeof (ContentSpinner)));
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ContentSpinner"/> class.
+        ///     Initializes a new instance of the <see cref="ContentSpinner" /> class.
         /// </summary>
         public ContentSpinner()
         {
             Loaded += (o, args) =>
-                          {
-                              if (AutoStart)
-                                  StartAnimation();
-                          };
+            {
+                if (AutoStart)
+                    StartAnimation();
+            };
             SizeChanged += (o, args) => RestartAnimation();
             Unloaded += (o, args) => StopAnimation();
         }
 
+        private const string Animation = "AnimatedRotateTransform";
+
         /// <summary>
-        /// Gets or sets the number of revolutions per second.
+        ///     Gets or sets the number of revolutions per second.
         /// </summary>
         public double RevolutionsPerSecond
         {
@@ -101,7 +56,7 @@ namespace Elpis.Controls
         }
 
         /// <summary>
-        /// Gets or sets the number of frames per rotation.
+        ///     Gets or sets the number of frames per rotation.
         /// </summary>
         public int NumberOfFrames
         {
@@ -110,7 +65,7 @@ namespace Elpis.Controls
         }
 
         /// <summary>
-        /// Gets or sets the content scale.
+        ///     Gets or sets the content scale.
         /// </summary>
         public double ContentScale
         {
@@ -127,7 +82,7 @@ namespace Elpis.Controls
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            _content = GetTemplateChild("PART_Content") as FrameworkElement;
+            _content = GetTemplateChild("PART_Content") as System.Windows.FrameworkElement;
         }
 
         public void StartAnimation()
@@ -135,12 +90,12 @@ namespace Elpis.Controls
             if (_content == null)
                 return;
 
-            DoubleAnimationUsingKeyFrames animation = GetAnimation();
+            System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames animation = GetAnimation();
 
             _content.LayoutTransform = GetContentLayoutTransform();
             _content.RenderTransform = GetContentRenderTransform();
 
-            _storyboard = new Storyboard();
+            _storyboard = new System.Windows.Media.Animation.Storyboard();
             _storyboard.Children.Add(animation);
 
             _storyboard.Begin(this, true);
@@ -150,84 +105,113 @@ namespace Elpis.Controls
 
         public void StopAnimation()
         {
-            if (_storyboard != null)
-            {
-                _storyboard.Stop();
-                _storyboard.Remove(this);
-                _storyboard = null;
-                _running = false;
-            }
+            if (_storyboard == null) return;
+            _storyboard.Stop();
+            _storyboard.Remove(this);
+            _storyboard = null;
+            _running = false;
         }
 
         private void RestartAnimation()
         {
-            if (AutoStart || (!AutoStart && _running))
-            {
-                StopAnimation();
-                StartAnimation();
-            }
+            if (!AutoStart && (AutoStart || !_running)) return;
+            StopAnimation();
+            StartAnimation();
         }
 
-        private Transform GetContentLayoutTransform()
+        private System.Windows.Media.Transform GetContentLayoutTransform()
         {
-            return new ScaleTransform(ContentScale, ContentScale);
+            return new System.Windows.Media.ScaleTransform(ContentScale, ContentScale);
         }
 
-        private Transform GetContentRenderTransform()
+        private System.Windows.Media.Transform GetContentRenderTransform()
         {
-            var rotateTransform = new RotateTransform(0, _content.ActualWidth/2*ContentScale,
-                                                      _content.ActualHeight/2*ContentScale);
-            RegisterName(ANIMATION, rotateTransform);
+            System.Windows.Media.RotateTransform rotateTransform = new System.Windows.Media.RotateTransform(0,
+                _content.ActualWidth/2*ContentScale, _content.ActualHeight/2*ContentScale);
+            RegisterName(Animation, rotateTransform);
 
             return rotateTransform;
         }
 
-        private DoubleAnimationUsingKeyFrames GetAnimation()
+        private System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames GetAnimation()
         {
-            NameScope.SetNameScope(this, new NameScope());
+            System.Windows.NameScope.SetNameScope(this, new System.Windows.NameScope());
 
-            var animation = new DoubleAnimationUsingKeyFrames();
+            System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames animation =
+                new System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames();
 
             for (int i = 0; i < NumberOfFrames; i++)
             {
                 double angle = i*360.0/NumberOfFrames;
-                KeyTime time = KeyTime.FromPercent(((double) i)/NumberOfFrames);
-                DoubleKeyFrame frame = new DiscreteDoubleKeyFrame(angle, time);
+                System.Windows.Media.Animation.KeyTime time =
+                    System.Windows.Media.Animation.KeyTime.FromPercent((double) i/NumberOfFrames);
+                System.Windows.Media.Animation.DoubleKeyFrame frame =
+                    new System.Windows.Media.Animation.DiscreteDoubleKeyFrame(angle, time);
                 animation.KeyFrames.Add(frame);
             }
 
-            animation.Duration = TimeSpan.FromSeconds(1/RevolutionsPerSecond);
-            animation.RepeatBehavior = RepeatBehavior.Forever;
+            animation.Duration = System.TimeSpan.FromSeconds(1/RevolutionsPerSecond);
+            animation.RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever;
 
-            Storyboard.SetTargetName(animation, ANIMATION);
-            Storyboard.SetTargetProperty(animation, new PropertyPath(RotateTransform.AngleProperty));
+            System.Windows.Media.Animation.Storyboard.SetTargetName(animation, Animation);
+            System.Windows.Media.Animation.Storyboard.SetTargetProperty(animation,
+                new System.Windows.PropertyPath(System.Windows.Media.RotateTransform.AngleProperty));
 
             return animation;
         }
+
+        #region Fields
+
+        private System.Windows.FrameworkElement _content;
+        private bool _running;
+        private System.Windows.Media.Animation.Storyboard _storyboard;
+
+        #endregion
+
+        #region Dependency properties
+
+        public static System.Windows.DependencyProperty NumberOfFramesProperty =
+            System.Windows.DependencyProperty.Register("NumberOfFrames", typeof (int), typeof (ContentSpinner),
+                new System.Windows.FrameworkPropertyMetadata(16, OnPropertyChange), ValidateNumberOfFrames);
+
+        public static System.Windows.DependencyProperty RevolutionsPerSecondProperty =
+            System.Windows.DependencyProperty.Register("RevolutionsPerSecond", typeof (double), typeof (ContentSpinner),
+                new System.Windows.PropertyMetadata(1.0, OnPropertyChange), ValidateRevolutionsPerSecond);
+
+        public static System.Windows.DependencyProperty ContentScaleProperty =
+            System.Windows.DependencyProperty.Register("ContentScale", typeof (double), typeof (ContentSpinner),
+                new System.Windows.PropertyMetadata(1.0, OnPropertyChange), ValidateContentScale);
+
+        public static System.Windows.DependencyProperty AutoStartProperty =
+            System.Windows.DependencyProperty.Register("AutoStart", typeof (bool), typeof (ContentSpinner),
+                new System.Windows.PropertyMetadata(true, OnPropertyChange));
+
+        #endregion
 
         #region Validation and prop change methods
 
         private static bool ValidateNumberOfFrames(object value)
         {
-            var frames = (int) value;
+            int frames = (int) value;
             return frames > 0;
         }
 
         private static bool ValidateContentScale(object value)
         {
-            var scale = (double) value;
+            double scale = (double) value;
             return scale > 0.0;
         }
 
         private static bool ValidateRevolutionsPerSecond(object value)
         {
-            var rps = (double) value;
+            double rps = (double) value;
             return rps > 0.0;
         }
 
-        private static void OnPropertyChange(DependencyObject target, DependencyPropertyChangedEventArgs args)
+        private static void OnPropertyChange(System.Windows.DependencyObject target,
+            System.Windows.DependencyPropertyChangedEventArgs args)
         {
-            var spinner = (ContentSpinner) target;
+            ContentSpinner spinner = (ContentSpinner) target;
             spinner.RestartAnimation();
         }
 

@@ -78,8 +78,8 @@
     <Compile Include="Net\Server\KayakServerState.cs" />
     <Compile Include="Net\Socket\KayakSocket.cs" />
     <Compile Include="Net\Socket\KayakSocketState.cs" />
-    <Compile Include="Net\Socket\OutputBuffer.cs" />
     <Compile Include="Net\Socket\SocketWrapper.cs" />
+    <Compile Include="OutputBuffer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\lib\httpmachine\src\HttpMachine\HttpParser.cs" />
     <Compile Include="..\lib\httpmachine\src\HttpMachine\IHttpParserDelegate.cs" />

@@ -17,52 +17,27 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media.Animation;
-
-namespace GUI.PageTransition
+namespace Elpis.PageTransition
 {
-    public partial class PageTransition : UserControl
+    public partial class PageTransition
     {
-        //Stack<UserControl> pages = new Stack<UserControl>();
-
-        #region Delegates
-
-        public delegate void CurrentPageSetHandler(UserControl page);
-
-        #endregion
-
-        public static readonly DependencyProperty TransitionTypeProperty = DependencyProperty.Register("TransitionType",
-                                                                                                       typeof (
-                                                                                                           PageTransitionType
-                                                                                                           ),
-                                                                                                       typeof (
-                                                                                                           PageTransition
-                                                                                                           ),
-                                                                                                       new PropertyMetadata
-                                                                                                           (PageTransitionType
-                                                                                                                .Next));
-
-        private readonly object _inTransitionLock = new object();
-
-        private readonly List<UserControl> pages = new List<UserControl>();
-        private ContentControl _currentContent;
-        private bool _inTransition;
-        private UserControl _loadingPage;
-
-        private UserControl _nextPage;
-        private PageTransitionType _nextTrasitionType = PageTransitionType.Auto;
-
         public PageTransition()
         {
             InitializeComponent();
             ClipToBounds = true;
         }
+
+        //Stack<UserControl> pages = new Stack<UserControl>();
+
+        #region Delegates
+
+        public delegate void CurrentPageSetHandler(System.Windows.Controls.UserControl page);
+
+        #endregion
+
+        public static readonly System.Windows.DependencyProperty TransitionTypeProperty =
+            System.Windows.DependencyProperty.Register("TransitionType", typeof(PageTransitionType),
+                typeof(PageTransition), new System.Windows.PropertyMetadata(PageTransitionType.Next));
 
         public bool InTransition
         {
@@ -82,90 +57,98 @@ namespace GUI.PageTransition
             }
         }
 
-        [DefaultValue(null)]
-        public UserControl CurrentPage { get; set; }
+        [System.ComponentModel.DefaultValue(null)]
+        public System.Windows.Controls.UserControl CurrentPage { get; set; }
 
-        public List<UserControl> PageList
-        {
-            get { return pages; }
-        }
+        public System.Collections.Generic.List<System.Windows.Controls.UserControl> PageList { get; } =
+            new System.Collections.Generic.List<System.Windows.Controls.UserControl>();
 
         public PageTransitionType TransitionType
         {
-            get { return (PageTransitionType) GetValue(TransitionTypeProperty); }
+            get { return (PageTransitionType)GetValue(TransitionTypeProperty); }
             set { SetValue(TransitionTypeProperty, value); }
         }
 
+        private readonly object _inTransitionLock = new object();
+
+        private System.Windows.Controls.ContentControl _currentContent;
+        private bool _inTransition;
+        private System.Windows.Controls.UserControl _loadingPage;
+
+        private System.Windows.Controls.UserControl _nextPage;
+        private PageTransitionType _nextTrasitionType = PageTransitionType.Auto;
+
         public event CurrentPageSetHandler CurrentPageSet;
 
-        public void AddPage(UserControl newPage, int index = -1)
+        public void AddPage(System.Windows.Controls.UserControl newPage, int index = -1)
         {
             if (index < 0)
-                pages.Add(newPage);
+                PageList.Add(newPage);
             else
             {
-                if (index > pages.Count - 1)
-                    index = pages.Count;
+                if (index > PageList.Count - 1)
+                    index = PageList.Count;
 
-                pages.Insert(index, newPage);
+                PageList.Insert(index, newPage);
             }
 
             //Task.Factory.StartNew(() => ShowNewPage());
         }
 
-        public void RemovePage(UserControl page)
+        public void RemovePage(System.Windows.Controls.UserControl opage)
         {
-            if (pages.Contains(page))
-                pages.Remove(page);
+            if (PageList.Contains(opage))
+                PageList.Remove(opage);
         }
 
-        public void ShowPage(UserControl page, PageTransitionType type = PageTransitionType.Auto)
+        public void ShowPage(System.Windows.Controls.UserControl opage, PageTransitionType type = PageTransitionType.Auto)
         {
-            if (page == CurrentPage)
+            if (Equals(opage, CurrentPage))
                 return;
 
-            Task.Factory.StartNew(() => Dispatcher.Invoke(new Action(() => loadPage(page, type))));
+            System.Threading.Tasks.Task.Factory.StartNew(
+                () => Dispatcher.Invoke(new System.Action(() => LoadPage(opage, type))));
         }
 
         public void ShowNextPage()
         {
-            UserControl page = null;
-            if (CurrentPage == null)
-                page = pages[0];
+            //System.Windows.Controls.UserControl page = null;
+            //if (CurrentPage == null)
+            //    page = PageList[0];
 
-            int i = pages.IndexOf(CurrentPage);
-            int next = (i == pages.Count - 1) ? 0 : i + 1;
+            int i = PageList.IndexOf(CurrentPage);
+            int next = i == PageList.Count - 1 ? 0 : i + 1;
 
-            ShowPage(pages[next]);
+            ShowPage(PageList[next]);
         }
 
         public void ShowPrevPage()
         {
-            UserControl page = null;
-            if (CurrentPage == null)
-                page = pages[pages.Count - 1];
+            //System.Windows.Controls.UserControl page = null;
+            //if (CurrentPage == null)
+            //    page = PageList[PageList.Count - 1];
 
-            int i = pages.IndexOf(CurrentPage);
-            int prev = (i == 0) ? pages.Count - 1 : i - 1;
+            int i = PageList.IndexOf(CurrentPage);
+            int prev = i == 0 ? PageList.Count - 1 : i - 1;
 
-            ShowPage(pages[prev]);
+            ShowPage(PageList[prev]);
         }
 
-        private void loadPage(UserControl page, PageTransitionType type)
+        private void LoadPage(System.Windows.Controls.UserControl opage, PageTransitionType type)
         {
-            if (page == null)
+            if (opage == null)
                 return;
 
             //If already in a trasition, save it for next time
             //Overwrite to skip if it's already filled
             if (InTransition)
             {
-                _nextPage = page;
+                _nextPage = opage;
                 _nextTrasitionType = type;
                 return;
             }
 
-            int i = pages.IndexOf(page);
+            int i = PageList.IndexOf(opage);
             if (i < 0)
                 return;
 
@@ -175,13 +158,13 @@ namespace GUI.PageTransition
                     type = PageTransitionType.Next;
                 else
                 {
-                    int c = pages.IndexOf(CurrentPage);
-                    if (c == (pages.Count - 1) && i == 0)
+                    int c = PageList.IndexOf(CurrentPage);
+                    if (c == PageList.Count - 1 && i == 0)
                         type = PageTransitionType.Next;
-                    else if (c == 0 && i == (pages.Count - 1))
+                    else if (c == 0 && i == PageList.Count - 1)
                         type = PageTransitionType.Previous;
                     else
-                        type = (c < i) ? PageTransitionType.Next : PageTransitionType.Previous;
+                        type = c < i ? PageTransitionType.Next : PageTransitionType.Previous;
                 }
             }
 
@@ -190,87 +173,83 @@ namespace GUI.PageTransition
 
             InTransition = true;
 
-            _loadingPage = page;
+            _loadingPage = opage;
             TransitionType = type;
 
             _loadingPage.Loaded += newPage_Loaded;
 
             //switch active content control
-            if (_currentContent == contentA)
-                _currentContent = contentB;
-            else
-                _currentContent = contentA;
+            _currentContent = _currentContent == contentA ? contentB : contentA;
 
             _currentContent.Content = _loadingPage;
         }
 
-        private void newPage_Loaded(object sender, RoutedEventArgs e)
+        private void newPage_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
             if (TransitionType == PageTransitionType.Auto)
                 return;
 
             _loadingPage.Loaded -= newPage_Loaded;
 
-            ContentControl _oldContent = null;
-            if (_currentContent == contentA)
-                _oldContent = contentB;
-            else
-                _oldContent = contentA;
+            System.Windows.Controls.ContentControl oldContent = Equals(_currentContent, contentA) ? contentB : contentA;
 
-            _currentContent.Visibility = Visibility.Visible;
+            _currentContent.Visibility = System.Windows.Visibility.Visible;
             //_oldContent.Visibility = System.Windows.Visibility.Hidden;
 
             if (CurrentPage != null)
             {
-                Storyboard hidePage =
-                    (Resources[string.Format("{0}Out", TransitionType.ToString())] as Storyboard).Clone();
-                var to = (Thickness) ((ThicknessAnimation) hidePage.Children[0]).To;
-                ((ThicknessAnimation) hidePage.Children[0]).To =
-                    new Thickness(to.Left*ActualWidth, to.Top*ActualHeight,
-                                  to.Right*ActualWidth, to.Bottom*ActualHeight);
+                System.Windows.Media.Animation.Storyboard hidePage =
+                    (Resources[$"{TransitionType}Out"] as System.Windows.Media.Animation.Storyboard)?.Clone();
+                System.Windows.Thickness to =
+                    (System.Windows.Thickness)
+                        ((System.Windows.Media.Animation.ThicknessAnimation)hidePage?.Children[0]).To;
+                ((System.Windows.Media.Animation.ThicknessAnimation)hidePage?.Children[0]).To =
+                    new System.Windows.Thickness(to.Left * ActualWidth, to.Top * ActualHeight, to.Right * ActualWidth,
+                        to.Bottom * ActualHeight);
 
                 hidePage.Completed += hidePage_Completed;
 
-                Storyboard showNewPage =
-                    (Resources[string.Format("{0}In", TransitionType.ToString())] as Storyboard).Clone();
-                var from = (Thickness) ((ThicknessAnimation) showNewPage.Children[0]).From;
-                ((ThicknessAnimation) showNewPage.Children[0]).From =
-                    new Thickness(from.Left*ActualWidth, from.Top*ActualHeight,
-                                  from.Right*ActualWidth, from.Bottom*ActualHeight);
+                System.Windows.Media.Animation.Storyboard showNewPage =
+                    (Resources[$"{TransitionType}In"] as System.Windows.Media.Animation.Storyboard)?.Clone();
+                System.Windows.Thickness from =
+                    (System.Windows.Thickness)
+                        ((System.Windows.Media.Animation.ThicknessAnimation)showNewPage?.Children[0]).From;
+                ((System.Windows.Media.Animation.ThicknessAnimation)showNewPage.Children[0]).From =
+                    new System.Windows.Thickness(from.Left * ActualWidth, from.Top * ActualHeight, from.Right * ActualWidth,
+                        from.Bottom * ActualHeight);
 
                 showNewPage.Completed += showNewPage_Completed;
 
                 if (CurrentPage != null)
-                    hidePage.Begin(_oldContent);
+                    hidePage.Begin(oldContent);
                 showNewPage.Begin(_currentContent);
             }
             else
                 InTransition = false;
 
-            CurrentPage = (UserControl) sender;
+            CurrentPage = (System.Windows.Controls.UserControl)sender;
         }
 
-        private void showNewPage_Completed(object sender, EventArgs e)
+        private void showNewPage_Completed(object sender, System.EventArgs e)
         {
             InTransition = false;
 
-            if (CurrentPageSet != null)
-                CurrentPageSet(CurrentPage);
+            CurrentPageSet?.Invoke(CurrentPage);
 
             if (_nextPage != null)
-                loadPage(_nextPage, _nextTrasitionType);
+                LoadPage(_nextPage, _nextTrasitionType);
         }
 
-        private void hidePage_Completed(object sender, EventArgs e)
+        private void hidePage_Completed(object sender, System.EventArgs e)
         {
-            if (_currentContent == contentA)
+            if (Equals(_currentContent, contentA))
             {
-                contentB.Visibility = Visibility.Hidden;
+                contentB.Visibility = System.Windows.Visibility.Hidden;
                 contentB.Content = null;
             }
             else
             {
-                contentA.Visibility = Visibility.Hidden;
+                contentA.Visibility = System.Windows.Visibility.Hidden;
                 contentA.Content = null;
             }
         }

@@ -17,41 +17,37 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Windows;
-using System.Windows.Controls;
-
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for RestartPage.xaml
+    ///     Interaction logic for RestartPage.xaml
     /// </summary>
-    public partial class RestartPage : UserControl
+    public partial class RestartPage
     {
+        public RestartPage()
+        {
+            InitializeComponent();
+        }
+
         #region Delegates
 
         public delegate void RestartSelectionEventHandler(bool status);
 
         #endregion
 
-        public RestartPage()
-        {
-            InitializeComponent();
-        }
-
         public event RestartSelectionEventHandler RestartSelectionEvent;
 
         private void SendRestartSelection(bool status)
         {
-            if (RestartSelectionEvent != null)
-                RestartSelectionEvent(status);
+            RestartSelectionEvent?.Invoke(status);
         }
 
-        private void btnLater_Click(object sender, RoutedEventArgs e)
+        private void btnLater_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             SendRestartSelection(false);
         }
 
-        private void btnRestart_Click(object sender, RoutedEventArgs e)
+        private void btnRestart_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             SendRestartSelection(true);
         }

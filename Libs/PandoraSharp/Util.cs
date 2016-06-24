@@ -17,15 +17,13 @@
  * along with PandoraSharp. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-
 namespace PandoraSharp
 {
     public class Time
     {
         public static int Unix()
         {
-            return DateTime.UtcNow.ToEpochTime();
+            return System.DateTime.UtcNow.ToEpochTime();
         }
     }
 }

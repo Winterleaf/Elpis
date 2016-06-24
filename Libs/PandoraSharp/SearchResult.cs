@@ -17,7 +17,6 @@
  * along with PandoraSharp. If not, see http://www.gnu.org/licenses/.
 */
 
-using Newtonsoft.Json.Linq;
 namespace PandoraSharp
 {
     public enum SearchResultType
@@ -28,29 +27,31 @@ namespace PandoraSharp
 
     public class SearchResult
     {
-        public SearchResult(SearchResultType type, JToken d)
+        public SearchResult(SearchResultType type, Newtonsoft.Json.Linq.JToken d)
         {
             ResultType = type;
             Score = (int) d["score"];
-            MusicToken = (string)d["musicToken"];
+            MusicToken = (string) d["musicToken"];
 
-            if (ResultType == SearchResultType.Song)
-            {
-                Title = (string)d["songName"];
-                Artist = (string)d["artistName"];
-            }
-            else if (ResultType == SearchResultType.Artist)
-            {
-                Name = (string)d["artistName"];
+            switch (ResultType) {
+                case SearchResultType.Song:
+                    Title = (string) d["songName"];
+                    Artist = (string) d["artistName"];
+                    break;
+                case SearchResultType.Artist:
+                    Name = (string) d["artistName"];
+                    break;
+                default:
+                    throw new System.ArgumentOutOfRangeException();
             }
         }
 
-        public SearchResultType ResultType { get; private set; }
+        public SearchResultType ResultType { get; }
         public int Score { get; private set; }
         public string MusicToken { get; private set; }
-        public string Title { get; private set; }
-        public string Artist { get; private set; }
-        public string Name { get; private set; }
+        public string Title { get; }
+        public string Artist { get; }
+        public string Name { get; }
 
         public string DisplayName
         {
@@ -58,8 +59,7 @@ namespace PandoraSharp
             {
                 if (ResultType == SearchResultType.Artist)
                     return Name; // + ": " + this.Score.ToString();
-                else
-                    return Title + " by " + Artist; // +": " + this.Score.ToString(); ;
+                return Title + " by " + Artist; // +": " + this.Score.ToString(); ;
             }
         }
     }

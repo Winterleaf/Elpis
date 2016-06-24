@@ -17,41 +17,40 @@
  * along with PandoraSharp. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Collections.Generic;
+using Enumerable = System.Linq.Enumerable;
 
 namespace PandoraSharp
 {
     public static class DateTimeExtensions
     {
-        public static int ToEpochTime(this DateTime time)
+        public static int ToEpochTime(this System.DateTime time)
         {
-            var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            System.DateTime epoch = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
             return (int) time.Subtract(epoch).TotalSeconds;
         }
     }
 
     public static class StringExtensions
     {
-        private static readonly Dictionary<char, string> encChars =
-            new Dictionary<char, string>
-                {
-                    {'&', "&amp;"},
-                    {'\'', "&apos;"},
-                    {'\"', "&quot;"},
-                    {'<', "&lt;"},
-                    {'>', "&gt;"},
-                };
+        private static readonly System.Collections.Generic.Dictionary<char, string> EncChars =
+            new System.Collections.Generic.Dictionary<char, string>
+            {
+                {'&', "&amp;"},
+                {'\'', "&apos;"},
+                {'\"', "&quot;"},
+                {'<', "&lt;"},
+                {'>', "&gt;"}
+            };
 
-        private static readonly Dictionary<string, char> decChars =
-            new Dictionary<string, char>
-                {
-                    {"&amp;", '&'},
-                    {"&apos;", '\''},
-                    {"&quot;", '\"'},
-                    {"&lt;", '<'},
-                    {"&gt;", '>'},
-                };
+        private static readonly System.Collections.Generic.Dictionary<string, char> DecChars =
+            new System.Collections.Generic.Dictionary<string, char>
+            {
+                {"&amp;", '&'},
+                {"&apos;", '\''},
+                {"&quot;", '\"'},
+                {"&lt;", '<'},
+                {"&gt;", '>'}
+            };
 
         public static bool IsNullOrEmpty(this string str)
         {
@@ -63,26 +62,20 @@ namespace PandoraSharp
             return string.IsNullOrWhiteSpace(str);
         }
 
-        public static string ToHex(this string str)
+        public static string ToHex(this System.Collections.Generic.IEnumerable<int> str)
         {
-            string hex = "";
-            foreach (char c in str)
-            {
-                int tmp = c;
-                hex += String.Format("{0:x2}", Convert.ToUInt32(tmp.ToString()));
-            }
-            return hex;
+            return Enumerable.Aggregate(str, "", (current, tmp) => current + $"{System.Convert.ToUInt32(tmp.ToString()):x2}");
         }
 
         public static string FromHex(this string hex)
         {
             if (hex.Length%2 != 0)
-                throw new ArgumentException("Input must be hex values and have an even number of characters.");
+                throw new System.ArgumentException("Input must be hex values and have an even number of characters.");
 
             string result = string.Empty;
             for (int i = 0; i < hex.Length; i += 2)
             {
-                result += (char) Convert.ToByte(hex.Substring(i, 2), 16);
+                result += (char) System.Convert.ToByte(hex.Substring(i, 2), 16);
             }
 
             return result;
@@ -90,8 +83,8 @@ namespace PandoraSharp
 
         public static string SafeSubstring(this string str, int startIndex, int length)
         {
-            if ((startIndex + length) > (str.Length - 1))
-                length = (str.Length - 1) - startIndex;
+            if (startIndex + length > str.Length - 1)
+                length = str.Length - 1 - startIndex;
 
             return str.Substring(startIndex, length);
         }
@@ -101,8 +94,8 @@ namespace PandoraSharp
             string result = string.Empty;
             foreach (char c in data)
             {
-                if (encChars.ContainsKey(c))
-                    result += encChars[c];
+                if (EncChars.ContainsKey(c))
+                    result += EncChars[c];
                 else
                     result += c;
             }
@@ -112,10 +105,7 @@ namespace PandoraSharp
 
         public static string XmlDecode(this string data)
         {
-            foreach (string s in decChars.Keys)
-                data = data.Replace(s, decChars[s].ToString());
-
-            return data;
+            return Enumerable.Aggregate(DecChars.Keys, data, (current, s) => current.Replace(s, DecChars[s].ToString()));
         }
     }
 }

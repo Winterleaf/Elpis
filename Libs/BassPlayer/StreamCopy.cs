@@ -18,42 +18,24 @@
 
 #endregion
 
-using System;
-using Un4seen.Bass;
-using Un4seen.Bass.Misc;
-
 namespace BassPlayer
 {
-    internal class StreamCopy : BaseDSP
+    internal class StreamCopy : Un4seen.Bass.Misc.BaseDSP
     {
-        private int _stream;
-        private BASSBuffer _streamBuffer;
-        private BASSFlag _streamFlags;
+        public StreamCopy() {}
 
-        public StreamCopy()
-        {
-        }
+        public StreamCopy(int channel, int priority) : base(channel, priority, System.IntPtr.Zero) {}
 
-        public StreamCopy(int channel, int priority)
-            : base(channel, priority, IntPtr.Zero)
-        {
-        }
+        public int Stream { get; private set; }
 
-        public int Stream
-        {
-            get { return _stream; }
-        }
+        public Un4seen.Bass.BASSFlag StreamFlags { get; set; }
 
-        public BASSFlag StreamFlags
-        {
-            get { return _streamFlags; }
-            set { _streamFlags = value; }
-        }
+        private Un4seen.Bass.BASSBuffer _streamBuffer;
 
         public override void OnChannelChanged()
         {
             OnStopped();
-            if (base.IsAssigned)
+            if (IsAssigned)
             {
                 OnStarted();
             }
@@ -61,60 +43,57 @@ namespace BassPlayer
 
         public override void OnStarted()
         {
-            int channelBitwidth = base.ChannelBitwidth;
+            int channelBitwidth = ChannelBitwidth;
             switch (channelBitwidth)
             {
                 case 0x20:
-                    _streamFlags &= ~BASSFlag.BASS_SAMPLE_8BITS;
-                    _streamFlags |= BASSFlag.BASS_SAMPLE_FLOAT;
+                    StreamFlags &= ~Un4seen.Bass.BASSFlag.BASS_SAMPLE_8BITS;
+                    StreamFlags |= Un4seen.Bass.BASSFlag.BASS_SAMPLE_FLOAT;
                     channelBitwidth = 4;
                     break;
 
                 case 8:
-                    _streamFlags &= ~BASSFlag.BASS_SAMPLE_FLOAT;
-                    _streamFlags |= BASSFlag.BASS_SAMPLE_8BITS;
+                    StreamFlags &= ~Un4seen.Bass.BASSFlag.BASS_SAMPLE_FLOAT;
+                    StreamFlags |= Un4seen.Bass.BASSFlag.BASS_SAMPLE_8BITS;
                     channelBitwidth = 1;
                     break;
 
                 default:
-                    _streamFlags &= ~BASSFlag.BASS_SAMPLE_FLOAT;
-                    _streamFlags &= ~BASSFlag.BASS_SAMPLE_8BITS;
+                    StreamFlags &= ~Un4seen.Bass.BASSFlag.BASS_SAMPLE_FLOAT;
+                    StreamFlags &= ~Un4seen.Bass.BASSFlag.BASS_SAMPLE_8BITS;
                     channelBitwidth = 2;
                     break;
             }
-            _streamBuffer = new BASSBuffer(2f, base.ChannelSampleRate, base.ChannelNumChans, channelBitwidth);
-            _stream = Bass.BASS_StreamCreate(base.ChannelSampleRate, base.ChannelNumChans, _streamFlags,
-                                             null, IntPtr.Zero);
-            Bass.BASS_ChannelSetLink(base.ChannelHandle, _stream);
-            if (Bass.BASS_ChannelIsActive(base.ChannelHandle) == BASSActive.BASS_ACTIVE_PLAYING)
+            _streamBuffer = new Un4seen.Bass.BASSBuffer(2f, ChannelSampleRate, ChannelNumChans, channelBitwidth);
+            Stream = Un4seen.Bass.Bass.BASS_StreamCreate(ChannelSampleRate, ChannelNumChans, StreamFlags, null,
+                System.IntPtr.Zero);
+            Un4seen.Bass.Bass.BASS_ChannelSetLink(ChannelHandle, Stream);
+            if (Un4seen.Bass.Bass.BASS_ChannelIsActive(ChannelHandle) == Un4seen.Bass.BASSActive.BASS_ACTIVE_PLAYING)
             {
-                Bass.BASS_ChannelPlay(_stream, false);
+                Un4seen.Bass.Bass.BASS_ChannelPlay(Stream, false);
             }
         }
 
         public override void OnStopped()
         {
-            Bass.BASS_ChannelRemoveLink(base.ChannelHandle, _stream);
-            Bass.BASS_StreamFree(_stream);
-            _stream = 0;
+            Un4seen.Bass.Bass.BASS_ChannelRemoveLink(ChannelHandle, Stream);
+            Un4seen.Bass.Bass.BASS_StreamFree(Stream);
+            Stream = 0;
             ClearBuffer();
         }
 
         public void ClearBuffer()
         {
-            if (_streamBuffer != null)
-            {
-                _streamBuffer.Clear();
-            }
+            _streamBuffer?.Clear();
         }
 
-        public override void DSPCallback(int handle, int channel, IntPtr buffer, int length, IntPtr user)
+        public override void DSPCallback(int handle, int channel, System.IntPtr buffer, int length, System.IntPtr user)
         {
             try
             {
                 _streamBuffer.Write(buffer, length);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 Log.Error("Caught Exception in DSPCallBack. {0}", ex.Message);
             }

@@ -17,130 +17,93 @@
  * along with PandoraSharp. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.IO;
-using System.Net;
-using System.Reflection;
-using System.Windows.Shell;
-using IWshRuntimeLibrary;
-using Util;
-using PandoraSharp.Exceptions;
-using Newtonsoft.Json.Linq;
-using File = System.IO.File;
-using System.Xml.Serialization;
-using System.Web.Script.Serialization;
+using Enumerable = System.Linq.Enumerable;
 
 namespace PandoraSharp
 {
-    public class Station : INotifyPropertyChanged
+    public class Station : System.ComponentModel.INotifyPropertyChanged
     {
-        private readonly object _artLock = new object();
-        private readonly Pandora _pandora;
-        private byte[] _artImage;
-
-        public Station(Pandora p, JToken d)
+        public Station(Pandora p, Newtonsoft.Json.Linq.JToken d)
         {
             SkipLimitReached = false;
-            SkipLimitTime = DateTime.MinValue;
+            SkipLimitTime = System.DateTime.MinValue;
 
             _pandora = p;
-            
-            ID = d["stationId"].ToString();
+
+            Id = d["stationId"].ToString();
             IdToken = d["stationToken"].ToString();
             IsCreator = !d["isShared"].ToObject<bool>();
             IsQuickMix = d["isQuickMix"].ToObject<bool>();
             Name = d["stationName"].ToString();
-            InfoUrl = (string)d["stationDetailUrl"];
+            InfoUrl = (string) d["stationDetailUrl"];
 
             if (IsQuickMix)
             {
                 Name = "Quick Mix";
                 _pandora.QuickMixStationIDs.Clear();
-                var qmIDs = d["quickMixStationIds"].ToObject<string[]>();
-                foreach(var qmid in qmIDs)
-                    _pandora.QuickMixStationIDs.Add((string) qmid);
+                string[] qmIDs = d["quickMixStationIds"].ToObject<string[]>();
+                foreach (string qmid in qmIDs)
+                    _pandora.QuickMixStationIDs.Add(qmid);
             }
 
             bool downloadArt = true;
-            if (!_pandora.ImageCachePath.Equals("") && File.Exists(ArtCacheFile))
+            if (!_pandora.ImageCachePath.Equals("") && System.IO.File.Exists(ArtCacheFile))
             {
                 try
                 {
-                    ArtImage = File.ReadAllBytes(ArtCacheFile);
+                    ArtImage = System.IO.File.ReadAllBytes(ArtCacheFile);
                 }
-                catch (Exception)
+                catch (System.Exception)
                 {
-                    Log.O("Error retrieving image cache file: " + ArtCacheFile);
-                    downloadArt = true;
+                    Util.Log.O("Error retrieving image cache file: " + ArtCacheFile);
                 }
 
                 downloadArt = false;
             }
 
-            if (downloadArt)
-            {
-                var value = d.SelectToken("artUrl");
-                if (value != null)
-                {
-                    ArtUrl = value.ToString();
+            if (!downloadArt) return;
+            Newtonsoft.Json.Linq.JToken value = d.SelectToken("artUrl");
+            if (value == null) return;
+            ArtUrl = value.ToString();
 
-                    if (ArtUrl != String.Empty)
-                    {
-                        try
-                        {
-                            ArtImage = PRequest.ByteRequest(ArtUrl);
-                            if (ArtImage.Length > 0)
-                                File.WriteAllBytes(ArtCacheFile, ArtImage);
-                        }
-                        catch (Exception)
-                        {
-                            Log.O("Error saving image cache file: " + ArtCacheFile);
-                        }
-                    }
-                }
-                //}
-                
+            if (ArtUrl == string.Empty) return;
+            try
+            {
+                ArtImage = Util.PRequest.ByteRequest(ArtUrl);
+                if (ArtImage.Length > 0)
+                    System.IO.File.WriteAllBytes(ArtCacheFile, ArtImage);
             }
+            catch (System.Exception)
+            {
+                Util.Log.O("Error saving image cache file: " + ArtCacheFile);
+            }
+            //}
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void Notify(String info)
-        {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, new PropertyChangedEventArgs(info));
-            }
-        }
-
-        public string ID { get; private set; }
-        public string IdToken { get; private set; }
+        public string Id { get; }
+        public string IdToken { get; }
         public bool IsCreator { get; private set; }
 
-        [DefaultValue(false)]
-        public bool IsQuickMix { get; private set; }
+        [System.ComponentModel.DefaultValue(false)]
+        public bool IsQuickMix { get; }
 
         public string Name { get; private set; }
 
-        private bool _useQuickMix = false;
         public bool UseQuickMix
         {
             get { return _useQuickMix; }
             set
             {
-                if (value != _useQuickMix)
-                {
-                    _useQuickMix = value;
-                    Notify("UseQuickMix");
-                }
+                if (value == _useQuickMix) return;
+                _useQuickMix = value;
+                Notify("UseQuickMix");
             }
         }
 
-        public string ArtUrl { get; private set; }
-        [XmlIgnore]
-        [ScriptIgnore]
+        public string ArtUrl { get; }
+
+        [System.Xml.Serialization.XmlIgnore]
+        [System.Web.Script.Serialization.ScriptIgnore]
         public byte[] ArtImage
         {
             get
@@ -159,74 +122,75 @@ namespace PandoraSharp
             }
         }
 
-        public string InfoUrl
-        {
-            get;
-            set;
-        }
+        public string InfoUrl { get; set; }
 
         public int ThumbsUp { get; set; }
         public int ThumbsDown { get; set; }
 
-        public string ArtCacheFile
-        {
-            get { return Path.Combine(_pandora.ImageCachePath, "Station_" + IdToken); }
-        }
+        public string ArtCacheFile => System.IO.Path.Combine(_pandora.ImageCachePath, "Station_" + IdToken);
 
         public bool SkipLimitReached { get; set; }
-        public DateTime SkipLimitTime { get; set; }
+        public System.DateTime SkipLimitTime { get; set; }
+        private readonly object _artLock = new object();
+        private readonly Pandora _pandora;
+        private byte[] _artImage;
 
-        private void StationArtDownloadHandler(object sender, DownloadDataCompletedEventArgs e)
+        private bool _gettingPlaylist;
+
+        private bool _useQuickMix;
+
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+
+        private void Notify(string info)
         {
-            if (e.Result.Length == 0)
-                return;
-
-            ArtImage = e.Result;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(info));
         }
+
+        //private void StationArtDownloadHandler(object sender, System.Net.DownloadDataCompletedEventArgs e)
+        //{
+        //    if (e.Result.Length == 0)
+        //        return;
+
+        //    ArtImage = e.Result;
+        //}
 
         public void TransformIfShared()
         {
-            if (!IsCreator)
-            {
-                Log.O("Pandora: Transforming Station");
-                _pandora.CallRPC("station.transformSharedStation", "stationToken", IdToken);
-                IsCreator = true;
-            }
+            if (IsCreator) return;
+            Util.Log.O("Pandora: Transforming Station");
+            _pandora.CallRPC("station.transformSharedStation", "stationToken", IdToken);
+            IsCreator = true;
         }
 
-        private bool _gettingPlaylist = false;
-        public List<Song> GetPlaylist()
-        { 
-            var results = new List<Song>();
+        public System.Collections.Generic.List<Song> GetPlaylist()
+        {
+            System.Collections.Generic.List<Song> results = new System.Collections.Generic.List<Song>();
             if (_gettingPlaylist) return results;
-            Log.O("GetPlaylist");
+            Util.Log.O("GetPlaylist");
             try
             {
                 _gettingPlaylist = true;
-                JObject req = new JObject();
-                req["stationToken"] = IdToken;
-                if(_pandora.AudioFormat != PAudioFormat.AACPlus)
+                Newtonsoft.Json.Linq.JObject req = new Newtonsoft.Json.Linq.JObject {["stationToken"] = IdToken};
+                if (_pandora.AudioFormat != PAudioFormat.AacPlus)
                     req["additionalAudioUrl"] = "HTTP_128_MP3,HTTP_192_MP3";
 
-                var playlist = _pandora.CallRPC("station.getPlaylist", req, false, true); // MUST use SSL
+                JsonResult playlist = _pandora.CallRPC("station.getPlaylist", req, false, true); // MUST use SSL
 
-                foreach (var song in playlist.Result["items"])
-                {
-                    if (song["songName"] == null) continue;
+                foreach (Newtonsoft.Json.Linq.JToken song in Enumerable.Where(playlist.Result["items"], song => song["songName"] != null)) {
                     try
                     {
                         results.Add(new Song(_pandora, song));
                     }
-                    catch (PandoraException ex)
+                    catch (Exceptions.PandoraException ex)
                     {
-                        Log.O("Song Add Error: " + ex.FaultMessage);
+                        Util.Log.O("Song Add Error: " + ex.FaultMessage);
                     }
                 }
 
                 _gettingPlaylist = false;
                 return results;
             }
-            catch (PandoraException ex) 
+            catch (Exceptions.PandoraException ex)
             {
                 _gettingPlaylist = false;
                 if (ex.Message == "PLAYLIST_END" || ex.Message == "DAILY_SKIP_LIMIT_REACHED")
@@ -234,26 +198,29 @@ namespace PandoraSharp
                     if (ex.Message == "PLAYLIST_END")
                     {
                         SkipLimitReached = true;
-                        SkipLimitTime = DateTime.Now;
+                        SkipLimitTime = System.DateTime.Now;
                     }
                     else
                         throw;
                 }
 
-                Log.O("Error getting playlist, will try again next time: " + Errors.GetErrorMessage(ex.Fault));
+                Util.Log.O("Error getting playlist, will try again next time: " + Util.Errors.GetErrorMessage(ex.Fault));
                 return results;
             }
         }
 
         public void AddVariety(SearchResult item)
         {
-            Log.O("Pandora: Adding {0} to {1}", item.DisplayName, this.Name);
+            Util.Log.O("Pandora: Adding {0} to {1}", item.DisplayName, Name);
 
             try
             {
                 _pandora.CallRPC("station.addMusic", "stationToken", IdToken, "musicToken", item.MusicToken);
             }
-            catch{} // eventually do something with this
+            catch
+            {
+                //
+            } // eventually do something with this
         }
 
         public void Rename(string newName)
@@ -263,76 +230,79 @@ namespace PandoraSharp
                 TransformIfShared();
                 if (newName == Name)
                     return;
-                Log.O("Pandora: Renaming Station");
+                Util.Log.O("Pandora: Renaming Station");
                 _pandora.CallRPC("station.renameStation", "stationToken", IdToken, "stationName", newName);
 
                 Name = newName;
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
-                Log.O(ex.ToString());
+                Util.Log.O(ex.ToString());
             }
         }
 
         public void Delete()
         {
-            Log.O("Pandora: Deleting Station");
+            Util.Log.O("Pandora: Deleting Station");
             _pandora.CallRPC("station.deleteStation", "stationToken", IdToken);
-            if (File.Exists(ArtCacheFile))
+            if (!System.IO.File.Exists(ArtCacheFile)) return;
+            try
             {
-                try
-                {
-                    File.Delete(ArtCacheFile);
-                }
-                catch (Exception)
-                {
-                }
+                System.IO.File.Delete(ArtCacheFile);
+            }
+            catch (System.Exception)
+            {
+                //todo
             }
         }
 
         public void CreateShortcut()
         {
-            WshShellClass wsh = new WshShellClass();
+            IWshRuntimeLibrary.WshShellClass wsh = new IWshRuntimeLibrary.WshShellClass();
 
-            string targetPathWithoutExtension = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\Elpis - " + Name;
-            for (int i = 1; File.Exists(targetPathWithoutExtension+".lnk"); i++ )
+            string targetPathWithoutExtension =
+                System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop) + "\\Elpis - " + Name;
+            for (int i = 1; System.IO.File.Exists(targetPathWithoutExtension + ".lnk"); i++)
             {
                 targetPathWithoutExtension = targetPathWithoutExtension + i;
             }
-            IWshShortcut shortcut = (IWshShortcut)wsh.CreateShortcut(targetPathWithoutExtension + ".lnk");
-            if(shortcut != null)
+            IWshRuntimeLibrary.IWshShortcut shortcut =
+                (IWshRuntimeLibrary.IWshShortcut) wsh.CreateShortcut(targetPathWithoutExtension + ".lnk");
+            if (shortcut == null) return;
+            shortcut.Arguments = $"--station={Id}";
+            shortcut.TargetPath =
+                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) +
+                "\\Elpis.exe";
+            // not sure about what this is for
+            shortcut.WindowStyle = 1;
+            shortcut.Description = $"Start Elpis tuned to {Name}";
+            shortcut.WorkingDirectory =
+                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+            //Get the assembly.
+            System.Reflection.Assembly currAssembly = System.Reflection.Assembly.LoadFrom(shortcut.TargetPath);
+
+            //Gets the image from the exe resources
+            System.IO.Stream stream = currAssembly.GetManifestResourceStream("main_icon.ico");
+            if (null != stream)
             {
-                shortcut.Arguments = String.Format("--station={0}", this.ID);
-                shortcut.TargetPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Elpis.exe";
-                // not sure about what this is for
-                shortcut.WindowStyle = 1;
-                shortcut.Description = String.Format("Start Elpis tuned to {0}", this.Name);
-                shortcut.WorkingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                
-                //Get the assembly.
-                Assembly currAssembly = Assembly.LoadFrom(shortcut.TargetPath);
-
-                //Gets the image from the exe resources
-                Stream stream = currAssembly.GetManifestResourceStream("main_icon.ico");
-                if (null != stream)
-                {
-                    string temp = Path.GetTempFileName();
-                    Image.FromStream(stream).Save(temp);
-                    shortcut.IconLocation = temp;
-                }
-
-                shortcut.Save();
+                string temp = System.IO.Path.GetTempFileName();
+                System.Drawing.Image.FromStream(stream).Save(temp);
+                shortcut.IconLocation = temp;
             }
 
+            shortcut.Save();
         }
 
-        public JumpTask asJumpTask()
+        public System.Windows.Shell.JumpTask AsJumpTask()
         {
-            var task = new JumpTask();
-            task.Title = Name;
-            task.Description = "Play station " + Name;
-            task.ApplicationPath = Assembly.GetEntryAssembly().Location;
-            task.Arguments = "--station=" + ID;
+            System.Windows.Shell.JumpTask task = new System.Windows.Shell.JumpTask
+            {
+                Title = Name,
+                Description = "Play station " + Name,
+                ApplicationPath = System.Reflection.Assembly.GetEntryAssembly().Location,
+                Arguments = "--station=" + Id
+            };
             return task;
         }
     }

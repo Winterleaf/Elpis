@@ -17,43 +17,38 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Windows;
-using System.Windows.Controls;
-
 namespace Elpis.Controls
 {
     public class TextBlockUtils
     {
-        public static readonly DependencyProperty AutoTooltipProperty =
-            DependencyProperty.RegisterAttached("AutoTooltip",
-                                                typeof (bool), typeof (TextBlockUtils),
-                                                new PropertyMetadata(false, OnAutoTooltipPropertyChanged));
+        public static readonly System.Windows.DependencyProperty AutoTooltipProperty =
+            System.Windows.DependencyProperty.RegisterAttached("AutoTooltip", typeof (bool), typeof (TextBlockUtils),
+                new System.Windows.PropertyMetadata(false, OnAutoTooltipPropertyChanged));
 
-        public static readonly DependencyProperty AutoTooltipFontSizeProperty =
-            DependencyProperty.RegisterAttached("AutoTooltipFontSize",
-                                                typeof (double), typeof (TextBlockUtils),
-                                                new PropertyMetadata(0.0, OnAutoTooltipFontSizePropertyChanged));
+        public static readonly System.Windows.DependencyProperty AutoTooltipFontSizeProperty =
+            System.Windows.DependencyProperty.RegisterAttached("AutoTooltipFontSize", typeof (double),
+                typeof (TextBlockUtils), new System.Windows.PropertyMetadata(0.0, OnAutoTooltipFontSizePropertyChanged));
 
-        public static bool GetAutoTooltip(DependencyObject obj)
+        public static bool GetAutoTooltip(System.Windows.DependencyObject obj)
         {
             return (bool) obj.GetValue(AutoTooltipProperty);
         }
 
-        public static void SetAutoTooltip(DependencyObject obj, bool value)
+        public static void SetAutoTooltip(System.Windows.DependencyObject obj, bool value)
         {
             obj.SetValue(AutoTooltipProperty, value);
         }
 
-        private static void OnAutoTooltipPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void OnAutoTooltipPropertyChanged(System.Windows.DependencyObject d,
+            System.Windows.DependencyPropertyChangedEventArgs e)
         {
-            var textBlock = (TextBlock) d;
+            System.Windows.Controls.TextBlock textBlock = (System.Windows.Controls.TextBlock) d;
             if (textBlock == null)
                 return;
 
             if (e.NewValue.Equals(true))
             {
-                textBlock.TextTrimming = TextTrimming.CharacterEllipsis;
+                textBlock.TextTrimming = System.Windows.TextTrimming.CharacterEllipsis;
                 ComputeAutoTooltip(textBlock);
                 textBlock.SizeChanged += TextBlock_SizeChanged;
             }
@@ -63,50 +58,45 @@ namespace Elpis.Controls
             }
         }
 
-        public static double GetAutoTooltipFontSize(DependencyObject obj)
+        public static double GetAutoTooltipFontSize(System.Windows.DependencyObject obj)
         {
-            var result = (double) obj.GetValue(AutoTooltipFontSizeProperty);
-            if (result.Equals(0.0))
-                return ((TextBlock) obj).FontSize;
-
-            return result;
+            double result = (double) obj.GetValue(AutoTooltipFontSizeProperty);
+            return result.Equals(0.0) ? ((System.Windows.Controls.TextBlock) obj).FontSize : result;
         }
 
-        public static void SetAutoTooltipFontSize(DependencyObject obj, double value)
+        public static void SetAutoTooltipFontSize(System.Windows.DependencyObject obj, double value)
         {
             if (value.Equals(0.0))
-                value = ((TextBlock) obj).FontSize;
+                value = ((System.Windows.Controls.TextBlock) obj).FontSize;
             obj.SetValue(AutoTooltipFontSizeProperty, value);
         }
 
-        private static void OnAutoTooltipFontSizePropertyChanged(DependencyObject d,
-                                                                 DependencyPropertyChangedEventArgs e)
-        {
-        }
+        private static void OnAutoTooltipFontSizePropertyChanged(System.Windows.DependencyObject d,
+            System.Windows.DependencyPropertyChangedEventArgs e) {}
 
-        private static void TextBlock_SizeChanged(object sender, SizeChangedEventArgs e)
+        private static void TextBlock_SizeChanged(object sender, System.Windows.SizeChangedEventArgs e)
         {
-            var textBlock = (TextBlock) sender;
+            System.Windows.Controls.TextBlock textBlock = (System.Windows.Controls.TextBlock) sender;
             ComputeAutoTooltip(textBlock);
         }
 
-        private static void ComputeAutoTooltip(TextBlock textBlock)
+        private static void ComputeAutoTooltip(System.Windows.Controls.TextBlock textBlock)
         {
-            textBlock.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
+            textBlock.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
             double width = textBlock.DesiredSize.Width;
 
             if (textBlock.ActualWidth < width)
             {
-                var toolBlock = new TextBlock()
-                                    {
-                                        Text = textBlock.Text,
-                                        FontSize = GetAutoTooltipFontSize(textBlock)
-                                    };
-                ToolTipService.SetToolTip(textBlock, toolBlock);
+                System.Windows.Controls.TextBlock toolBlock = new System.Windows.Controls.TextBlock
+                {
+                    Text = textBlock.Text,
+                    FontSize = GetAutoTooltipFontSize(textBlock)
+                };
+                System.Windows.Controls.ToolTipService.SetToolTip(textBlock, toolBlock);
             }
             else
             {
-                ToolTipService.SetToolTip(textBlock, null);
+                System.Windows.Controls.ToolTipService.SetToolTip(textBlock, null);
             }
         }
     }

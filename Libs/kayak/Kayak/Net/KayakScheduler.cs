@@ -1,121 +1,109 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Kayak
+﻿namespace Kayak.Net
 {
-    class DefaultKayakScheduler : TaskScheduler, IScheduler
+    internal class DefaultKayakScheduler : System.Threading.Tasks.TaskScheduler, IScheduler
     {
-        ISchedulerDelegate del;
-
-        Thread dispatch;
-        ManualResetEventSlim wh;
-        ConcurrentQueue<Task> queue;
-        bool stopped;
-
-        public void Post(Action action)
-        {
-            Debug.WriteLine("--- Posted task.");
-
-            var task = new Task(action);
-            task.ContinueWith(t =>
-            {
-                del.OnException(this, t.Exception);
-            }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, this);
-            task.Start(this);
-        }
-
         internal DefaultKayakScheduler(ISchedulerDelegate del)
         {
             if (del == null)
-                throw new ArgumentNullException("del");
+                throw new System.ArgumentNullException(nameof(del));
 
-            this.del = del;
-            queue = new ConcurrentQueue<Task>();
+            _del = del;
+            _queue = new System.Collections.Concurrent.ConcurrentQueue<System.Threading.Tasks.Task>();
+        }
+
+        public override int MaximumConcurrencyLevel => 1;
+
+        private readonly ISchedulerDelegate _del;
+
+        private System.Threading.Thread _dispatch;
+        private System.Collections.Concurrent.ConcurrentQueue<System.Threading.Tasks.Task> _queue;
+        private bool _stopped;
+        private System.Threading.ManualResetEventSlim _wh;
+
+        public void Post(System.Action action)
+        {
+            System.Diagnostics.Debug.WriteLine("--- Posted task.");
+
+            System.Threading.Tasks.Task task = new System.Threading.Tasks.Task(action);
+            task.ContinueWith(t => { _del.OnException(this, t.Exception); }, System.Threading.CancellationToken.None,
+                System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted, this);
+            task.Start(this);
         }
 
         public void Start()
         {
-            if (dispatch != null)
-                throw new InvalidOperationException("The scheduler was already started.");
+            if (_dispatch != null)
+                throw new System.InvalidOperationException("The scheduler was already started.");
 
             Dispatch();
         }
 
         public void Stop()
         {
-            Debug.WriteLine("Scheduler will stop.");
-            Post(() => { stopped = true; });
+            System.Diagnostics.Debug.WriteLine("Scheduler will stop.");
+            Post(() => { _stopped = true; });
         }
 
-        void Dispatch()
+        public void Dispose()
         {
-            wh = new ManualResetEventSlim();
+            // nothing to see here!
+        }
+
+        private void Dispatch()
+        {
+            _wh = new System.Threading.ManualResetEventSlim();
 
             while (true)
             {
-                Task outTask = null;
+                System.Threading.Tasks.Task outTask;
 
-                if (queue.TryDequeue(out outTask))
+                if (_queue.TryDequeue(out outTask))
                 {
-                    Debug.WriteLine("--- Executing Task ---");
+                    System.Diagnostics.Debug.WriteLine("--- Executing Task ---");
                     TryExecuteTask(outTask);
-                    Debug.WriteLine("--- Done Executing Task ---");
+                    System.Diagnostics.Debug.WriteLine("--- Done Executing Task ---");
 
-                    if (stopped)
-                    {
-                        stopped = false;
-                        dispatch = null;
-                        queue = new ConcurrentQueue<Task>();
+                    if (!_stopped) continue;
+                    _stopped = false;
+                    _dispatch = null;
+                    _queue = new System.Collections.Concurrent.ConcurrentQueue<System.Threading.Tasks.Task>();
 
-                        Debug.WriteLine("Scheduler stopped.");
-                        del.OnStop(this);
+                    System.Diagnostics.Debug.WriteLine("Scheduler stopped.");
+                    _del.OnStop(this);
 
-                        break;
-                    }
+                    break;
                 }
-                else
-                {
-                    wh.Wait();
-                    wh.Reset();
-                }
+                _wh.Wait();
+                _wh.Reset();
             }
 
-            stopped = false;
-            dispatch = null;
-            wh.Dispose();
-            wh = null;
+            _stopped = false;
+            _dispatch = null;
+            _wh.Dispose();
+            _wh = null;
         }
 
-        protected override IEnumerable<Task> GetScheduledTasks()
+        protected override System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> GetScheduledTasks()
         {
             yield break;
         }
 
-        public override int MaximumConcurrencyLevel { get { return 1; } }
-
-        protected override void QueueTask(Task task)
+        protected override void QueueTask(System.Threading.Tasks.Task task)
         {
-            queue.Enqueue(task);
-            if (wh != null)
-            {
-                wh.Set();
-            }
+            _queue.Enqueue(task);
+            _wh?.Set();
         }
 
-        protected override bool TryDequeue(Task task)
+        protected override bool TryDequeue(System.Threading.Tasks.Task task)
         {
-            Task outTask = null;
-            queue.TryDequeue(out outTask);
-            return (task == outTask);
+            System.Threading.Tasks.Task outTask;
+            _queue.TryDequeue(out outTask);
+            return task == outTask;
         }
 
-        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+        protected override bool TryExecuteTaskInline(System.Threading.Tasks.Task task, bool taskWasPreviouslyQueued)
         {
-            if (Thread.CurrentThread != dispatch) return false;
+            if (System.Threading.Thread.CurrentThread != _dispatch) return false;
 
             if (taskWasPreviouslyQueued && !TryDequeue(task))
             {
@@ -123,11 +111,6 @@ namespace Kayak
             }
 
             return TryExecuteTask(task);
-        }
-
-        public void Dispose()
-        {
-            // nothing to see here!
         }
     }
 }

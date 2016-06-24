@@ -17,40 +17,16 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Input;
-using System.Windows.Media.Animation;
-using System.Windows.Navigation;
-using BassPlayer;
-using Elpis.Controls;
-using PandoraSharp;
-using PandoraSharpPlayer;
-using Util;
+using Enumerable = System.Linq.Enumerable;
 
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for PlaylistPage.xaml
+    ///     Interaction logic for PlaylistPage.xaml
     /// </summary>
-    public partial class PlaylistPage : UserControl
+    public partial class PlaylistPage
     {
-        private readonly object _currSongLock = new object();
-        private readonly Dictionary<Song, ImageButton[]> _feedbackMap;
-        private readonly Player _player;
-        private Song _currSong;
-        private Song _currMenuSong;
-
-        private ContextMenu _songMenu;
-        private MenuItem _purchaseMenu;
-        private MenuItem _purchaseAmazonAlbum;
-        private MenuItem _purchaseAmazonTrack;
-
-        public PlaylistPage(Player player)
+        public PlaylistPage(PandoraSharpPlayer.Player player)
         {
             _player = player;
             _player.SongStarted += _player_SongStarted;
@@ -66,206 +42,205 @@ namespace Elpis
             _player.LogoutEvent += _player_LogoutEvent;
             InitializeComponent();
 
-            _feedbackMap = new Dictionary<Song, ImageButton[]>();
+            _feedbackMap = new System.Collections.Generic.Dictionary<PandoraSharp.Song, Controls.ImageButton[]>();
 
-            _songMenu = this.Resources["SongMenu"] as ContextMenu;
+            _songMenu = Resources["SongMenu"] as System.Windows.Controls.ContextMenu;
             //This would need to be changed if the menu order is ever changed
-            _purchaseMenu = _songMenu.Items[0] as MenuItem;
-            _purchaseAmazonAlbum = _purchaseMenu.Items[0] as MenuItem;
-            _purchaseAmazonTrack = _purchaseMenu.Items[1] as MenuItem;
+            System.Diagnostics.Debug.Assert(_songMenu != null, "_songMenu != null");
+            _purchaseMenu = _songMenu.Items[0] as System.Windows.Controls.MenuItem;
+            System.Diagnostics.Debug.Assert(_purchaseMenu != null, "_purchaseMenu != null");
+            _purchaseAmazonAlbum = _purchaseMenu.Items[0] as System.Windows.Controls.MenuItem;
+            _purchaseAmazonTrack = _purchaseMenu.Items[1] as System.Windows.Controls.MenuItem;
         }
+
+        private readonly object _currSongLock = new object();
+        private readonly System.Collections.Generic.Dictionary<PandoraSharp.Song, Controls.ImageButton[]> _feedbackMap;
+        private readonly PandoraSharpPlayer.Player _player;
+        private PandoraSharp.Song _currMenuSong;
+        private PandoraSharp.Song _currSong;
+        private readonly System.Windows.Controls.MenuItem _purchaseAmazonAlbum;
+        private readonly System.Windows.Controls.MenuItem _purchaseAmazonTrack;
+        private readonly System.Windows.Controls.MenuItem _purchaseMenu;
+
+        private readonly System.Windows.Controls.ContextMenu _songMenu;
 
         private void ShowWait(bool state)
         {
-            this.BeginDispatch(() => StationWaitScreen.Visibility = state ? Visibility.Visible : Visibility.Hidden);
+            this.BeginDispatch(
+                () =>
+                    StationWaitScreen.Visibility =
+                        state ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden);
         }
 
-        void _player_LogoutEvent(object sender)
+        private void _player_LogoutEvent(object sender)
         {
             lstOldSongs.Items.Clear();
         }
 
-        void _player_ExceptionEvent(object sender, ErrorCodes code, Exception ex)
+        private void _player_ExceptionEvent(object sender, Util.ErrorCodes code, System.Exception ex)
         {
             ShowWait(false);
         }
 
-        private void _player_PlaybackStateChanged(object sender, BassAudioEngine.PlayState oldState,
-                                                  BassAudioEngine.PlayState newState)
+        private void _player_PlaybackStateChanged(object sender, BassPlayer.BassAudioEngine.PlayState oldState,
+            BassPlayer.BassAudioEngine.PlayState newState)
         {
             lock (_currSongLock)
             {
-                if (newState == BassAudioEngine.PlayState.Playing && _currSong != null)
+                if (newState == BassPlayer.BassAudioEngine.PlayState.Playing && _currSong != null)
                     this.BeginDispatch(() => SetSong(_currSong));
             }
         }
 
-        private void _player_StationLoaded(object sender, Station station)
+        private void _player_StationLoaded(object sender, PandoraSharp.Station station)
         {
             this.BeginDispatch(() =>
-                                   {
-                                       txtStationName.Text = station.Name;
-                                       ShowWait(false);
-                                   });
+            {
+                txtStationName.Text = station.Name;
+                ShowWait(false);
+            });
         }
 
-        private void _player_StationLoading(object sender, Station station)
+        private void _player_StationLoading(object sender, PandoraSharp.Station station)
         {
             this.BeginDispatch(() =>
-                                   {
-                                       if (IsLoaded)
-                                       {
-                                           ShowWait(true);
-                                       }
-                                   });
+            {
+                if (IsLoaded)
+                {
+                    ShowWait(true);
+                }
+            });
         }
 
-        private void _player_PlaybackProgress(object sender, BassAudioEngine.Progress prog)
+        private void _player_PlaybackProgress(object sender, BassPlayer.BassAudioEngine.Progress prog)
         {
             UpdateProgress(prog);
         }
 
-        private void UpdateProgress(BassAudioEngine.Progress prog)
+        private void UpdateProgress(BassPlayer.BassAudioEngine.Progress prog)
         {
             this.BeginDispatch(() =>
-                                   {
-                                       lblCurrTime.Content = prog.ElapsedTime.ToString(@"mm\:ss");
-                                       lblRemainTime.Content = prog.RemainingTime.ToString(@"mm\:ss");
-                                       progPlayTime.Value = prog.Percent;
-                                   });
+            {
+                lblCurrTime.Content = prog.ElapsedTime.ToString(@"mm\:ss");
+                lblRemainTime.Content = prog.RemainingTime.ToString(@"mm\:ss");
+                progPlayTime.Value = prog.Percent;
+            });
         }
 
-        private void _player_FeedbackUpdateEvent(object sender, Song song, bool success)
+        private void _player_FeedbackUpdateEvent(object sender, PandoraSharp.Song song, bool success)
         {
             this.BeginDispatch(() =>
-                                   {
-                                       if (_feedbackMap.ContainsKey(song))
-                                       {
-                                           //bit of a hack, but avoids putting INotify in lower level classes or making wrappers
-                                           foreach (ImageButton button in _feedbackMap[song])
-                                           {
-                                               var spinner = button.FindParent<ContentSpinner>();
-                                               BindingExpression bind =
-                                                   button.GetBindingExpression(ImageButton.IsActiveProperty);
-                                               if (bind != null) bind.UpdateTarget();
-                                               spinner.StopAnimation();
-                                           }
-                                           _feedbackMap.Remove(song);
+            {
+                if (!_feedbackMap.ContainsKey(song)) return;
+                //bit of a hack, but avoids putting INotify in lower level classes or making wrappers
+                foreach (Controls.ImageButton button in _feedbackMap[song])
+                {
+                    Controls.ContentSpinner spinner = button.FindParent<Controls.ContentSpinner>();
+                    System.Windows.Data.BindingExpression bind =
+                        button.GetBindingExpression(Controls.ImageButton.IsActiveProperty);
+                    bind?.UpdateTarget();
+                    spinner.StopAnimation();
+                }
+                _feedbackMap.Remove(song);
 
-                                           if (song.Banned && song == _player.CurrentSong) _player.Next();
-                                       }
-                                   });
+                if (song.Banned && song == _player.CurrentSong) _player.Next();
+            });
         }
 
         private void _player_LoadingNextSong(object sender)
         {
-            UpdateProgress(new BassAudioEngine.Progress {ElapsedTime = new TimeSpan(0), TotalTime = new TimeSpan(0)});
+            UpdateProgress(new BassPlayer.BassAudioEngine.Progress
+            {
+                ElapsedTime = new System.TimeSpan(0),
+                TotalTime = new System.TimeSpan(0)
+            });
             this.BeginDispatch(() =>
-                                   {
-                                       CurrentSong.Visibility = Visibility.Hidden;
-                                       WaitScreen.Visibility = Visibility.Visible;
-                                   });
+            {
+                CurrentSong.Visibility = System.Windows.Visibility.Hidden;
+                WaitScreen.Visibility = System.Windows.Visibility.Visible;
+            });
         }
 
-        private void _player_PlayedSongRemoved(object sender, Song song)
+        private void _player_PlayedSongRemoved(object sender, PandoraSharp.Song song)
         {
             this.BeginDispatch(() => PlayedSongRemove(song));
         }
 
-        private void PlayedSongRemove(Song song)
+        private void PlayedSongRemove(PandoraSharp.Song song)
         {
-            ContentControl result = null;
-            foreach (ContentControl sc in lstOldSongs.Items)
-            {
-                if (song == sc.Content)
-                {
-                    result = sc;
-                    break;
-                }
-            }
+            System.Windows.Controls.ContentControl result = Enumerable.FirstOrDefault(Enumerable.Cast<System.Windows.Controls.ContentControl>(lstOldSongs.Items), sc => song == sc.Content);
 
-            if (result != null)
-            {
-                bool last = lstOldSongs.Items.IndexOf(result) == (lstOldSongs.Items.Count - 1);
-                Dispatcher.Invoke(AnimateListRemove(result, last));
-            }
+            if (result == null) return;
+            bool last = lstOldSongs.Items.IndexOf(result) == lstOldSongs.Items.Count - 1;
+            Dispatcher.Invoke(AnimateListRemove(result, last));
         }
 
-        private Action AnimateListRemove(ContentControl item, bool last)
+        private System.Action AnimateListRemove(System.Windows.Controls.ContentControl item, bool last)
         {
             return () =>
-                       {
-                           Storyboard remSB;
-                           if (last)
-                           {
-                               remSB = ((Storyboard) Resources["ListBoxRemoveLast"]).Clone();
-                           }
-                           else
-                           {
-                               remSB = ((Storyboard) Resources["ListBoxRemove"]).Clone();
-                               ((DoubleAnimation) remSB.Children[1]).From = (item).ActualHeight;
-                           }
+            {
+                System.Windows.Media.Animation.Storyboard remSB;
+                if (last)
+                {
+                    remSB = ((System.Windows.Media.Animation.Storyboard) Resources["ListBoxRemoveLast"]).Clone();
+                }
+                else
+                {
+                    remSB = ((System.Windows.Media.Animation.Storyboard) Resources["ListBoxRemove"]).Clone();
+                    ((System.Windows.Media.Animation.DoubleAnimation) remSB.Children[1]).From = item.ActualHeight;
+                }
 
-                           remSB.Completed += ((o, e) => lstOldSongs.Items.Remove(item));
-                           remSB.Begin(item);
-                       };
+                remSB.Completed += (o, e) => lstOldSongs.Items.Remove(item);
+                remSB.Begin(item);
+            };
         }
 
-        private void _player_PlayedSongAdded(object sender, Song song)
+        private void _player_PlayedSongAdded(object sender, PandoraSharp.Song song)
         {
             this.BeginDispatch(() => PlayedSongAdd(song));
         }
 
-        private void PlayedSongAdd(Song song)
+        private void PlayedSongAdd(PandoraSharp.Song song)
         {
-            var songControl = new ContentControl();
-            RoutedEventHandler loadEvent = AnimateListAdd(lstOldSongs.Items.Count == 0);
+            System.Windows.Controls.ContentControl songControl = new System.Windows.Controls.ContentControl();
+            System.Windows.RoutedEventHandler loadEvent = AnimateListAdd(lstOldSongs.Items.Count == 0);
             songControl.Loaded += loadEvent;
             songControl.Tag = loadEvent;
-            songControl.ContentTemplate = (DataTemplate) Resources["SongTemplate"];
+            songControl.ContentTemplate = (System.Windows.DataTemplate) Resources["SongTemplate"];
             songControl.Content = song;
 
             lstOldSongs.Items.Insert(0, songControl);
         }
 
-        private RoutedEventHandler AnimateListAdd(bool first)
+        private System.Windows.RoutedEventHandler AnimateListAdd(bool first)
         {
             return (o1, e1) =>
-                       {
-                           Storyboard addSB;
-                           if (first)
-                           {
-                               addSB = ((Storyboard) Resources["ListBoxAddFirst"]).Clone();
-                           }
-                           else
-                           {
-                               addSB = ((Storyboard) Resources["ListBoxAdd"]).Clone();
-                               //((DoubleAnimation) addSB.Children[0]).To = 96;//((ContentControl)o1).ActualHeight;
-                           }
-                           addSB.Begin((ContentControl) o1);
+            {
+                System.Windows.Media.Animation.Storyboard addSB = first ? ((System.Windows.Media.Animation.Storyboard) Resources["ListBoxAddFirst"]).Clone() : ((System.Windows.Media.Animation.Storyboard) Resources["ListBoxAdd"]).Clone();
+                addSB.Begin((System.Windows.Controls.ContentControl) o1);
 
-                           var song = (ContentControl) o1;
-                           song.Loaded -= (RoutedEventHandler) song.Tag;
-                       };
+                System.Windows.Controls.ContentControl song = (System.Windows.Controls.ContentControl) o1;
+                song.Loaded -= (System.Windows.RoutedEventHandler) song.Tag;
+            };
         }
 
-        private void SetSong(Song song)
+        private void SetSong(PandoraSharp.Song song)
         {
             CurrentSong.Content = song;
-            CurrentSong.Visibility = Visibility.Visible;
-            WaitScreen.Visibility = Visibility.Collapsed;
+            CurrentSong.Visibility = System.Windows.Visibility.Visible;
+            WaitScreen.Visibility = System.Windows.Visibility.Collapsed;
 
             this.BeginDispatch(() =>
             {
-                String[] stat = txtStationName.Text.Split('-');
+                string[] stat = txtStationName.Text.Split('-');
                 if (stat[0].Equals("Quick Mix"))
                 {
-                    txtStationName.Text = stat[0]+"-"+song.Station.Name;
+                    txtStationName.Text = stat[0] + "-" + song.Station.Name;
                 }
             });
         }
 
-        private void _player_SongStarted(object sender, Song song)
+        private void _player_SongStarted(object sender, PandoraSharp.Song song)
         {
             lock (_currSongLock)
             {
@@ -273,26 +248,28 @@ namespace Elpis
             }
         }
 
-        private void RequestNavigate(object sender, RequestNavigateEventArgs e)
+        private void RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
-            Process.Start(e.Uri.AbsoluteUri);
+            System.Diagnostics.Process.Start(e.Uri.AbsoluteUri);
         }
 
         public void ThumbDownCurrent()
         {
-            var thumbDown = CurrentSong.FindChildByName<ImageButton>("btnThumbDown");
+            Controls.ImageButton thumbDown = CurrentSong.FindChildByName<Controls.ImageButton>("btnThumbDown");
             ThumbDownHandle(thumbDown);
         }
 
-        private void ThumbDownHandle(ImageButton button)
+        private void ThumbDownHandle(Controls.ImageButton button)
         {
-            var song = (Song)((button).FindParentByName<Grid>("SongItem")).DataContext;
-            var spinner = button.FindParent<ContentSpinner>();
+            PandoraSharp.Song song =
+                (PandoraSharp.Song) button.FindParentByName<System.Windows.Controls.Grid>("SongItem").DataContext;
+            Controls.ContentSpinner spinner = button.FindParent<Controls.ContentSpinner>();
             if (_feedbackMap.ContainsKey(song)) return;
 
-            var otherButton =
-                spinner.FindSiblingByName<ContentSpinner>("SpinUp").FindChildByName<ImageButton>("btnThumbUp");
-            _feedbackMap.Add(song, new[] { button, otherButton });
+            Controls.ImageButton otherButton =
+                spinner.FindSiblingByName<Controls.ContentSpinner>("SpinUp")
+                    .FindChildByName<Controls.ImageButton>("btnThumbUp");
+            _feedbackMap.Add(song, new[] {button, otherButton});
 
             if (song.Banned)
                 _player.SongDeleteFeedback(song);
@@ -302,26 +279,28 @@ namespace Elpis
             spinner.StartAnimation();
         }
 
-        private void btnThumbDown_Click(object sender, RoutedEventArgs e)
+        private void btnThumbDown_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            ThumbDownHandle((ImageButton)sender);
+            ThumbDownHandle((Controls.ImageButton) sender);
         }
 
         public void ThumbUpCurrent()
         {
-            var thumbUp = CurrentSong.FindChildByName<ImageButton>("btnThumbUp");
+            Controls.ImageButton thumbUp = CurrentSong.FindChildByName<Controls.ImageButton>("btnThumbUp");
             ThumbUpHandle(thumbUp);
         }
 
-        private void ThumbUpHandle(ImageButton button)
+        private void ThumbUpHandle(Controls.ImageButton button)
         {
-            var song = (Song)((button).FindParentByName<Grid>("SongItem")).DataContext;
-            var spinner = button.FindParent<ContentSpinner>();
+            PandoraSharp.Song song =
+                (PandoraSharp.Song) button.FindParentByName<System.Windows.Controls.Grid>("SongItem").DataContext;
+            Controls.ContentSpinner spinner = button.FindParent<Controls.ContentSpinner>();
             if (_feedbackMap.ContainsKey(song)) return;
 
-            var otherButton =
-                spinner.FindSiblingByName<ContentSpinner>("SpinDown").FindChildByName<ImageButton>("btnThumbDown");
-            _feedbackMap.Add(song, new[] { button, otherButton });
+            Controls.ImageButton otherButton =
+                spinner.FindSiblingByName<Controls.ContentSpinner>("SpinDown")
+                    .FindChildByName<Controls.ImageButton>("btnThumbDown");
+            _feedbackMap.Add(song, new[] {button, otherButton});
             if (song.Loved)
                 _player.SongDeleteFeedback(song);
             else
@@ -330,51 +309,57 @@ namespace Elpis
             spinner.StartAnimation();
         }
 
-
-        private void btnThumbUp_Click(object sender, RoutedEventArgs e)
+        private void btnThumbUp_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            ThumbUpHandle((ImageButton)sender);
+            ThumbUpHandle((Controls.ImageButton) sender);
         }
 
-        private Song GetItemSong(object sender)
+        private PandoraSharp.Song GetItemSong(object sender)
         {
-            return (Song) (((ImageButton) sender).FindParentByName<Grid>("SongItem")).DataContext;
+            return
+                (PandoraSharp.Song)
+                    ((Controls.ImageButton) sender).FindParentByName<System.Windows.Controls.Grid>("SongItem")
+                        .DataContext;
         }
 
         private void ShowMenu(object sender)
         {
-            _songMenu.PlacementTarget = sender as UIElement;
-            bool showAmazonAlbum = (_currMenuSong.AmazonAlbumID != string.Empty);
-            bool showAmazonTrack = (_currMenuSong.AmazonTrackID != string.Empty);
-            bool showPurchase = (showAmazonAlbum || showAmazonTrack);
+            _songMenu.PlacementTarget = sender as System.Windows.UIElement;
+            bool showAmazonAlbum = _currMenuSong.AmazonAlbumId != string.Empty;
+            bool showAmazonTrack = _currMenuSong.AmazonTrackId != string.Empty;
+            bool showPurchase = showAmazonAlbum || showAmazonTrack;
 
-            _purchaseAmazonAlbum.Visibility = showAmazonAlbum ? Visibility.Visible : Visibility.Hidden;
-            _purchaseAmazonTrack.Visibility = showAmazonTrack ? Visibility.Visible : Visibility.Hidden;
+            _purchaseAmazonAlbum.Visibility = showAmazonAlbum
+                ? System.Windows.Visibility.Visible
+                : System.Windows.Visibility.Hidden;
+            _purchaseAmazonTrack.Visibility = showAmazonTrack
+                ? System.Windows.Visibility.Visible
+                : System.Windows.Visibility.Hidden;
 
-            _purchaseMenu.Visibility = showPurchase ? Visibility.Visible : Visibility.Hidden;
+            _purchaseMenu.Visibility = showPurchase
+                ? System.Windows.Visibility.Visible
+                : System.Windows.Visibility.Hidden;
 
             _songMenu.IsOpen = true;
         }
 
-        private void btnMenu_Click(object sender, RoutedEventArgs e)
+        private void btnMenu_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             _currMenuSong = GetItemSong(sender);
             ShowMenu(sender);
         }
 
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        private void UserControl_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
             ShowWait(false);
         }
 
-        private void mnuTired_Click(object sender, RoutedEventArgs e)
+        private void mnuTired_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            if (_currMenuSong != null)
-            {
-                _player.SongTired(_currMenuSong);
-                if (_currMenuSong == _player.CurrentSong)
-                    _player.Next();
-            }
+            if (_currMenuSong == null) return;
+            _player.SongTired(_currMenuSong);
+            if (_currMenuSong == _player.CurrentSong)
+                _player.Next();
         }
 
         public void TiredOfCurrentSongFromSystemTray()
@@ -383,7 +368,7 @@ namespace Elpis
             _player.Next();
         }
 
-        private void mnuBookArtist_Click(object sender, RoutedEventArgs e)
+        private void mnuBookArtist_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currMenuSong != null)
             {
@@ -391,7 +376,7 @@ namespace Elpis
             }
         }
 
-        private void mnuBookSong_Click(object sender, RoutedEventArgs e)
+        private void mnuBookSong_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currMenuSong != null)
             {
@@ -399,12 +384,12 @@ namespace Elpis
             }
         }
 
-        private void SongMenu_Closed(object sender, RoutedEventArgs e)
+        private void SongMenu_Closed(object sender, System.Windows.RoutedEventArgs e)
         {
             _currMenuSong = null;
         }
 
-        private void mnuCreateArtist_Click(object sender, RoutedEventArgs e)
+        private void mnuCreateArtist_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currMenuSong != null)
             {
@@ -412,7 +397,7 @@ namespace Elpis
             }
         }
 
-        private void mnuCreateSong_Click(object sender, RoutedEventArgs e)
+        private void mnuCreateSong_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currMenuSong != null)
             {
@@ -432,21 +417,21 @@ namespace Elpis
                 }
 #endif
 
-                Process.Start(url);
+                System.Diagnostics.Process.Start(url);
             }
         }
 
-        private void mnuPurchaseAmazonAlbum_Click(object sender, RoutedEventArgs e)
+        private void mnuPurchaseAmazonAlbum_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currMenuSong != null)
             {
-                if (_currMenuSong.AmazonAlbumID != null)
+                if (_currMenuSong.AmazonAlbumId != null)
                 {
-                    LaunchAmazonURL(_currMenuSong.AmazonAlbumID);
+                    LaunchAmazonURL(_currMenuSong.AmazonAlbumId);
                 }
                 else
                 {
-                    if(_currMenuSong.AmazonAlbumUrl != null)
+                    if (_currMenuSong.AmazonAlbumUrl != null)
                     {
                         string url = _currMenuSong.AmazonAlbumUrl;
 
@@ -457,17 +442,17 @@ namespace Elpis
                             url = url.Replace(oldTag, ReleaseData.AmazonTag);
                         }
 #endif
-                        Process.Start(url);
+                        System.Diagnostics.Process.Start(url);
                     }
                 }
             }
         }
 
-        private void mnuPurchaeAmazonTrack_Click(object sender, RoutedEventArgs e)
+        private void mnuPurchaeAmazonTrack_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currMenuSong != null)
             {
-                LaunchAmazonURL(_currMenuSong.AmazonTrackID);
+                LaunchAmazonURL(_currMenuSong.AmazonTrackId);
             }
         }
     }

@@ -1,37 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Kayak.Http
+﻿namespace Kayak.Http
 {
-    interface IHeaderRenderer
+    internal interface IHeaderRenderer
     {
-        void Render(ISocket consumer, HttpResponseHead head);
+        void Render(Net.ISocket consumer, HttpResponseHead head);
     }
 
-    class HttpResponseHeaderRenderer : IHeaderRenderer
+    internal class HttpResponseHeaderRenderer : IHeaderRenderer
     {
-        public void Render(ISocket socket, HttpResponseHead head)
+        public void Render(Net.ISocket socket, HttpResponseHead head)
         {
-            var status = head.Status;
-            var headers = head.Headers;
+            string status = head.Status;
+            System.Collections.Generic.IDictionary<string, string> headers = head.Headers;
 
             // XXX don't reallocate every time
-            var sb = new StringBuilder();
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
             sb.AppendFormat("HTTP/1.1 {0}\r\n", status);
 
             if (headers != null)
             {
-                foreach (var pair in headers)
-                    foreach (var line in pair.Value.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (System.Collections.Generic.KeyValuePair<string, string> pair in headers)
+                    foreach (
+                        string line in pair.Value.Split(new[] {"\r\n"}, System.StringSplitOptions.RemoveEmptyEntries))
                         sb.AppendFormat("{0}: {1}\r\n", pair.Key, line);
             }
 
             sb.Append("\r\n");
 
-            socket.Write(new ArraySegment<byte>(Encoding.ASCII.GetBytes(sb.ToString())), null);
+            socket.Write(new System.ArraySegment<byte>(System.Text.Encoding.ASCII.GetBytes(sb.ToString())), null);
         }
     }
 }

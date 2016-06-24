@@ -17,29 +17,19 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Windows;
-using System.Windows.Controls;
-
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for RestartPage.xaml
+    ///     Interaction logic for RestartPage.xaml
     /// </summary>
-    public partial class LastFMAuthPage : UserControl
+    public partial class LastFmAuthPage
     {
-        #region Delegates
-
-        public delegate void ContinueEventHandler();
-        public delegate void CancelEventHandler();
-
-        #endregion
-
-        public LastFMAuthPage()
+        public LastFmAuthPage()
         {
             InitializeComponent();
         }
 
-        public void SetAuthURL(string url)
+        public void SetAuthUrl(string url)
         {
             txtUrl.Text = url;
         }
@@ -48,26 +38,32 @@ namespace Elpis
 
         private void SendContinue()
         {
-            if (ContinueEvent != null)
-                ContinueEvent();
+            ContinueEvent?.Invoke();
         }
 
         public event CancelEventHandler CancelEvent;
 
         private void SendCancel()
         {
-            if (CancelEvent != null)
-                CancelEvent();
+            CancelEvent?.Invoke();
         }
 
-        private void btnCancel_Click(object sender, RoutedEventArgs e)
+        private void btnCancel_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             SendCancel();
         }
 
-        private void btnContinue_Click(object sender, RoutedEventArgs e)
+        private void btnContinue_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             SendContinue();
         }
+
+        #region Delegates
+
+        public delegate void ContinueEventHandler();
+
+        public delegate void CancelEventHandler();
+
+        #endregion
     }
 }

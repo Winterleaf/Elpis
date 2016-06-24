@@ -1,39 +1,31 @@
-﻿using System;
-using System.Diagnostics;
-using System.Text;
-using System.IO;
-
-namespace Kayak
+﻿namespace Kayak.Extensions
 {
-    public static partial class Extensions
+    public static class Extensions
     {
-        public static void DebugStackTrace(this Exception exception)
+        public static void DebugStackTrace(this System.Exception exception)
         {
 #if DEBUG
-            Debug.WriteLine(GetStackTrace(exception));
+            System.Diagnostics.Debug.WriteLine(GetStackTrace(exception));
 #endif
         }
 
-        public static void WriteStackTrace(this TextWriter writer, Exception exception)
+        public static void WriteStackTrace(this System.IO.TextWriter writer, System.Exception exception)
         {
             writer.WriteLine(GetStackTrace(exception));
         }
 
-        public static string GetStackTrace(Exception exception)
+        public static string GetStackTrace(System.Exception exception)
         {
-            var sb = new StringBuilder();
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
             int i = 0;
-            for (Exception e = exception; e != null; e = e.InnerException)
+            for (System.Exception e = exception; e != null; e = e.InnerException)
             {
                 //if (e is TargetInvocationException || e is AggregateException) continue;
 
-                if (i++ == 0)
-                    sb.AppendLine("____________________________________________________________________________");
-                else
-                    sb.AppendLine("Caused by:");
+                sb.AppendLine(i++ == 0 ? "____________________________________________________________________________" : "Caused by:");
 
-                sb.AppendLine(string.Format("[{0}] {1}", e.GetType().Name, e.Message));
+                sb.AppendLine($"[{e.GetType().Name}] {e.Message}");
                 sb.AppendLine(e.StackTrace);
                 sb.AppendLine();
             }
@@ -51,7 +43,10 @@ namespace Kayak
             System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace();
             System.Diagnostics.StackFrame stackFrame = stackTrace.GetFrame(1);
             System.Reflection.MethodBase methodBase = stackFrame.GetMethod();
-            Console.WriteLine("[thread " + System.Threading.Thread.CurrentThread.ManagedThreadId + ", " + methodBase.DeclaringType.Name + "." + methodBase.Name + "] " + string.Format(format, args));
+            if (methodBase.DeclaringType != null)
+                System.Console.WriteLine("[thread " + System.Threading.Thread.CurrentThread.ManagedThreadId + ", " +
+                                         methodBase.DeclaringType.Name + "." + methodBase.Name + "] " +
+                                         string.Format(format, args));
 #endif
         }
     }

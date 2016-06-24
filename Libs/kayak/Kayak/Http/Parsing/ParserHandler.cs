@@ -1,131 +1,135 @@
-﻿using System;
-using System.Collections.Generic;
-using HttpMachine;
-using System.Diagnostics;
+﻿ // XXX all of this should live in HTTP Machine
 
-// XXX all of this should live in HTTP Machine
-namespace Kayak.Http
+namespace Kayak.Http.Parsing
 {
-    struct HttpRequestHeaders
+    internal struct HttpRequestHeaders
     {
         public string Method;
         public string Uri;
         public string Path;
         public string QueryString;
         public string Fragment;
-        public Version Version;
-        public IDictionary<string, string> Headers;
+        public System.Version Version;
+        public System.Collections.Generic.IDictionary<string, string> Headers;
     }
 
-    interface IHighLevelParserDelegate
+    internal interface IHighLevelParserDelegate
     {
         void OnRequestBegan(HttpRequestHeaders request, bool shouldKeepAlive);
-        void OnRequestBody(ArraySegment<byte> data);
+        void OnRequestBody(System.ArraySegment<byte> data);
         void OnRequestEnded();
     }
 
-    class ParserDelegate : IHttpParserDelegate
+    internal class ParserDelegate : HttpMachine.IHttpParserDelegate
     {
-        string method, requestUri, path, fragment, queryString, headerName, headerValue;
-        IDictionary<string, string> headers;
-        IHighLevelParserDelegate del;
-
         public ParserDelegate(IHighLevelParserDelegate del)
         {
-            this.del = del;
+            _del = del;
         }
 
-        public void OnMessageBegin(HttpParser parser)
+        private readonly IHighLevelParserDelegate _del;
+        private System.Collections.Generic.IDictionary<string, string> _headers;
+        private string _method;
+        private string _requestUri;
+        private string _path;
+        private string _fragment;
+        private string _queryString;
+        private string _headerName;
+        private string _headerValue;
+
+        public void OnMessageBegin(HttpMachine.HttpParser parser)
         {
-            method = requestUri = path = fragment = queryString = headerName = headerValue = null;
-            headers = null;
+            _method = _requestUri = _path = _fragment = _queryString = _headerName = _headerValue = null;
+            _headers = null;
         }
 
-        public void OnMethod(HttpParser parser, string method)
+        public void OnMethod(HttpMachine.HttpParser parser, string method)
         {
-            this.method = method;
+            _method = method;
         }
 
-        public void OnRequestUri(HttpParser parser, string requestUri)
+        public void OnRequestUri(HttpMachine.HttpParser parser, string requestUri)
         {
-            this.requestUri = requestUri;
+            _requestUri = requestUri;
         }
 
-        public void OnPath(HttpParser parser, string path)
+        public void OnPath(HttpMachine.HttpParser parser, string path)
         {
-            this.path = path;
+            _path = path;
         }
 
-        public void OnFragment(HttpParser parser, string fragment)
+        public void OnFragment(HttpMachine.HttpParser parser, string fragment)
         {
-            this.fragment = fragment;
+            _fragment = fragment;
         }
 
-        public void OnQueryString(HttpParser parser, string queryString)
+        public void OnQueryString(HttpMachine.HttpParser parser, string queryString)
         {
-            this.queryString = queryString;
+            _queryString = queryString;
         }
 
-        public void OnHeaderName(HttpParser parser, string name)
+        public void OnHeaderName(HttpMachine.HttpParser parser, string name)
         {
-            if (headers == null)
-                headers = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            if (_headers == null)
+                _headers =
+                    new System.Collections.Generic.Dictionary<string, string>(
+                        System.StringComparer.InvariantCultureIgnoreCase);
 
-            if (!string.IsNullOrEmpty(headerValue))
+            if (!string.IsNullOrEmpty(_headerValue))
                 CommitHeader();
 
-            headerName = name;
+            _headerName = name;
         }
 
-        public void OnHeaderValue(HttpParser parser, string value)
+        public void OnHeaderValue(HttpMachine.HttpParser parser, string value)
         {
-            if (string.IsNullOrEmpty(headerName))
-                throw new Exception("Got header value without name.");
+            if (string.IsNullOrEmpty(_headerName))
+                throw new System.Exception("Got header value without name.");
 
-            headerValue = value;
+            _headerValue = value;
         }
 
-        public void OnHeadersEnd(HttpParser parser)
+        public void OnHeadersEnd(HttpMachine.HttpParser parser)
         {
-            Debug.WriteLine("OnHeadersEnd");
+            System.Diagnostics.Debug.WriteLine("OnHeadersEnd");
 
-            if (!string.IsNullOrEmpty(headerValue))
+            if (!string.IsNullOrEmpty(_headerValue))
                 CommitHeader();
 
-            var request = new HttpRequestHeaders()
-                {
-                    Method = method,
-                    Path = path,
-                    Fragment = fragment,
-                    QueryString = queryString,
-                    Uri = requestUri,
-                    Headers = headers,
-                    Version = new Version(parser.MajorVersion, parser.MinorVersion)
-                };
+            HttpRequestHeaders request = new HttpRequestHeaders
+            {
+                Method = _method,
+                Path = _path,
+                Fragment = _fragment,
+                QueryString = _queryString,
+                Uri = _requestUri,
+                Headers = _headers,
+                Version = new System.Version(parser.MajorVersion, parser.MinorVersion)
+            };
 
-            del.OnRequestBegan(request, parser.ShouldKeepAlive);
+            _del.OnRequestBegan(request, parser.ShouldKeepAlive);
         }
 
-        void CommitHeader()
+        public void OnBody(HttpMachine.HttpParser parser, System.ArraySegment<byte> data)
         {
-            headers[headerName] = headerValue;
-            headerName = headerValue = null;
-        }
-
-        public void OnBody(HttpParser parser, ArraySegment<byte> data)
-        {
-            Debug.WriteLine("OnBody");
+            System.Diagnostics.Debug.WriteLine("OnBody");
             // XXX can we defer this check to the parser?
             if (data.Count > 0)
             {
-                del.OnRequestBody(data);
+                _del.OnRequestBody(data);
             }
         }
 
-        public void OnMessageEnd(HttpParser parser)
+        public void OnMessageEnd(HttpMachine.HttpParser parser)
         {
-            Debug.WriteLine("OnMessageEnd");
-            del.OnRequestEnded();
+            System.Diagnostics.Debug.WriteLine("OnMessageEnd");
+            _del.OnRequestEnded();
+        }
+
+        private void CommitHeader()
+        {
+            _headers[_headerName] = _headerValue;
+            _headerName = _headerValue = null;
         }
     }
 }

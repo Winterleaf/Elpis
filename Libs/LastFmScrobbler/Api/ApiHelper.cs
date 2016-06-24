@@ -1,22 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
-using System.Xml.XPath;
+﻿using Enumerable = System.Linq.Enumerable;
 
 namespace Lpfm.LastFmScrobbler.Api
 {
     internal class ApiHelper
     {
-        const string LastFmStatusOk = "ok";
-        const string LastFmErrorXPath = "/lfm/error";
-        const string LastFmErrorCodeXPath = "/lfm/error/@code";
-        const string LastFmStatusXPath = "/lfm/@status";
-        
+        private const string LastFmStatusOk = "ok";
+        private const string LastFmErrorXPath = "/lfm/error";
+        private const string LastFmErrorCodeXPath = "/lfm/error/@code";
+        private const string LastFmStatusXPath = "/lfm/@status";
+
         /// <summary>
-        /// The Last.fm web service root URL
+        ///     The Last.fm web service root URL
         /// </summary>
         public const string LastFmWebServiceRootUrl = "http://ws.audioscrobbler.com/2.0/";
 
@@ -26,47 +20,59 @@ namespace Lpfm.LastFmScrobbler.Api
         public const string SessionKeyParamName = "sk";
 
         /// <summary>
-        /// Check the Last.fm status of the response and throw a <see cref="LastFmApiException"/> if an error is detected
+        ///     Check the Last.fm status of the response and throw a <see cref="LastFmApiException" /> if an error is detected
         /// </summary>
-        /// <param name="navigator">The response as <see cref="XPathNavigator"/></param>
-        /// <exception cref="LastFmApiException"/>
-        public static void CheckLastFmStatus(XPathNavigator navigator)
+        /// <param name="navigator">The response as <see cref="System.Xml.XPath.XPathNavigator" /></param>
+        /// <exception cref="LastFmApiException" />
+        public static void CheckLastFmStatus(System.Xml.XPath.XPathNavigator navigator)
         {
             CheckLastFmStatus(navigator, null);
         }
 
         /// <summary>
-        /// Check the Last.fm status of the response and throw a <see cref="LastFmApiException"/> if an error is detected
+        ///     Check the Last.fm status of the response and throw a <see cref="LastFmApiException" /> if an error is detected
         /// </summary>
-        /// <param name="navigator">The response as <see cref="XPathNavigator"/></param>
-        /// <param name="webException">An optional <see cref="WebException"/> to be set as the inner exception</param>
-        /// <exception cref="LastFmApiException"/>
-        public static void CheckLastFmStatus(XPathNavigator navigator, WebException webException)
+        /// <param name="navigator">The response as <see cref="System.Xml.XPath.XPathNavigator" /></param>
+        /// <param name="webException">An optional <see cref="System.Net.WebException" /> to be set as the inner exception</param>
+        /// <exception cref="LastFmApiException" />
+        public static void CheckLastFmStatus(System.Xml.XPath.XPathNavigator navigator,
+            System.Net.WebException webException)
         {
-            var node = SelectSingleNode(navigator, LastFmStatusXPath);
+            System.Xml.XPath.XPathNavigator node = SelectSingleNode(navigator, LastFmStatusXPath);
 
             if (node.Value == LastFmStatusOk) return;
 
-            throw new LastFmApiException(string.Format("LastFm status = \"{0}\". Error code = {1}. {2}",
-                                                       node.Value,
-                                                       SelectSingleNode(navigator, LastFmErrorCodeXPath),
-                                                       SelectSingleNode(navigator, LastFmErrorXPath)), webException);
+            throw new LastFmApiException($"LastFm status = \"{node.Value}\". Error code = {SelectSingleNode(navigator, LastFmErrorCodeXPath)}. {SelectSingleNode(navigator, LastFmErrorXPath)}",
+                webException);
         }
 
         /// <summary>
-        /// Helper method to select a single node from an <see cref="XPathNavigator"/> as <see cref="XPathNavigator"/>
+        ///     Helper method to select a single node from an <see cref="System.Xml.XPath.XPathNavigator" /> as
+        ///     <see cref="System.Xml.XPath.XPathNavigator" />
         /// </summary>
-        public static XPathNavigator SelectSingleNode(XPathNavigator navigator, string xpath)
+        public static System.Xml.XPath.XPathNavigator SelectSingleNode(System.Xml.XPath.XPathNavigator navigator,
+            string xpath)
         {
-            var node = navigator.SelectSingleNode(xpath);
-            if (node == null) throw new InvalidOperationException("Node is null. Cannot select single node. XML response may be mal-formed");
+            System.Xml.XPath.XPathNavigator node = navigator.SelectSingleNode(xpath);
+            if (node == null)
+                throw new System.InvalidOperationException(
+                    "Node is null. Cannot select single node. XML response may be mal-formed");
             return node;
         }
 
+#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
         /// <summary>
-        /// Adds the parameters that are required by the Last.Fm API to the <see cref="parameters"/> dictionary
+        /// 
+        ///     Adds the parameters that are required by the Last.Fm API to the <see cref="parameters" /> dictionary
+        /// 
         /// </summary>
-        public static void AddRequiredParams(Dictionary<string, string> parameters, string methodName, Authentication authentication, bool addApiSignature = true)
+        /// <param name="parameters"></param>
+        /// <param name="methodName"></param>
+        /// <param name="authentication"></param>
+        /// <param name="addApiSignature"></param>
+        public static void AddRequiredParams(System.Collections.Generic.Dictionary<string, string> parameters,
+#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
+            string methodName, Authentication authentication, bool addApiSignature = true)
         {
             // method
             parameters.Add(MethodParamName, methodName);
@@ -85,9 +91,10 @@ namespace Lpfm.LastFmScrobbler.Api
         }
 
         /// <summary>
-        /// Generates a hashed Last.fm API Signature from the parameter name-value pairs, and the API secret
+        ///     Generates a hashed Last.fm API Signature from the parameter name-value pairs, and the API secret
         /// </summary>
-        public static string GetApiSignature(Dictionary<string, string> nameValues, string apiSecret)
+        public static string GetApiSignature(System.Collections.Generic.Dictionary<string, string> nameValues,
+            string apiSecret)
         {
             string parameters = GetStringOfOrderedParamsForHashing(nameValues);
             parameters += apiSecret;
@@ -96,15 +103,18 @@ namespace Lpfm.LastFmScrobbler.Api
         }
 
         /// <summary>
-        /// Gets a string of ordered parameter values for hashing
+        ///     Gets a string of ordered parameter values for hashing
         /// </summary>
-        public static string GetStringOfOrderedParamsForHashing(Dictionary<string, string> nameValues)
+        public static string GetStringOfOrderedParamsForHashing(
+            System.Collections.Generic.Dictionary<string, string> nameValues)
         {
-            var paramsBuilder = new StringBuilder();
+            System.Text.StringBuilder paramsBuilder = new System.Text.StringBuilder();
 
-            foreach (KeyValuePair<string, string> nameValue in nameValues.OrderBy(nv => nv.Key))
+            foreach (
+                System.Collections.Generic.KeyValuePair<string, string> nameValue in
+                    Enumerable.OrderBy(nameValues, nv => nv.Key))
             {
-                paramsBuilder.Append(string.Format("{0}{1}", nameValue.Key, nameValue.Value));
+                paramsBuilder.Append($"{nameValue.Key}{nameValue.Value}");
             }
             return paramsBuilder.ToString();
         }
@@ -115,25 +125,24 @@ namespace Lpfm.LastFmScrobbler.Api
         public static string Hash(string input)
         {
             // Create a new instance of the MD5CryptoServiceProvider object.
-            MD5 md5Hasher = MD5.Create();
+            System.Security.Cryptography.MD5 md5Hasher = System.Security.Cryptography.MD5.Create();
 
             // Convert the input string to a byte array and compute the hash.
-            byte[] data = md5Hasher.ComputeHash(Encoding.Default.GetBytes(input));
+            byte[] data = md5Hasher.ComputeHash(System.Text.Encoding.Default.GetBytes(input));
 
             // Create a new Stringbuilder to collect the bytes
             // and create a string.
-            var sBuilder = new StringBuilder();
+            System.Text.StringBuilder sBuilder = new System.Text.StringBuilder();
 
             // Loop through each byte of the hashed data 
             // and format each one as a hexadecimal string.
-            for (int i = 0; i < data.Length; i++)
+            foreach (byte t in data)
             {
-                sBuilder.Append(data[i].ToString("x2"));
+                sBuilder.Append(t.ToString("x2"));
             }
 
             // Return the hexadecimal string.
             return sBuilder.ToString();
         }
-
     }
 }

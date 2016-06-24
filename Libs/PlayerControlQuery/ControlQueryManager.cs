@@ -1,31 +1,43 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Util;
-using PandoraSharp;
-
-namespace PandoraSharp.ControlQuery
+﻿namespace PlayerControlQuery
 {
     public class ControlQueryManager
     {
-        private List<IPlayerControlQuery> _pcqList;
-
-        private object _lastQueryStatusLock = new object();
-        private QueryStatusValue _lastQueryStatus = QueryStatusValue.Waiting;
-
-        private object _lastQuerySongLock = new object();
-        private Song _lastQuerySong;
-
         public ControlQueryManager()
         {
             _lastQuerySong = null;
 
-            _pcqList = new List<IPlayerControlQuery>();
+            _pcqList = new System.Collections.Generic.List<IPlayerControlQuery>();
         }
 
-        public Song LastSong { get { lock (_lastQuerySongLock) { return _lastQuerySong; } } }
-        public QueryStatusValue LastQueryStatus { get { lock (_lastQueryStatusLock) { return _lastQueryStatus; } } }
+        public PandoraSharp.Song LastSong
+        {
+            get
+            {
+                lock (_lastQuerySongLock)
+                {
+                    return _lastQuerySong;
+                }
+            }
+        }
+
+        public QueryStatusValue LastQueryStatus
+        {
+            get
+            {
+                lock (_lastQueryStatusLock)
+                {
+                    return _lastQueryStatus;
+                }
+            }
+        }
+
+        private PandoraSharp.Song _lastQuerySong;
+
+        private readonly object _lastQuerySongLock = new object();
+        private QueryStatusValue _lastQueryStatus = QueryStatusValue.Waiting;
+
+        private readonly object _lastQueryStatusLock = new object();
+        private readonly System.Collections.Generic.List<IPlayerControlQuery> _pcqList;
 
         public void RegisterPlayerControlQuery(IPlayerControlQuery obj)
         {
@@ -48,49 +60,49 @@ namespace PandoraSharp.ControlQuery
 
         public event SetSongMetaRequestEvent SetSongMetaRequest;
 
-        void obj_SetSongMetaRequest(object sender, object meta)
+        private void obj_SetSongMetaRequest(object sender, object meta)
         {
-            if (SetSongMetaRequest != null) SetSongMetaRequest(sender, meta);
+            SetSongMetaRequest?.Invoke(sender, meta);
         }
 
-        void StopRequestHandler(object sender)
+        private void StopRequestHandler(object sender)
         {
-            if (StopRequest != null) StopRequest(sender);
+            StopRequest?.Invoke(sender);
         }
 
-        void NextRequestHandler(object sender)
+        private void NextRequestHandler(object sender)
         {
-            if (NextRequest != null) NextRequest(sender);
+            NextRequest?.Invoke(sender);
         }
 
-        void PauseRequestHandler(object sender)
+        private void PauseRequestHandler(object sender)
         {
-            if (PauseRequest != null) PauseRequest(sender);
+            PauseRequest?.Invoke(sender);
         }
 
-        void PlayRequestHandler(object sender)
+        private void PlayRequestHandler(object sender)
         {
-            if (PlayRequest != null) PlayRequest(sender);
+            PlayRequest?.Invoke(sender);
         }
 
-        QueryStatusValue PlayStateRequestHandler(object sender)
+        private QueryStatusValue PlayStateRequestHandler(object sender)
         {
             if (PlayStateRequest != null) return PlayStateRequest(sender);
-            else return QueryStatusValue.Invalid;
+            return QueryStatusValue.Invalid;
         }
 
-        public void SendSongUpdate(Song song)
+        public void SendSongUpdate(PandoraSharp.Song song)
         {
             lock (_lastQuerySongLock)
             {
                 _lastQuerySong = song;
             }
 
-            Log.O("Song Update: {0} | {1} | {2}", song.Artist, song.Album, song.SongTitle);
-            foreach (var obj in _pcqList)
+            Util.Log.O("Song Update: {0} | {1} | {2}", song.Artist, song.Album, song.SongTitle);
+            foreach (IPlayerControlQuery obj in _pcqList)
             {
-                obj.SongUpdateReceiver(new QuerySong() 
-                { 
+                obj.SongUpdateReceiver(new QuerySong
+                {
                     Artist = song.Artist,
                     Album = song.Album,
                     Title = song.SongTitle,
@@ -106,11 +118,9 @@ namespace PandoraSharp.ControlQuery
                 _lastQueryStatus = status.CurrentStatus;
             }
 
-            Log.O("Status Update: {0} -> {1}",
-                status.PreviousStatus.ToString(),
-                status.CurrentStatus.ToString());
+            Util.Log.O("Status Update: {0} -> {1}", status.PreviousStatus.ToString(), status.CurrentStatus.ToString());
 
-            foreach (var obj in _pcqList)
+            foreach (IPlayerControlQuery obj in _pcqList)
             {
                 obj.StatusUpdateReceiver(status);
             }
@@ -118,7 +128,7 @@ namespace PandoraSharp.ControlQuery
 
         public void SendStatusUpdate(QueryStatusValue previous, QueryStatusValue current)
         {
-            SendStatusUpdate(new QueryStatus() { PreviousStatus = previous, CurrentStatus = current });
+            SendStatusUpdate(new QueryStatus {PreviousStatus = previous, CurrentStatus = current});
         }
 
         public void SendStatusUpdate(QueryStatusValue current)
@@ -126,19 +136,20 @@ namespace PandoraSharp.ControlQuery
             SendStatusUpdate(_lastQueryStatus, current);
         }
 
-        public void SendProgressUpdate(Song song, QueryTrackProgress progress)
+        public void SendProgressUpdate(PandoraSharp.Song song, QueryTrackProgress progress)
         {
-            foreach (var obj in _pcqList)
+            foreach (IPlayerControlQuery obj in _pcqList)
             {
-                var prog = new QueryProgress()
+                QueryProgress prog = new QueryProgress
                 {
-                    Song = new QuerySong()
-                    {
-                        Artist = song.Artist,
-                        Album = song.Album,
-                        Title = song.SongTitle,
-                        Meta = song.GetMetaObject(obj)
-                    },
+                    Song =
+                        new QuerySong
+                        {
+                            Artist = song.Artist,
+                            Album = song.Album,
+                            Title = song.SongTitle,
+                            Meta = song.GetMetaObject(obj)
+                        },
                     Progress = progress
                 };
 
@@ -146,22 +157,23 @@ namespace PandoraSharp.ControlQuery
             }
         }
 
-        public void SendProgressUpdate(Song song, TimeSpan TotalTime, TimeSpan ElapsedTime)
+        public void SendProgressUpdate(PandoraSharp.Song song, System.TimeSpan totalTime, System.TimeSpan elapsedTime)
         {
-            SendProgressUpdate(song, new QueryTrackProgress() { TotalTime = TotalTime, ElapsedTime = ElapsedTime });
+            SendProgressUpdate(song, new QueryTrackProgress {TotalTime = totalTime, ElapsedTime = elapsedTime});
         }
 
-        public void SendRatingUpdate(QuerySong song, SongRating oldRating, SongRating newRating)
+        public void SendRatingUpdate(QuerySong song, PandoraSharp.SongRating oldRating, PandoraSharp.SongRating newRating)
         {
-            foreach (var obj in _pcqList)
+            foreach (IPlayerControlQuery obj in _pcqList)
             {
                 obj.RatingUpdateReceiver(song, oldRating, newRating);
             }
         }
 
-        public void SendRatingUpdate(string artist, string album, string song, SongRating oldRating, SongRating newRating)
+        public void SendRatingUpdate(string artist, string album, string song, PandoraSharp.SongRating oldRating,
+            PandoraSharp.SongRating newRating)
         {
-            SendRatingUpdate(new QuerySong() { Artist = artist, Album = album, Title = song }, oldRating, newRating);
+            SendRatingUpdate(new QuerySong {Artist = artist, Album = album, Title = song}, oldRating, newRating);
         }
     }
 }

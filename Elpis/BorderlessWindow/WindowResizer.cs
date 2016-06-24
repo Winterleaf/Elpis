@@ -17,19 +17,12 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Media;
-using GUI.Interop;
+using Enumerable = System.Linq.Enumerable;
 
-namespace GUI.BorderlessWindow
+namespace Elpis.BorderlessWindow
 {
     /// <summary>
-    /// Determines the position of a window border.
+    ///     Determines the position of a window border.
     /// </summary>
     public enum BorderPosition
     {
@@ -44,20 +37,20 @@ namespace GUI.BorderlessWindow
     }
 
     /// <summary>
-    /// Represents a Framework element which is acting as a border for a window.
+    ///     Represents a Framework element which is acting as a border for a window.
     /// </summary>
     public class WindowBorder
     {
         /// <summary>
-        /// Creates a new window border using the specified element and position.
+        ///     Creates a new window border using the specified element and position.
         /// </summary>
         /// <param name="position"></param>
         /// <param name="element"></param>
-        public WindowBorder(BorderPosition position, FrameworkElement element)
+        public WindowBorder(BorderPosition position, System.Windows.FrameworkElement element)
         {
             if (element == null)
             {
-                throw new ArgumentNullException("element");
+                throw new System.ArgumentNullException(nameof(element));
             }
 
             Position = position;
@@ -65,82 +58,41 @@ namespace GUI.BorderlessWindow
         }
 
         /// <summary>
-        /// The element which is acting as the border.
+        ///     The element which is acting as the border.
         /// </summary>
-        public FrameworkElement Element { get; private set; }
+        public System.Windows.FrameworkElement Element { get; }
 
         /// <summary>
-        /// The position of the border.
+        ///     The position of the border.
         /// </summary>
-        public BorderPosition Position { get; private set; }
+        public BorderPosition Position { get; }
     }
 
     /// <summary>
-    /// Class which manages resizing of borderless windows.
-    /// Based heavily on Kirupa Chinnathambi's code at http://blog.kirupa.com/?p=256.
+    ///     Class which manages resizing of borderless windows.
+    ///     Based heavily on Kirupa Chinnathambi's code at http://blog.kirupa.com/?p=256.
     /// </summary>
     public class WindowResizer
     {
-        private readonly Win32 _win32;
-
         /// <summary>
-        /// The borders for the window.
-        /// </summary>
-        private readonly WindowBorder[] borders;
-
-        /// <summary>
-        /// Defines the cursors that should be used when the mouse is hovering
-        /// over a border in each position.
-        /// </summary>
-        private readonly Dictionary<BorderPosition, Cursor> cursors = new Dictionary<BorderPosition, Cursor>
-                                                                          {
-                                                                              {BorderPosition.Left, Cursors.SizeWE},
-                                                                              {BorderPosition.Right, Cursors.SizeWE},
-                                                                              {BorderPosition.Top, Cursors.SizeNS},
-                                                                              {BorderPosition.Bottom, Cursors.SizeNS},
-                                                                              {
-                                                                                  BorderPosition.BottomLeft,
-                                                                                  Cursors.SizeNESW
-                                                                                  },
-                                                                              {
-                                                                                  BorderPosition.TopRight, Cursors.SizeNESW
-                                                                                  },
-                                                                              {
-                                                                                  BorderPosition.BottomRight,
-                                                                                  Cursors.SizeNWSE
-                                                                                  },
-                                                                              {BorderPosition.TopLeft, Cursors.SizeNWSE}
-                                                                          };
-
-        /// <summary>
-        /// The WPF window.
-        /// </summary>
-        private readonly Window window;
-
-        /// <summary>
-        /// The handle to the window.
-        /// </summary>
-        private HwndSource hwndSource;
-
-        /// <summary>
-        /// Creates a new WindowResizer for the specified Window using the
-        /// specified border elements.
+        ///     Creates a new WindowResizer for the specified Window using the
+        ///     specified border elements.
         /// </summary>
         /// <param name="window">The Window which should be resized.</param>
         /// <param name="borders">The elements which can be used to resize the window.</param>
-        public WindowResizer(Window window, params WindowBorder[] borders)
+        public WindowResizer(System.Windows.Window window, params WindowBorder[] borders)
         {
             if (window == null)
             {
-                throw new ArgumentNullException("window");
+                throw new System.ArgumentNullException(nameof(window));
             }
             if (borders == null)
             {
-                throw new ArgumentNullException("borders");
+                throw new System.ArgumentNullException(nameof(borders));
             }
 
-            this.window = window;
-            this.borders = borders;
+            _window = window;
+            _borders = borders;
 
             foreach (WindowBorder border in borders)
             {
@@ -150,67 +102,105 @@ namespace GUI.BorderlessWindow
             }
 
             _win32 = new Win32(window);
-            window.SourceInitialized += (o, e) => hwndSource = (HwndSource) PresentationSource.FromVisual((Visual) o);
-            window.SourceInitialized += ((o, e) => _win32.SourceInitialized(window));
+            window.SourceInitialized +=
+                (o, e) =>
+                    _hwndSource =
+                        (System.Windows.Interop.HwndSource)
+                            System.Windows.PresentationSource.FromVisual((System.Windows.Media.Visual) o);
+            window.SourceInitialized += (o, e) => _win32.SourceInitialized(window);
             // window.SizeChanged += (o, e) => ConfineMinMax();
         }
 
-        private void ConfineMinMax()
-        {
-            if (window.ActualHeight <= window.MinHeight)
-                window.Height = window.MinHeight;
-            if (window.ActualHeight >= window.MaxHeight)
-                window.Height = window.MaxHeight;
-
-            if (window.ActualWidth <= window.MinWidth)
-                window.Width = window.MinWidth;
-            if (window.ActualWidth >= window.MaxWidth)
-                window.Width = window.MaxWidth;
-        }
+        private readonly Win32 _win32;
 
         /// <summary>
-        /// Puts a resize message on the message queue for the specified border position.
+        ///     The borders for the window.
+        /// </summary>
+        private readonly WindowBorder[] _borders;
+
+        /// <summary>
+        ///     Defines the cursors that should be used when the mouse is hovering
+        ///     over a border in each position.
+        /// </summary>
+        private readonly System.Collections.Generic.Dictionary<BorderPosition, System.Windows.Input.Cursor> _cursors =
+            new System.Collections.Generic.Dictionary<BorderPosition, System.Windows.Input.Cursor>
+            {
+                {BorderPosition.Left, System.Windows.Input.Cursors.SizeWE},
+                {BorderPosition.Right, System.Windows.Input.Cursors.SizeWE},
+                {BorderPosition.Top, System.Windows.Input.Cursors.SizeNS},
+                {BorderPosition.Bottom, System.Windows.Input.Cursors.SizeNS},
+                {BorderPosition.BottomLeft, System.Windows.Input.Cursors.SizeNESW},
+                {BorderPosition.TopRight, System.Windows.Input.Cursors.SizeNESW},
+                {BorderPosition.BottomRight, System.Windows.Input.Cursors.SizeNWSE},
+                {BorderPosition.TopLeft, System.Windows.Input.Cursors.SizeNWSE}
+            };
+
+        /// <summary>
+        ///     The WPF window.
+        /// </summary>
+        private readonly System.Windows.Window _window;
+
+        /// <summary>
+        ///     The handle to the window.
+        /// </summary>
+        private System.Windows.Interop.HwndSource _hwndSource;
+
+        //private void ConfineMinMax()
+        //{
+        //    if (_window.ActualHeight <= _window.MinHeight)
+        //        _window.Height = _window.MinHeight;
+        //    if (_window.ActualHeight >= _window.MaxHeight)
+        //        _window.Height = _window.MaxHeight;
+
+        //    if (_window.ActualWidth <= _window.MinWidth)
+        //        _window.Width = _window.MinWidth;
+        //    if (_window.ActualWidth >= _window.MaxWidth)
+        //        _window.Width = _window.MaxWidth;
+        //}
+
+        /// <summary>
+        ///     Puts a resize message on the message queue for the specified border position.
         /// </summary>
         /// <param name="direction"></param>
         private void ResizeWindow(BorderPosition direction)
         {
-            _win32.SendWMMessage(hwndSource.Handle, 0x112, (IntPtr) direction, IntPtr.Zero);
+            _win32.SendWMMessage(_hwndSource.Handle, 0x112, (System.IntPtr) direction, System.IntPtr.Zero);
         }
 
         /// <summary>
-        /// Resets the cursor when the left mouse button is not pressed.
+        ///     Resets the cursor when the left mouse button is not pressed.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ResetCursor(object sender, MouseEventArgs e)
+        private void ResetCursor(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            if (Mouse.LeftButton != MouseButtonState.Pressed)
+            if (System.Windows.Input.Mouse.LeftButton != System.Windows.Input.MouseButtonState.Pressed)
             {
-                window.Cursor = Cursors.Arrow;
+                _window.Cursor = System.Windows.Input.Cursors.Arrow;
             }
         }
 
         /// <summary>
-        /// Resizes the window.
+        ///     Resizes the window.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Resize(object sender, MouseButtonEventArgs e)
+        private void Resize(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            WindowBorder border = borders.Single(b => b.Element.Equals(sender));
-            window.Cursor = cursors[border.Position];
+            WindowBorder border = Enumerable.Single(_borders, b => b.Element.Equals(sender));
+            _window.Cursor = _cursors[border.Position];
             ResizeWindow(border.Position);
         }
 
         /// <summary>
-        /// Ensures that the correct cursor is displayed.
+        ///     Ensures that the correct cursor is displayed.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DisplayResizeCursor(object sender, MouseEventArgs e)
+        private void DisplayResizeCursor(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            WindowBorder border = borders.Single(b => b.Element.Equals(sender));
-            window.Cursor = cursors[border.Position];
+            WindowBorder border = Enumerable.Single(_borders, b => b.Element.Equals(sender));
+            _window.Cursor = _cursors[border.Position];
         }
     }
 }

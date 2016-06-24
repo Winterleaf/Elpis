@@ -17,156 +17,139 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Globalization;
-using System.IO;
-using System.Reflection;
-using System.Windows;
-using System.Windows.Data;
-using System.Windows.Media.Imaging;
-
-namespace GUI.Converters
+namespace Elpis
 {
-    public class BinaryImageConverter : IValueConverter
+    public class BinaryImageConverter : System.Windows.Data.IValueConverter
     {
         #region IValueConverter Members
 
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
             if (value == null || value.GetType() != typeof (byte[]))
             {
-                if (parameter == null)
-                    return new BitmapImage();
-                
-                return parameter;
+                return parameter ?? new System.Windows.Media.Imaging.BitmapImage();
             }
 
-            var data = (byte[]) value;
-            var result = new BitmapImage();
+            byte[] data = (byte[]) value;
+            System.Windows.Media.Imaging.BitmapImage result = new System.Windows.Media.Imaging.BitmapImage();
             result.BeginInit();
-            result.StreamSource = new MemoryStream(data);
+            result.StreamSource = new System.IO.MemoryStream(data);
             result.EndInit();
             return result;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
-            throw new NotImplementedException();
+            throw new System.NotImplementedException();
         }
 
         #endregion
     }
 
-    public class BooleanToVisibilityConverter : IValueConverter
+    public class BooleanToVisibilityConverter : System.Windows.Data.IValueConverter
     {
         #region IValueConverter Members
 
-        public object Convert(object value, Type targetType, object parameter,
-                              CultureInfo culture)
+        public object Convert(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
             bool state = true;
             if (parameter != null)
                 state = (bool) parameter;
 
-            if (value is Boolean)
+            if (value is bool)
             {
-                return ((bool) value)
-                           ? (state ? Visibility.Visible : Visibility.Hidden)
-                           : (state ? Visibility.Hidden : Visibility.Visible);
+                return (bool) value
+                    ? (state ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden)
+                    : (state ? System.Windows.Visibility.Hidden : System.Windows.Visibility.Visible);
             }
 
-            return Visibility.Visible;
+            return System.Windows.Visibility.Visible;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter,
-                                  CultureInfo culture)
+        public object ConvertBack(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
-            throw new NotImplementedException();
+            throw new System.NotImplementedException();
         }
 
         #endregion
     }
 
-    public class WindowStateToVisibilityConverter : IValueConverter
+    public class WindowStateToVisibilityConverter : System.Windows.Data.IValueConverter
     {
         #region IValueConverter Members
 
-        public object Convert(object value, Type targetType, object parameter,
-                              CultureInfo culture)
+        public object Convert(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
-            if (value is WindowState)
-            {
-                bool state = ((WindowState) value) == WindowState.Maximized;
-                if (parameter != null && !(bool.Parse((string) parameter)))
-                    state = !state;
+            if (!(value is System.Windows.WindowState)) return value;
+            bool state = (System.Windows.WindowState) value == System.Windows.WindowState.Maximized;
+            if (parameter != null && !bool.Parse((string) parameter))
+                state = !state;
 
-                return state ? Visibility.Visible : Visibility.Collapsed;
-            }
-
-            return value;
+            return state ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter,
-                                  CultureInfo culture)
+        public object ConvertBack(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
-            throw new NotImplementedException();
+            throw new System.NotImplementedException();
         }
 
         #endregion
     }
 
-    public class WindowStateToThicknessConverter : IValueConverter
+    public class WindowStateToThicknessConverter : System.Windows.Data.IValueConverter
     {
         #region IValueConverter Members
 
-        public object Convert(object value, Type targetType, object parameter,
-                              CultureInfo culture)
+        public object Convert(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
-            if (value is WindowState)
-            {
-                bool state = ((WindowState) value) == WindowState.Maximized;
-                int margin = 0;
+            if (!(value is System.Windows.WindowState)) return value;
+            bool state = (System.Windows.WindowState) value == System.Windows.WindowState.Maximized;
+            int margin = 0;
 
-                if (parameter != null && !state)
-                    margin = (int.Parse((string) parameter));
+            if (parameter != null && !state)
+                margin = int.Parse((string) parameter);
 
-                return new Thickness(margin);
-            }
-
-            return value;
+            return new System.Windows.Thickness(margin);
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter,
-                                  CultureInfo culture)
+        public object ConvertBack(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
-            throw new NotImplementedException();
+            throw new System.NotImplementedException();
         }
 
         #endregion
     }
 
-    public class AssemblyVersionConverter : IValueConverter
+    public class AssemblyVersionConverter : System.Windows.Data.IValueConverter
     {
         #region IValueConverter Members
 
-        public object Convert(object value, Type targetType, object parameter,
-                              CultureInfo culture)
+        public object Convert(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
             try
             {
-                Version ver = Assembly.GetEntryAssembly().GetName().Version;
+                System.Version ver = System.Reflection.Assembly.GetEntryAssembly().GetName().Version;
                 return ver.ToString();
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 return "0.0.0.0";
             }
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter,
-                                  CultureInfo culture)
+        public object ConvertBack(object value, System.Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
         {
-            throw new NotImplementedException();
+            throw new System.NotImplementedException();
         }
 
         #endregion

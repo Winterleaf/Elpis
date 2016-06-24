@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using PandoraSharp;
-
-namespace PandoraSharp.ControlQuery
+﻿namespace PlayerControlQuery
 {
-    public class QuerySong 
+    public class QuerySong
     {
         public string Artist { get; set; }
         public string Album { get; set; }
@@ -16,13 +10,10 @@ namespace PandoraSharp.ControlQuery
 
     public class QueryTrackProgress
     {
-        public TimeSpan TotalTime { get; set; }
-        public TimeSpan ElapsedTime { get; set; }
+        public System.TimeSpan TotalTime { get; set; }
+        public System.TimeSpan ElapsedTime { get; set; }
 
-        public TimeSpan RemainingTime
-        {
-            get { return TotalTime - ElapsedTime; }
-        }
+        public System.TimeSpan RemainingTime => TotalTime - ElapsedTime;
 
         public double Percent
         {
@@ -31,7 +22,7 @@ namespace PandoraSharp.ControlQuery
                 if (TotalTime.Ticks == 0)
                     return 0.0;
 
-                return ((ElapsedTime.TotalSeconds / TotalTime.TotalSeconds) * 100);
+                return ElapsedTime.TotalSeconds/TotalTime.TotalSeconds*100;
             }
         }
     }
@@ -39,7 +30,7 @@ namespace PandoraSharp.ControlQuery
     public class QueryProgress
     {
         public QuerySong Song { get; set; }
-        public QueryTrackProgress Progress { get; set; } 
+        public QueryTrackProgress Progress { get; set; }
     }
 
     public enum QueryStatusValue
@@ -64,27 +55,34 @@ namespace PandoraSharp.ControlQuery
     }
 
     public delegate void SongUpdate(QuerySong song);
+
     public delegate void ProgressUpdate(QueryProgress progress);
+
     public delegate void StatusUpdate(QueryStatus status);
-    public delegate void RatingUpdate(QuerySong song, SongRating rating);
+
+    public delegate void RatingUpdate(QuerySong song, PandoraSharp.SongRating rating);
 
     public delegate QueryStatusValue PlayStateRequestEvent(object sender);
+
     public delegate void PlayRequestEvent(object sender);
+
     public delegate void PauseRequestEvent(object sender);
+
     public delegate void NextRequestEvent(object sender);
+
     public delegate void StopRequestEvent(object sender);
 
     public delegate void SetSongMetaRequestEvent(object sender, object meta);
 
     public interface IPlayerControlQuery
-    {    
+    {
         void SongUpdateReceiver(QuerySong song);
-    
+
         void ProgressUpdateReciever(QueryProgress progress);
 
         void StatusUpdateReceiver(QueryStatus status);
 
-        void RatingUpdateReceiver(QuerySong song, SongRating oldRating, SongRating newRating);
+        void RatingUpdateReceiver(QuerySong song, PandoraSharp.SongRating oldRating, PandoraSharp.SongRating newRating);
 
         event PlayStateRequestEvent PlayStateRequest;
         event PlayRequestEvent PlayRequest;
@@ -97,4 +95,3 @@ namespace PandoraSharp.ControlQuery
         //TODO: Add Control Methods
     }
 }
-

@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using HttpMachine;
-using System.Diagnostics;
-
-namespace Kayak.Http
+﻿namespace Kayak.Http.Parsing
 {
     // adapts synchronous parser events to asynchronous "socket-like" events.
     // 
@@ -22,61 +15,64 @@ namespace Kayak.Http
     // the first request has an entity body, the user cannot expect to "delay" 
     // the processing of the next request by returning true from the OnData 
     // handler, since that request is already in memory.
-    class ParserToTransactionTransform : IHighLevelParserDelegate
+    internal class ParserToTransactionTransform : Parsing.IHighLevelParserDelegate
     {
-        ParserEventQueue queue;
-        IHttpServerTransaction transaction;
-        IHttpServerTransactionDelegate transactionDelegate;
-
-        public ParserToTransactionTransform(IHttpServerTransaction transaction, IHttpServerTransactionDelegate transactionDelegate)
+        public ParserToTransactionTransform(IHttpServerTransaction transaction,
+            IHttpServerTransactionDelegate transactionDelegate)
         {
-            this.transaction = transaction;
-            this.transactionDelegate = transactionDelegate;
-            queue = new ParserEventQueue();
+            _transaction = transaction;
+            _transactionDelegate = transactionDelegate;
+            _queue = new Parsing.ParserEventQueue();
         }
 
-        public void OnRequestBegan(HttpRequestHeaders head, bool shouldKeepAlive)
+        private readonly Parsing.ParserEventQueue _queue;
+        private readonly IHttpServerTransaction _transaction;
+        private readonly IHttpServerTransactionDelegate _transactionDelegate;
+
+        public void OnRequestBegan(Parsing.HttpRequestHeaders head, bool shouldKeepAlive)
         {
-            queue.OnRequestBegan(head, shouldKeepAlive);
+            _queue.OnRequestBegan(head, shouldKeepAlive);
         }
 
-        public void OnRequestBody(ArraySegment<byte> data)
+        public void OnRequestBody(System.ArraySegment<byte> data)
         {
-            queue.OnRequestBody(data);
+            _queue.OnRequestBody(data);
         }
 
         public void OnRequestEnded()
         {
-            queue.OnRequestEnded();
+            _queue.OnRequestEnded();
         }
 
-        public bool Commit(Action continuation)
+        public bool Commit(System.Action continuation)
         {
-            while (queue.HasEvents)
+            while (_queue.HasEvents)
             {
-                var e = queue.Dequeue();
+                Parsing.ParserEvent e = _queue.Dequeue();
 
                 switch (e.Type)
                 {
-                    case ParserEventType.RequestHeaders:
-                        transactionDelegate.OnRequest(transaction, new HttpRequestHead() { 
-                            Method = e.Request.Method,
-                            Uri = e.Request.Uri,
-                            Path = e.Request.Path,
-                            Fragment = e.Request.Fragment,
-                            QueryString = e.Request.QueryString,
-                            Version = e.Request.Version,
-                            Headers = e.Request.Headers
-                        }, e.KeepAlive);
+                    case Parsing.ParserEventType.RequestHeaders:
+                        _transactionDelegate.OnRequest(_transaction,
+                            new HttpRequestHead
+                            {
+                                Method = e.Request.Method,
+                                Uri = e.Request.Uri,
+                                Path = e.Request.Path,
+                                Fragment = e.Request.Fragment,
+                                QueryString = e.Request.QueryString,
+                                Version = e.Request.Version,
+                                Headers = e.Request.Headers
+                            }, e.KeepAlive);
                         break;
-                    case ParserEventType.RequestBody:
-                        if (!queue.HasEvents)
-                            return transactionDelegate.OnRequestData(transaction, e.Data, continuation);
+                    case Parsing.ParserEventType.RequestBody:
+                        if (!_queue.HasEvents)
+                            return _transactionDelegate.OnRequestData(_transaction, e.Data, continuation);
 
-                        transactionDelegate.OnRequestData(transaction, e.Data, null);
+                        _transactionDelegate.OnRequestData(_transaction, e.Data, null);
                         break;
-                    case ParserEventType.RequestEnded:
-                        transactionDelegate.OnRequestEnd(transaction);
+                    case Parsing.ParserEventType.RequestEnded:
+                        _transactionDelegate.OnRequestEnd(_transaction);
                         break;
                 }
             }

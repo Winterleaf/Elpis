@@ -17,114 +17,105 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using Elpis.Controls;
-using PandoraSharp;
-using PandoraSharpPlayer;
-using Util;
-
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for StationList.xaml
+    ///     Interaction logic for StationList.xaml
     /// </summary>
-    public partial class StationList : UserControl
+    public partial class StationList
     {
-        public delegate void EditQuickMixEventHandler();
-        public event EditQuickMixEventHandler EditQuickMixEvent;
-
-        public delegate void AddVarietyEventHandler(Station station);
-        public event AddVarietyEventHandler AddVarietyEvent;
-
-        private readonly Player _player;
-
-        private ContextMenu _stationMenu;
-        private MenuItem _mnuRename;
-        private MenuItem _mnuDelete;
-        private MenuItem _mnuEditQuickMix;
-        private MenuItem _mnuAddVariety;
-        private MenuItem _mnuInfo;
-        private Station _currMenuStation = null;
-        private Control _currStationItem = null;
-
-        private Pandora.SortOrder _currSort = Pandora.SortOrder.DateDesc;
-        private bool _waiting;
-
-        public StationList(Player player)
+        public StationList(PandoraSharpPlayer.Player player)
         {
             _player = player;
             _player.StationLoading += _player_StationLoading;
             _player.ExceptionEvent += _player_ExceptionEvent;
             InitializeComponent();
 
-            _stationMenu = this.Resources["StationMenu"] as ContextMenu;
-            _mnuRename = _stationMenu.Items[0] as MenuItem; //mnuRename
-            _mnuDelete = _stationMenu.Items[1] as MenuItem; //mnuDelete
-            _mnuEditQuickMix = _stationMenu.Items[2] as MenuItem; //mnuEditQuickMix
-            _mnuAddVariety = _stationMenu.Items[3] as MenuItem; //mnuAddVariety
-            _mnuInfo = _stationMenu.Items[4] as MenuItem; //mnuInfo
+            _stationMenu = Resources["StationMenu"] as System.Windows.Controls.ContextMenu;
+            _mnuRename = _stationMenu?.Items[0] as System.Windows.Controls.MenuItem; //mnuRename
+            _mnuDelete = _stationMenu?.Items[1] as System.Windows.Controls.MenuItem; //mnuDelete
+            _mnuEditQuickMix = _stationMenu?.Items[2] as System.Windows.Controls.MenuItem; //mnuEditQuickMix
+            _mnuAddVariety = _stationMenu?.Items[3] as System.Windows.Controls.MenuItem; //mnuAddVariety
+            _mnuInfo = _stationMenu?.Items[4] as System.Windows.Controls.MenuItem; //mnuInfo
         }
 
-        public List<Station> Stations
+        public delegate void AddVarietyEventHandler(PandoraSharp.Station station);
+
+        public delegate void EditQuickMixEventHandler();
+
+        public System.Collections.Generic.List<PandoraSharp.Station> Stations
         {
-            get { return (List<Station>) StationItems.ItemsSource; }
+            get { return (System.Collections.Generic.List<PandoraSharp.Station>) StationItems.ItemsSource; }
             set
             {
                 this.BeginDispatch(() =>
-                                       {
-                                           if (value == null) return;
+                {
+                    if (value == null) return;
 
-                                           lblNoStations.Visibility = (value.Count > 0) ? Visibility.Hidden : Visibility.Visible;
-                                           StationItems.ItemsSource = value;
-                                           _currSort = _player.StationSortOrder;
-                                           scrollMain.ScrollToHome();
-                                           if (_waiting)
-                                           {
-                                               ShowWait(false);
-                                               _waiting = false;
-                                           }
-                                       });
+                    lblNoStations.Visibility = value.Count > 0
+                        ? System.Windows.Visibility.Hidden
+                        : System.Windows.Visibility.Visible;
+                    StationItems.ItemsSource = value;
+                    _currSort = _player.StationSortOrder;
+                    scrollMain.ScrollToHome();
+                    if (!_waiting) return;
+                    ShowWait(false);
+                    _waiting = false;
+                });
             }
         }
+
+        private readonly PandoraSharpPlayer.Player _player;
+        private PandoraSharp.Station _currMenuStation;
+
+        private PandoraSharp.Pandora.SortOrder _currSort = PandoraSharp.Pandora.SortOrder.DateDesc;
+        private System.Windows.Controls.Control _currStationItem;
+        private readonly System.Windows.Controls.MenuItem _mnuAddVariety;
+        private readonly System.Windows.Controls.MenuItem _mnuDelete;
+        private readonly System.Windows.Controls.MenuItem _mnuEditQuickMix;
+        private System.Windows.Controls.MenuItem _mnuInfo;
+        private readonly System.Windows.Controls.MenuItem _mnuRename;
+
+        private readonly System.Windows.Controls.ContextMenu _stationMenu;
+        private bool _waiting;
+        public event EditQuickMixEventHandler EditQuickMixEvent;
+        public event AddVarietyEventHandler AddVarietyEvent;
 
         public void SetStationsRefreshing()
         {
             this.BeginDispatch(() =>
-                                   {
-                                       _waiting = true;
-                                       ShowWait(true);
-                                   });
+            {
+                _waiting = true;
+                ShowWait(true);
+            });
         }
 
         public void ShowWait(bool state)
         {
-            this.BeginDispatch(() =>
-                                   {
-                                       WaitScreen.Visibility = state
-                                                                   ? Visibility.Visible
-                                                                   : Visibility.Collapsed;
-                                   });
+            this.BeginDispatch(
+                () =>
+                {
+                    WaitScreen.Visibility = state
+                        ? System.Windows.Visibility.Visible
+                        : System.Windows.Visibility.Collapsed;
+                });
         }
 
-        private void _player_StationLoading(object sender, Station station)
+        private void _player_StationLoading(object sender, PandoraSharp.Station station)
         {
             this.BeginDispatch(() =>
-                                   {
-                                       if(this.IsLoaded)
-                                            ShowWait(true);
-                                   });
+            {
+                if (IsLoaded)
+                    ShowWait(true);
+            });
         }
 
-        void _player_ExceptionEvent(object sender, ErrorCodes code, System.Exception ex)
+        private void _player_ExceptionEvent(object sender, Util.ErrorCodes code, System.Exception ex)
         {
             ShowWait(false);
         }
 
-        private void StationList_Loaded(object sender, RoutedEventArgs e)
+        private void StationList_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
             CloseRename();
             ShowWait(false);
@@ -132,15 +123,15 @@ namespace Elpis
                 _player.RefreshStations();
         }
 
-        private void StationList_Unloaded(object sender, RoutedEventArgs e)
+        private void StationList_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
             CloseRename();
             ShowWait(false);
         }
 
-        private void StationItem_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void StationItem_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            var station = (Station) ((Grid) sender).DataContext;
+            PandoraSharp.Station station = (PandoraSharp.Station) ((System.Windows.Controls.Grid) sender).DataContext;
 
             _player.PlayStation(station);
         }
@@ -149,37 +140,41 @@ namespace Elpis
         {
             if (_currMenuStation == null || _currStationItem == null) return;
 
-            var btnSaveRename = _currStationItem.FindChildByName<Button>("btnSaveRename");
-            var txtStationName = _currStationItem.FindChildByName<TextBlock>("txtStationName");
-            var txtRename = _currStationItem.FindChildByName<TextBox>("txtRename");
+            System.Windows.Controls.Button btnSaveRename =
+                _currStationItem.FindChildByName<System.Windows.Controls.Button>("btnSaveRename");
+            System.Windows.Controls.TextBlock txtStationName =
+                _currStationItem.FindChildByName<System.Windows.Controls.TextBlock>("txtStationName");
+            System.Windows.Controls.TextBox txtRename =
+                _currStationItem.FindChildByName<System.Windows.Controls.TextBox>("txtRename");
 
-            txtStationName.Visibility = Visibility.Visible;
-            txtRename.Visibility = Visibility.Hidden;
-            btnSaveRename.Visibility = Visibility.Hidden;
+            txtStationName.Visibility = System.Windows.Visibility.Visible;
+            txtRename.Visibility = System.Windows.Visibility.Hidden;
+            btnSaveRename.Visibility = System.Windows.Visibility.Hidden;
         }
 
         private void DoRename()
         {
             if (_currMenuStation == null || _currStationItem == null) return;
 
-            string name = _currStationItem.FindChildByName<TextBox>("txtRename").Text;
+            string name = _currStationItem.FindChildByName<System.Windows.Controls.TextBox>("txtRename").Text;
 
             _player.StationRename(_currMenuStation, name);
 
-            var txtStationName = _currStationItem.FindChildByName<TextBlock>("txtStationName");
+            System.Windows.Controls.TextBlock txtStationName =
+                _currStationItem.FindChildByName<System.Windows.Controls.TextBlock>("txtStationName");
 
             txtStationName.Text = name;
 
             CloseRename();
         }
 
-        private void TextBox_KeyUp(object sender, KeyEventArgs e)
+        private void TextBox_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (e.Key == Key.Enter)
+            if (e.Key == System.Windows.Input.Key.Enter)
                 DoRename();
         }
 
-        private void btnSaveRename_Click(object sender, RoutedEventArgs e)
+        private void btnSaveRename_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             e.Handled = true;
 
@@ -190,27 +185,36 @@ namespace Elpis
         {
             if (_currMenuStation != null)
             {
-                _mnuRename.Visibility = _currMenuStation.IsQuickMix ? Visibility.Collapsed : Visibility.Visible;
-                _mnuDelete.Visibility = _currMenuStation.IsQuickMix ? Visibility.Collapsed : Visibility.Visible;
-                _mnuAddVariety.Visibility = _currMenuStation.IsQuickMix ? Visibility.Collapsed : Visibility.Visible;
-                _mnuEditQuickMix.Visibility = _currMenuStation.IsQuickMix ? Visibility.Visible : Visibility.Collapsed;
+                _mnuRename.Visibility = _currMenuStation.IsQuickMix
+                    ? System.Windows.Visibility.Collapsed
+                    : System.Windows.Visibility.Visible;
+                _mnuDelete.Visibility = _currMenuStation.IsQuickMix
+                    ? System.Windows.Visibility.Collapsed
+                    : System.Windows.Visibility.Visible;
+                _mnuAddVariety.Visibility = _currMenuStation.IsQuickMix
+                    ? System.Windows.Visibility.Collapsed
+                    : System.Windows.Visibility.Visible;
+                _mnuEditQuickMix.Visibility = _currMenuStation.IsQuickMix
+                    ? System.Windows.Visibility.Visible
+                    : System.Windows.Visibility.Collapsed;
             }
 
-            _stationMenu.PlacementTarget = sender as UIElement;
+            _stationMenu.PlacementTarget = sender as System.Windows.UIElement;
             _stationMenu.IsOpen = true;
         }
 
-        private Control GetStationItem(object sender)
+        private System.Windows.Controls.Control GetStationItem(object sender)
         {
-            return (Control)(((ImageButton)sender).FindParentByName<ContentControl>("StationItem"));
+            return
+                ((Controls.ImageButton) sender).FindParentByName<System.Windows.Controls.ContentControl>("StationItem");
         }
 
-        private Station GetItemStation(object sender)
+        private PandoraSharp.Station GetItemStation(object sender)
         {
-            return GetStationItem(sender).DataContext as Station;
+            return GetStationItem(sender).DataContext as PandoraSharp.Station;
         }
 
-        private void btnMenu_Click(object sender, RoutedEventArgs e)
+        private void btnMenu_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             CloseRename();
 
@@ -220,29 +224,32 @@ namespace Elpis
             ShowMenu(sender);
         }
 
-        private void StationMenu_Closed(object sender, RoutedEventArgs e)
+        private void StationMenu_Closed(object sender, System.Windows.RoutedEventArgs e)
         {
             //_currMenuStation = null;
             //_currStationItem = null;
         }
 
-        private void mnuRename_Click(object sender, RoutedEventArgs e)
+        private void mnuRename_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currStationItem == null) return;
 
-            var textStation = _currStationItem.FindChildByName<TextBlock>("txtStationName");
-            var textBox = _currStationItem.FindChildByName<TextBox>("txtRename");
-            var saverename = _currStationItem.FindChildByName<Button>("btnSaveRename");
+            System.Windows.Controls.TextBlock textStation =
+                _currStationItem.FindChildByName<System.Windows.Controls.TextBlock>("txtStationName");
+            System.Windows.Controls.TextBox textBox =
+                _currStationItem.FindChildByName<System.Windows.Controls.TextBox>("txtRename");
+            System.Windows.Controls.Button saverename =
+                _currStationItem.FindChildByName<System.Windows.Controls.Button>("btnSaveRename");
 
             textBox.Text = textStation.Text;
-            textStation.Visibility = Visibility.Hidden;
-            textBox.Visibility = Visibility.Visible;
-            saverename.Visibility = Visibility.Visible;
+            textStation.Visibility = System.Windows.Visibility.Hidden;
+            textBox.Visibility = System.Windows.Visibility.Visible;
+            saverename.Visibility = System.Windows.Visibility.Visible;
             textBox.Focus();
             textBox.SelectAll();
         }
 
-        private void mnuDelete_Click(object sender, RoutedEventArgs e)
+        private void mnuDelete_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currMenuStation != null)
             {
@@ -252,36 +259,32 @@ namespace Elpis
             }
         }
 
-        private void mnuEditQuickMix_Click(object sender, RoutedEventArgs e)
+        private void mnuEditQuickMix_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            if(EditQuickMixEvent != null)
-                EditQuickMixEvent();
+            EditQuickMixEvent?.Invoke();
         }
 
-        private void mnuInfo_Click(object sender, RoutedEventArgs e)
+        private void mnuInfo_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currMenuStation != null && _currMenuStation.InfoUrl.StartsWith("http"))
-                Process.Start(_currMenuStation.InfoUrl);
+                System.Diagnostics.Process.Start(_currMenuStation.InfoUrl);
         }
 
-        private void mnuAddVariety_Click(object sender, RoutedEventArgs e)
+        private void mnuAddVariety_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (_currMenuStation != null)
             {
-                if (AddVarietyEvent != null)
-                    AddVarietyEvent(_currMenuStation);
+                AddVarietyEvent?.Invoke(_currMenuStation);
             }
         }
 
-
-        private void mnuMakeShortcut_Click(object sender, RoutedEventArgs e)
+        private void mnuMakeShortcut_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-         /*TODO: Add some kind of visual feedback to make it obvious creating the shortcut succeeded*/   
-            if (_currMenuStation != null)
+            /*TODO: Add some kind of visual feedback to make it obvious creating the shortcut succeeded*/
+            if (_currMenuStation == null)
             {
-                _currMenuStation.CreateShortcut();
+                _currMenuStation?.CreateShortcut();
             }
-
         }
     }
 }

@@ -17,7 +17,6 @@
  * along with BassPlayer. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
 using SD = System.Diagnostics;
 
 namespace BassPlayer
@@ -27,11 +26,11 @@ namespace BassPlayer
         Log,
         Recorder,
         Error,
-        EPG,
-        VMR9,
+        Epg,
+        Vmr9,
         Config,
         MusicShareWatcher,
-        WebEPG
+        WebEpg
     }
 
     public class Log
@@ -51,7 +50,7 @@ namespace BassPlayer
             Util.Log.O("Error: " + format, arg);
         }
 
-        public static void Error(Exception ex)
+        public static void Error(System.Exception ex)
         {
             Util.Log.O("Error: " + ex);
         }

@@ -17,57 +17,35 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Collections.Generic;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Input;
-using Elpis.Hotkeys;
-using PandoraSharpPlayer;
-using System;
-using KeyEventArgs = System.Windows.Input.KeyEventArgs;
-using TextBox = System.Windows.Controls.TextBox;
-using UserControl = System.Windows.Controls.UserControl;
-using System.Net.Sockets;
-using System.Net;
 using System.Linq;
-using System.ComponentModel;
 
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for Settings.xaml
+    ///     Interaction logic for Settings.xaml
     /// </summary>
-    public partial class Settings : UserControl
+    public partial class Settings
     {
-        #region Delegates
-
-        public delegate void CloseEvent();
-
-        public delegate void RestartEvent();
-
-        public delegate void LogoutEvent();
-
-        public delegate void LastFMAuthRequestEvent();
-
-        public delegate void LasFMDeAuthRequestEvent();
-
-        #endregion
-
-        private readonly Config _config;
-
-        private readonly Player _player;
-        private readonly HotKeyHost _keyHost;
-
-        public Settings(Player player, Config config, HotKeyHost keyHost)
+        public Settings(PandoraSharpPlayer.Player player, Config config, HotKeyHost keyHost)
         {
             InitializeComponent();
 
             _config = config;
             _player = player;
             _keyHost = keyHost;
-            HotKeyItems.SetBinding(ItemsControl.ItemsSourceProperty, new Binding("HotKeys") {Source = _keyHost, NotifyOnSourceUpdated=true, Mode=BindingMode.OneWay });
+            HotKeyItems.SetBinding(System.Windows.Controls.ItemsControl.ItemsSourceProperty,
+                new System.Windows.Data.Binding("HotKeys")
+                {
+                    Source = _keyHost,
+                    NotifyOnSourceUpdated = true,
+                    Mode = System.Windows.Data.BindingMode.OneWay
+                });
         }
+
+        private readonly Config _config;
+        private readonly HotKeyHost _keyHost;
+
+        private readonly PandoraSharpPlayer.Player _player;
 
         public event CloseEvent Close;
 
@@ -75,12 +53,15 @@ namespace Elpis
 
         public event LogoutEvent Logout;
 
-        public event LastFMAuthRequestEvent LastFMAuthRequest;
+        public event LastFmAuthRequestEvent LastFmAuthRequest;
 
-        public event LasFMDeAuthRequestEvent LasFMDeAuthRequest;
+        public event LasFmDeAuthRequestEvent LasFmDeAuthRequest;
 
         private void LoadConfig()
         {
+            chkRipStream.IsChecked = _config.Fields.RipStream;
+            txtRipPath.Text = _config.Fields.RipPath;
+
             chkAutoLogin.IsChecked = _config.Fields.Login_AutoLogin;
             cmbAudioFormat.SelectedValue = _config.Fields.Pandora_AudioFormat;
             cmbStationSort.SelectedValue = _config.Fields.Pandora_StationSortOrder;
@@ -116,46 +97,51 @@ namespace Elpis
 
             _config.SaveConfig();
 
-            UpdateLastFMControlState();
+            UpdateLastFmControlState();
         }
 
-        private List<string> getLocalIPAddresses()
+        private System.Collections.Generic.List<string> getLocalIPAddresses()
         {
-            List<string> ips = new List<string>();
-            if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+            System.Collections.Generic.List<string> ips = new System.Collections.Generic.List<string>();
+            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable()) return ips;
+            try
             {
-                try
-                {
-                    IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
-                    foreach (IPAddress ip in host.AddressList) {
-                        if (!(ip.IsIPv6LinkLocal || ip.IsIPv6Multicast || ip.IsIPv6SiteLocal || ip.IsIPv6Teredo)) {
-                            ips.Add(ip.ToString());
-                        }
-                    }
-                }
-                catch (SocketException e)
-                {
-                    Console.WriteLine("There was a socket error attempting to get local ips: " + e.ToString());
-                }
+                System.Net.IPHostEntry host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                ips.AddRange(from ip in host.AddressList where !(ip.IsIPv6LinkLocal || ip.IsIPv6Multicast || ip.IsIPv6SiteLocal || ip.IsIPv6Teredo) select ip.ToString());
+            }
+            catch (System.Net.Sockets.SocketException e)
+            {
+                System.Console.WriteLine(@"There was a socket error attempting to get local ips: " + e);
             }
             return ips;
         }
 
         private void SaveConfig()
         {
+            System.Diagnostics.Debug.Assert(chkRipStream.IsChecked != null, "chkRipStream.IsChecked != null");
+            _config.Fields.RipStream = (bool) chkRipStream.IsChecked;
+            _config.Fields.RipPath = txtRipPath.Text;
+
+            System.Diagnostics.Debug.Assert(chkAutoLogin.IsChecked != null, "chkAutoLogin.IsChecked != null");
             _config.Fields.Login_AutoLogin = (bool) chkAutoLogin.IsChecked;
             _config.Fields.Pandora_AudioFormat = (string) cmbAudioFormat.SelectedValue;
             _config.Fields.Pandora_StationSortOrder = (string) cmbStationSort.SelectedValue;
-            if (!_config.Fields.Pandora_AutoPlay &&
-                (bool) chkAutoPlay.IsChecked && _player.CurrentStation != null)
-                _config.Fields.Pandora_LastStationID = _player.CurrentStation.ID;
+            System.Diagnostics.Debug.Assert(chkAutoPlay.IsChecked != null, "chkAutoPlay.IsChecked != null");
+            if (!_config.Fields.Pandora_AutoPlay && (bool) chkAutoPlay.IsChecked && _player.CurrentStation != null)
+                _config.Fields.Pandora_LastStationID = _player.CurrentStation.Id;
             _config.Fields.Pandora_AutoPlay = (bool) chkAutoPlay.IsChecked;
+            System.Diagnostics.Debug.Assert(chkCheckUpdates.IsChecked != null, "chkCheckUpdates.IsChecked != null");
             _config.Fields.Elpis_CheckUpdates = (bool) chkCheckUpdates.IsChecked;
-            _config.Fields.Elpis_CheckBetaUpdates = (bool)chkCheckBetaUpdates.IsChecked;
-            _config.Fields.Elpis_RemoteControlEnabled = (bool)chkRemoteControlEnabled.IsChecked;
+            System.Diagnostics.Debug.Assert(chkCheckBetaUpdates.IsChecked != null, "chkCheckBetaUpdates.IsChecked != null");
+            _config.Fields.Elpis_CheckBetaUpdates = (bool) chkCheckBetaUpdates.IsChecked;
+            System.Diagnostics.Debug.Assert(chkRemoteControlEnabled.IsChecked != null, "chkRemoteControlEnabled.IsChecked != null");
+            _config.Fields.Elpis_RemoteControlEnabled = (bool) chkRemoteControlEnabled.IsChecked;
+            System.Diagnostics.Debug.Assert(chkTrayMinimize.IsChecked != null, "chkTrayMinimize.IsChecked != null");
             _config.Fields.Elpis_MinimizeToTray = (bool) chkTrayMinimize.IsChecked;
+            System.Diagnostics.Debug.Assert(chkShowNotify.IsChecked != null, "chkShowNotify.IsChecked != null");
             _config.Fields.Elpis_ShowTrayNotifications = (bool) chkShowNotify.IsChecked;
-            _player.PauseOnLock = _config.Fields.Elpis_PauseOnLock = (bool)chkPauseOnLock.IsChecked;
+            System.Diagnostics.Debug.Assert(chkPauseOnLock.IsChecked != null, "chkPauseOnLock.IsChecked != null");
+            _player.PauseOnLock = _config.Fields.Elpis_PauseOnLock = (bool) chkPauseOnLock.IsChecked;
 
             _player.AudioFormat = _config.Fields.Pandora_AudioFormat;
             //In case MP3-HiFi was rejected
@@ -166,23 +152,25 @@ namespace Elpis
 
             _config.Fields.Proxy_Address = txtProxyAddress.Text;
             int port = _config.Fields.Proxy_Port;
-            Int32.TryParse(txtProxyPort.Text, out port);
+            int.TryParse(txtProxyPort.Text, out port);
             _config.Fields.Proxy_Port = port;
             _config.Fields.Proxy_User = txtProxyUser.Text;
             _config.Fields.Proxy_Password = txtProxyPassword.Password;
 
-            _config.Fields.LastFM_Scrobble = (bool)chkEnableScrobbler.IsChecked;
-            Dictionary<int, HotkeyConfig> keys = new Dictionary<int, HotkeyConfig>();
-            foreach (KeyValuePair<int,HotKey> pair in _keyHost.HotKeys)
+            System.Diagnostics.Debug.Assert(chkEnableScrobbler.IsChecked != null, "chkEnableScrobbler.IsChecked != null");
+            _config.Fields.LastFM_Scrobble = (bool) chkEnableScrobbler.IsChecked;
+            System.Collections.Generic.Dictionary<int, HotkeyConfig> keys =
+                new System.Collections.Generic.Dictionary<int, HotkeyConfig>();
+            foreach (System.Collections.Generic.KeyValuePair<int, HotKey> pair in _keyHost.HotKeys)
             {
-                keys.Add(pair.Key,new HotkeyConfig(pair.Value));
+                keys.Add(pair.Key, new HotkeyConfig(pair.Value));
             }
             _config.Fields.Elpis_HotKeys = keys;
 
-            if (!_config.Fields.System_OutputDevice.Equals((string)cmbOutputDevice.SelectedValue))
+            if (!_config.Fields.System_OutputDevice.Equals((string) cmbOutputDevice.SelectedValue))
             {
-                _config.Fields.System_OutputDevice = (string)cmbOutputDevice.SelectedValue;
-                _player.OutputDevice = (string)cmbOutputDevice.SelectedValue;
+                _config.Fields.System_OutputDevice = (string) cmbOutputDevice.SelectedValue;
+                _player.OutputDevice = (string) cmbOutputDevice.SelectedValue;
             }
 
             _config.SaveConfig();
@@ -190,67 +178,73 @@ namespace Elpis
 
         private bool NeedsRestart()
         {
-            bool restart =
-                txtProxyAddress.Text != _config.Fields.Proxy_Address ||
-                txtProxyPort.Text != _config.Fields.Proxy_Port.ToString() ||
-                txtProxyUser.Text != _config.Fields.Proxy_User ||
-                txtProxyPassword.Password != _config.Fields.Proxy_Password ||
-                chkRemoteControlEnabled.IsChecked != _config.Fields.Elpis_RemoteControlEnabled;
+            bool restart = txtProxyAddress.Text != _config.Fields.Proxy_Address ||
+                           txtProxyPort.Text != _config.Fields.Proxy_Port.ToString() ||
+                           txtProxyUser.Text != _config.Fields.Proxy_User ||
+                           txtProxyPassword.Password != _config.Fields.Proxy_Password ||
+                           chkRemoteControlEnabled.IsChecked != _config.Fields.Elpis_RemoteControlEnabled;
 
             return restart;
         }
 
-        private void btnSave_Click(object sender, RoutedEventArgs e)
+        private void btnSave_Click(object sender, System.Windows.RoutedEventArgs e)
         {
+            if (!System.IO.Directory.Exists(txtRipPath.Text) && chkRipStream.IsChecked == true)
+            {
+                chkRipStream.IsChecked = false;
+                txtRipPath.Text = "Invalid";
+                return;
+            }
+            if (cmbAudioFormat.SelectedIndex == 0 && chkRipStream.IsChecked == true)
+            {
+                chkRipStream.IsChecked = false;
+                return;
+            }
+
             bool restart = NeedsRestart();
             SaveConfig();
 
             if (restart)
             {
-                if (Restart != null)
-                    Restart();
+                Restart?.Invoke();
             }
             else
             {
-                if (Close != null)
-                    Close();
+                Close?.Invoke();
             }
         }
 
-        private void btnLogout_Click(object sender, RoutedEventArgs e)
+        private void btnLogout_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             _config.Fields.Login_Email = string.Empty;
             _config.Fields.Login_Password = string.Empty;
 
             SaveConfig();
 
-            if (Logout != null)
-                Logout();
+            Logout?.Invoke();
         }
 
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        private void UserControl_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
             btnLogout.IsEnabled = _player.LoggedIn;
             LoadConfig();
         }
 
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
-        {
-        }
+        private void UserControl_Unloaded(object sender, System.Windows.RoutedEventArgs e) {}
 
-        private void btnCancel_Click(object sender, RoutedEventArgs e)
+        private void btnCancel_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            if (Close != null)
-                Close();
+            Close?.Invoke();
         }
 
         private void txtProxyPort_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
         {
             try
             {
-                Convert.ToInt32(e.Text);
+                // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+                System.Convert.ToInt32(e.Text);
                 string text = txtProxyPort.Text + e.Text;
-                int output = Convert.ToInt32(text);
+                int output = System.Convert.ToInt32(text);
                 if (output < 0 || output > 65535)
                     e.Handled = true;
             }
@@ -260,43 +254,43 @@ namespace Elpis
             }
         }
 
-        private void ShowLastFMAuthButton(bool state)
+        private void ShowLastFmAuthButton(bool state)
         {
-            btnLastFMAuth.Visibility = state ? Visibility.Visible : Visibility.Hidden;
-            btnLastFMDisable.Visibility = state ? Visibility.Hidden : Visibility.Visible;
+            btnLastFMAuth.Visibility = state ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
+            btnLastFMDisable.Visibility = state ? System.Windows.Visibility.Hidden : System.Windows.Visibility.Visible;
         }
 
-        private void UpdateLastFMControlState()
+        private void UpdateLastFmControlState()
         {
-            bool state = (bool)chkEnableScrobbler.IsChecked;
+            System.Diagnostics.Debug.Assert(chkEnableScrobbler.IsChecked != null, "chkEnableScrobbler.IsChecked != null");
+            bool state = (bool) chkEnableScrobbler.IsChecked;
 
-            ShowLastFMAuthButton(_config.Fields.LastFM_SessionKey == string.Empty);
+            ShowLastFmAuthButton(_config.Fields.LastFM_SessionKey == string.Empty);
             btnLastFMAuth.IsEnabled = state || _config.Fields.LastFM_SessionKey != string.Empty;
         }
 
-        private void chkEnableScrobbler_Click(object sender, RoutedEventArgs e)
+        private void chkEnableScrobbler_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            UpdateLastFMControlState();
+            UpdateLastFmControlState();
         }
 
-        private void btnLastFMAuth_Click(object sender, RoutedEventArgs e)
+        private void btnLastFMAuth_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            if (LastFMAuthRequest != null)
-                LastFMAuthRequest();
+            LastFmAuthRequest?.Invoke();
         }
 
-        private void btnLastFMDisable_Click(object sender, RoutedEventArgs e)
+        private void btnLastFMDisable_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            if (LasFMDeAuthRequest != null)
-                LasFMDeAuthRequest();
+            LasFmDeAuthRequest?.Invoke();
 
             chkEnableScrobbler.IsChecked = false;
-            UpdateLastFMControlState();
+            UpdateLastFmControlState();
         }
 
-        private void btnAddHotKey_Click(object sender, RoutedEventArgs e)
+        private void btnAddHotKey_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            _keyHost.AddHotKey(new HotKey(PlayerCommands.PlayPause,Key.None,ModifierKeys.None));
+            _keyHost.AddHotKey(new HotKey(PlayerCommands.PlayPause, System.Windows.Input.Key.None,
+                System.Windows.Input.ModifierKeys.None));
         }
 
         //private void btnDelHotkey_Click(object sender, RoutedEventArgs e)
@@ -305,61 +299,79 @@ namespace Elpis
         //    _keyHost.RemoveHotKey(pair.Value);
         //}
 
-        private void RemoveHotkey_MouseDown(object sender, MouseButtonEventArgs e)
+        private void RemoveHotkey_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            KeyValuePair<int, HotKey> pair = (KeyValuePair<int, HotKey>)((FrameworkElement)sender).DataContext;
+            System.Collections.Generic.KeyValuePair<int, HotKey> pair =
+                (System.Collections.Generic.KeyValuePair<int, HotKey>)
+                    ((System.Windows.FrameworkElement) sender).DataContext;
             _keyHost.RemoveHotKey(pair.Value);
         }
 
-        private void txtIPAddress_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void txtIPAddress_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
+            if (e.Key == System.Windows.Input.Key.C &&
+                System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Control)
             {
-                Clipboard.SetText(txtIPAddress.SelectedItem.ToString());
+                System.Windows.Clipboard.SetText(txtIPAddress.SelectedItem.ToString());
             }
         }
+
+        #region Delegates
+
+        public delegate void CloseEvent();
+
+        public delegate void RestartEvent();
+
+        public delegate void LogoutEvent();
+
+        public delegate void LastFmAuthRequestEvent();
+
+        public delegate void LasFmDeAuthRequestEvent();
+
+        #endregion
     }
 
-    public class HotKeyBox : TextBox
+    public class HotKeyBox : System.Windows.Controls.TextBox
     {
-        public HotKeyBox() : base() { }
-
         static HotKeyBox()
         {
-            TextProperty.OverrideMetadata(typeof(HotKeyBox),
-                                                  new FrameworkPropertyMetadata()
-                                                      {
-                                                          BindsTwoWayByDefault = false,
-                                                          Journal = true,
-                                                          DefaultUpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
-                                                      });
+            TextProperty.OverrideMetadata(typeof (HotKeyBox),
+                new System.Windows.FrameworkPropertyMetadata
+                {
+                    BindsTwoWayByDefault = false,
+                    Journal = true,
+                    DefaultUpdateSourceTrigger = System.Windows.Data.UpdateSourceTrigger.PropertyChanged
+                });
         }
-        protected override void OnPreviewKeyDown(KeyEventArgs e)
+
+        protected override void OnPreviewKeyDown(System.Windows.Input.KeyEventArgs e)
         {
             base.OnPreviewKeyDown(e);
-            KeyValuePair<int, HotKey> pair = (KeyValuePair<int, HotKey>) DataContext;
+            System.Collections.Generic.KeyValuePair<int, HotKey> pair =
+                (System.Collections.Generic.KeyValuePair<int, HotKey>) DataContext;
             HotKey h = pair.Value;
             switch (e.Key)
             {
-                case Key.LeftShift:
-                case Key.LeftAlt:
-                case Key.LeftCtrl:
-                case Key.RightCtrl:
-                case Key.RightAlt:
-                case Key.RightShift:
+                case System.Windows.Input.Key.LeftShift:
+                case System.Windows.Input.Key.LeftAlt:
+                case System.Windows.Input.Key.LeftCtrl:
+                case System.Windows.Input.Key.RightCtrl:
+                case System.Windows.Input.Key.RightAlt:
+                case System.Windows.Input.Key.RightShift:
                     break;
                 default:
                     try
                     {
-                        h.SetKeyCombo(e.Key, Keyboard.Modifiers);
+                        h.SetKeyCombo(e.Key, System.Windows.Input.Keyboard.Modifiers);
                         e.Handled = true;
-                        GetBindingExpression(TextBox.TextProperty).UpdateTarget();
+                        GetBindingExpression(TextProperty)?.UpdateTarget();
                         //HACK: This is a cheap-and-nasty way to shift focus from the textbox
                         IsEnabled = false;
                         IsEnabled = true;
                     }
-                    catch (HotKeyNotSupportedException es)
+                    catch (HotKeyNotSupportedException)
                     {
+                        //todo
                         //Log.O(es.Message);
                     }
                     break;

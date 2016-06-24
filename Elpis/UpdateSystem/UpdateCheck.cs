@@ -17,83 +17,64 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using System.Net;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using Util;
-using System.ComponentModel;
-
 namespace Elpis.UpdateSystem
 {
     public class UpdateCheck
     {
-        #region Delegates
+        public System.Version CurrentVersion => System.Reflection.Assembly.GetEntryAssembly().GetName().Version;
 
-        public delegate void UpdateDataLoadedEventHandler(bool foundUpdate);
-
-        public delegate void DownloadProgressHandler(int prog);
-        public event DownloadProgressHandler DownloadProgress;
-        public delegate void DownloadCompleteHandler(bool error, Exception ex);
-        public event DownloadCompleteHandler DownloadComplete;
-
-        #endregion
-
-        private bool _downloadComplete;
-        private string _downloadString = string.Empty;
-
-        public Version CurrentVersion
-        {
-            //get { return new Version(0, 5); } //uncomment to force update
-            get { return Assembly.GetEntryAssembly().GetName().Version; }
-        }
-
-        public Version NewVersion { get; set; }
+        public System.Version NewVersion { get; set; }
         public string DownloadUrl { get; set; }
         public string ReleaseNotesPath { get; set; }
         public string ReleaseNotes { get; set; }
         public bool UpdateNeeded { get; set; }
         public string UpdatePath { get; set; }
+
+        private bool _downloadComplete;
+        private string _downloadString = string.Empty;
         public event UpdateDataLoadedEventHandler UpdateDataLoadedEvent;
-      
 
         private void SendUpdateEvent(bool foundUpdate)
         {
-            if (UpdateDataLoadedEvent != null)
-                UpdateDataLoadedEvent(foundUpdate);
+            UpdateDataLoadedEvent?.Invoke(foundUpdate);
         }
 
         private string DownloadString(string url, int timeoutSec = 10)
         {
-            using (var wc = new WebClient())
+            using (System.Net.WebClient wc = new System.Net.WebClient())
             {
                 wc.DownloadStringCompleted += wc_DownloadStringCompleted;
 
                 _downloadComplete = false;
                 _downloadString = string.Empty;
-                if (PRequest.Proxy != null)
-                    wc.Proxy = PRequest.Proxy;
+                if (Util.PRequest.Proxy != null)
+                    wc.Proxy = Util.PRequest.Proxy;
 
-                wc.DownloadStringAsync(new Uri(url));
+                wc.DownloadStringAsync(new System.Uri(url));
 
-                DateTime start = DateTime.Now;
-                while (!_downloadComplete && ((DateTime.Now - start).TotalMilliseconds < (timeoutSec * 1000)))
-                    Thread.Sleep(25);
+                System.DateTime start = System.DateTime.Now;
+                while (!_downloadComplete && ((System.DateTime.Now - start).TotalMilliseconds < timeoutSec*1000))
+                    System.Threading.Thread.Sleep(25);
 
                 if (_downloadComplete)
                     return _downloadString;
 
                 wc.CancelAsync();
 
-                throw new Exception("Timeout waiting for " + url + " to download.");
+                throw new System.Exception("Timeout waiting for " + url + " to download.");
             }
         }
 
-        private void wc_DownloadStringCompleted(object sender, DownloadStringCompletedEventArgs e)
+        private void wc_DownloadStringCompleted(object sender, System.Net.DownloadStringCompletedEventArgs e)
         {
-            try { _downloadString = e.Result; }
-            catch { _downloadString = string.Empty; }
+            try
+            {
+                _downloadString = e.Result;
+            }
+            catch
+            {
+                _downloadString = string.Empty;
+            }
 
             _downloadComplete = true;
         }
@@ -102,7 +83,7 @@ namespace Elpis.UpdateSystem
         {
             try
             {
-                Log.O("Checking for "+(beta?"beta ":"")+"updates...");
+                Util.Log.O("Checking for " + (beta ? "beta " : "") + "updates...");
                 string updateUrl = "";
 
 #if APP_RELEASE
@@ -110,26 +91,26 @@ namespace Elpis.UpdateSystem
                             "?r=" + DateTime.UtcNow.ToEpochTime().ToString();
                     //Because WebClient won't let you disable caching :(
 #endif
-                Log.O("Downloading update file: " + updateUrl);
+                Util.Log.O("Downloading update file: " + updateUrl);
 
                 string data = DownloadString(updateUrl);
 
-                var mc = new MapConfig();
+                Util.MapConfig mc = new Util.MapConfig();
                 mc.LoadConfig(data);
 
-                string verStr = mc.GetValue(beta?"BetaVersion":"CurrentVersion", string.Empty);
+                string verStr = mc.GetValue(beta ? "BetaVersion" : "CurrentVersion", string.Empty);
                 DownloadUrl = mc.GetValue(beta ? "BetaDownloadUrl" : "DownloadUrl", string.Empty);
                 ReleaseNotesPath = mc.GetValue(beta ? "BetaReleaseNotes" : "ReleaseNotes", string.Empty);
 
                 ReleaseNotes = string.Empty;
-                if(ReleaseNotesPath != string.Empty)
+                if (ReleaseNotesPath != string.Empty)
                 {
                     ReleaseNotes = DownloadString(ReleaseNotesPath);
                 }
 
-                Version ver = null;
+                System.Version ver;
 
-                if (!Version.TryParse(verStr, out ver))
+                if (!System.Version.TryParse(verStr, out ver))
                 {
                     SendUpdateEvent(false);
                     return false;
@@ -137,17 +118,15 @@ namespace Elpis.UpdateSystem
 
                 NewVersion = ver;
 
-                bool result = false;
-                if (NewVersion > CurrentVersion)
-                    result = true;
+                bool result = NewVersion > CurrentVersion;
 
                 UpdateNeeded = result;
                 SendUpdateEvent(result);
                 return result;
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                Log.O("Error checking for updates: " + e);
+                Util.Log.O("Error checking for updates: " + e);
                 UpdateNeeded = false;
                 SendUpdateEvent(false);
                 return false;
@@ -166,32 +145,46 @@ namespace Elpis.UpdateSystem
 
         public void CheckForUpdateAsync()
         {
-            Task.Factory.StartNew(() => CheckForUpdateInternal());
+            System.Threading.Tasks.Task.Factory.StartNew(() => CheckForUpdateInternal());
         }
 
         public void DownloadUpdateAsync(string outputPath)
         {
             UpdatePath = outputPath;
-            Log.O("Download Elpis Update...");
-            Task.Factory.StartNew(() => PRequest.FileRequestAsync(DownloadUrl, outputPath, 
-                DownloadProgressChanged, DownloadFileCompleted));
+            Util.Log.O("Download Elpis Update...");
+            System.Threading.Tasks.Task.Factory.StartNew(
+                () =>
+                    Util.PRequest.FileRequestAsync(DownloadUrl, outputPath, DownloadProgressChanged,
+                        DownloadFileCompleted));
         }
 
-        private void DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        private void DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
         {
             if (e.Error == null)
-                Log.O("Update Download Complete.");
+                Util.Log.O("Update Download Complete.");
             else
-                Log.O("Update Download Error: " + e.Error);
+                Util.Log.O("Update Download Error: " + e.Error);
 
-            if (DownloadComplete != null)
-                DownloadComplete(e.Error != null, e.Error);
+            DownloadComplete?.Invoke(e.Error != null, e.Error);
         }
 
-        private void DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        private void DownloadProgressChanged(object sender, System.Net.DownloadProgressChangedEventArgs e)
         {
-            if (DownloadProgress != null)
-                DownloadProgress(e.ProgressPercentage);
+            DownloadProgress?.Invoke(e.ProgressPercentage);
         }
+
+        #region Delegates
+
+        public delegate void UpdateDataLoadedEventHandler(bool foundUpdate);
+
+        public delegate void DownloadProgressHandler(int prog);
+
+        public event DownloadProgressHandler DownloadProgress;
+
+        public delegate void DownloadCompleteHandler(bool error, System.Exception ex);
+
+        public event DownloadCompleteHandler DownloadComplete;
+
+        #endregion
     }
 }

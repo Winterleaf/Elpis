@@ -1,127 +1,117 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Kayak.Http
+﻿namespace Kayak.Http
 {
-    interface ITransactionSegment
+    internal interface ITransactionSegment
     {
         void AttachNext(ITransactionSegment next);
         void AttachTransaction(IHttpServerTransaction transaction);
     }
 
-    class ResponseSegment : ITransactionSegment, /*private*/ IDataConsumer
+    internal class ResponseSegment : ITransactionSegment, /*private*/ Net.IDataConsumer
     {
-        bool gotContinue, gotResponse, bodyFinished;
+        private Net.IDataProducer _body;
+        private bool _gotContinue;
+        private bool _gotResponse;
+        private bool _bodyFinished;
+        private HttpResponseHead _head;
 
-        IHttpServerTransaction transaction;
-        HttpResponseHead head;
-        IDataProducer body;
+        private ITransactionSegment _next;
 
-        ITransactionSegment next;
+        private IHttpServerTransaction _transaction;
 
-        public void WriteContinue()
+        public void OnError(System.Exception e)
         {
-            if (gotResponse) return;
-
-            if (gotContinue) throw new InvalidOperationException("WriteContinue was previously called.");
-            gotContinue = true;
-
-            if (transaction != null)
-                transaction.OnContinue();
+            _transaction.Dispose();
+            _transaction = null;
+            _next = null;
         }
 
-        public void WriteResponse(HttpResponseHead head, IDataProducer body)
+        public bool OnData(System.ArraySegment<byte> data, System.Action continuation)
         {
-            if (gotResponse) throw new InvalidOperationException("WriteResponse was previously called.");
-            gotResponse = true;
+            return _transaction.OnResponseData(data, continuation);
+        }
 
-            this.head = head;
-            this.body = body;
+        public void OnEnd()
+        {
+            _transaction.OnResponseEnd();
 
-            if (transaction != null)
-                DoWriteResponse();
+            _bodyFinished = true;
+
+            HandOffTransactionIfPossible();
         }
 
         public void AttachNext(ITransactionSegment next)
         {
-            this.next = next;
+            _next = next;
 
             HandOffTransactionIfPossible();
         }
 
         public void AttachTransaction(IHttpServerTransaction transaction)
         {
-            this.transaction = transaction;
+            _transaction = transaction;
 
-            if (gotContinue)
+            if (_gotContinue)
                 transaction.OnContinue();
 
-            if (gotResponse)
+            if (_gotResponse)
                 DoWriteResponse();
         }
 
-        void DoWriteResponse()
+        public void WriteContinue()
         {
-            transaction.OnResponse(head);
+            if (_gotResponse) return;
 
-            if (body != null)
+            if (_gotContinue) throw new System.InvalidOperationException("WriteContinue was previously called.");
+            _gotContinue = true;
+
+            _transaction?.OnContinue();
+        }
+
+        public void WriteResponse(HttpResponseHead head, Net.IDataProducer body)
+        {
+            if (_gotResponse) throw new System.InvalidOperationException("WriteResponse was previously called.");
+            _gotResponse = true;
+
+            _head = head;
+            _body = body;
+
+            if (_transaction != null)
+                DoWriteResponse();
+        }
+
+        private void DoWriteResponse()
+        {
+            _transaction.OnResponse(_head);
+
+            if (_body != null)
             {
                 // XXX there is no cancel.
-                body.Connect(this);
+                _body.Connect(this);
             }
             else
             {
-                transaction.OnResponseEnd();
+                _transaction.OnResponseEnd();
                 HandOffTransactionIfPossible();
             }
         }
 
-        public void OnError(Exception e)
+        private void HandOffTransactionIfPossible()
         {
-            transaction.Dispose();
-            transaction = null;
-            next = null;
-        }
-
-        public bool OnData(ArraySegment<byte> data, Action continuation)
-        {
-            return transaction.OnResponseData(data, continuation);
-        }
-
-        public void OnEnd()
-        {
-            transaction.OnResponseEnd();
-
-            bodyFinished = true;
-
-            HandOffTransactionIfPossible();
-        }
-
-        void HandOffTransactionIfPossible()
-        {
-            if (gotResponse && (body == null || (body != null && bodyFinished)) && transaction != null && next != null)
-            {
-                next.AttachTransaction(transaction);
-                transaction = null;
-                next = null;
-                body = null;
-            }
+            if (!_gotResponse || (_body != null && (_body == null || !_bodyFinished)) || _transaction == null || _next == null) return;
+            _next.AttachTransaction(_transaction);
+            _transaction = null;
+            _next = null;
+            _body = null;
         }
     }
 
-    class EndSegment : ITransactionSegment
+    internal class EndSegment : ITransactionSegment
     {
-        public void AttachNext(ITransactionSegment next)
-        {
-
-        }
+        public void AttachNext(ITransactionSegment next) {}
 
         public void AttachTransaction(IHttpServerTransaction transaction)
         {
             transaction.OnEnd();
         }
     }
-
 }

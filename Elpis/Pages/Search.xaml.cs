@@ -17,36 +17,14 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Collections.Generic;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using PandoraSharp;
-using PandoraSharpPlayer;
-using Util;
-
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for Search.xaml
+    ///     Interaction logic for Search.xaml
     /// </summary>
-    public partial class Search : UserControl
+    public partial class Search
     {
-        #region Delegates
-
-        public delegate void CancelHandler(object sender);
-
-        public delegate void AddVarietyHandler(object sender);
-
-        #endregion
-
-        private readonly Player _player;
-        private const string initialSearchText = "Enter Artist, Track or Composer";
-
-        public SearchMode SearchMode { get; set; }
-        public Station VarietyStation { get; set; }
-
-        public Search(Player player)
+        public Search(PandoraSharpPlayer.Player player)
         {
             _player = player;
             InitializeComponent();
@@ -55,106 +33,118 @@ namespace Elpis
             _player.ExceptionEvent += _player_ExceptionEvent;
         }
 
+        private const string InitialSearchText = "Enter Artist, Track or Composer";
+
+        public SearchMode SearchMode { get; set; }
+        public PandoraSharp.Station VarietyStation { get; set; }
+
+        private readonly PandoraSharpPlayer.Player _player;
+
         public event CancelHandler Cancel;
         public event AddVarietyHandler AddVariety;
 
-        void _player_ExceptionEvent(object sender, ErrorCodes code, System.Exception ex)
+        private void _player_ExceptionEvent(object sender, Util.ErrorCodes code, System.Exception ex)
         {
             ShowWait(false);
         }
 
         private void RunSearch(string query)
         {
-            if (query != string.Empty && !string.IsNullOrWhiteSpace(query))
-            {
-                lblNoResults.Visibility = Visibility.Collapsed;
-                ShowWait(true);
-                _player.StationSearchNew(query);
-            }
+            if (query == string.Empty || string.IsNullOrWhiteSpace(query)) return;
+            lblNoResults.Visibility = System.Windows.Visibility.Collapsed;
+            ShowWait(true);
+            _player.StationSearchNew(query);
         }
 
         private void ShowWait(bool state)
         {
-            this.BeginDispatch(() =>
-                                   {
-                                       WaitScreen.Visibility = state
-                                                                   ? Visibility.Visible
-                                                                   : Visibility.Collapsed;
-                                   });
+            this.BeginDispatch(
+                () =>
+                {
+                    WaitScreen.Visibility = state
+                        ? System.Windows.Visibility.Visible
+                        : System.Windows.Visibility.Collapsed;
+                });
         }
 
-        private void _player_SearchResult(object sender, List<SearchResult> result)
+        private void _player_SearchResult(object sender,
+            System.Collections.Generic.List<PandoraSharp.SearchResult> result)
         {
             this.BeginDispatch(() =>
-                                   {
-                                       if (result.Count == 0)
-                                           lblNoResults.Visibility = Visibility.Visible;
+            {
+                if (result.Count == 0)
+                    lblNoResults.Visibility = System.Windows.Visibility.Visible;
 
-                                       ResultItems.ItemsSource = result;
-                                       ResultScroller.ScrollToHome();
-                                       ShowWait(false);
-                                   });
+                ResultItems.ItemsSource = result;
+                ResultScroller.ScrollToHome();
+                ShowWait(false);
+            });
         }
 
-        private void btnSearch_Click(object sender, RoutedEventArgs e)
+        private void btnSearch_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             RunSearch(txtSearch.Text);
         }
 
-        private void btnCancel_Click(object sender, RoutedEventArgs e)
+        private void btnCancel_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            if (Cancel != null)
-                Cancel(this);
+            Cancel?.Invoke(this);
         }
 
-        private void Grid_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void Grid_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            var result = (SearchResult) ((Grid) sender).DataContext;
+            PandoraSharp.SearchResult result =
+                (PandoraSharp.SearchResult) ((System.Windows.Controls.Grid) sender).DataContext;
 
-            if (SearchMode == Elpis.SearchMode.NewStation)
+            if (SearchMode == SearchMode.NewStation)
             {
                 ShowWait(true);
-                _player.CreateStation(result); 
+                _player.CreateStation(result);
             }
             else
             {
-                if (VarietyStation != null)
-                    VarietyStation.AddVariety(result);
+                VarietyStation?.AddVariety(result);
 
-                if (AddVariety != null)
-                    AddVariety(this);
+                AddVariety?.Invoke(this);
             }
-
         }
 
-        private void txtSearch_KeyDown(object sender, KeyEventArgs e)
+        private void txtSearch_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (e.Key == Key.Enter)
+            if (e.Key == System.Windows.Input.Key.Enter)
                 RunSearch(txtSearch.Text);
         }
 
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        private void UserControl_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            lblNoResults.Visibility = Visibility.Collapsed;
-            txtSearch.Text = initialSearchText;
+            lblNoResults.Visibility = System.Windows.Visibility.Collapsed;
+            txtSearch.Text = InitialSearchText;
             ResultScroller.ScrollToHome();
             ShowWait(false);
         }
 
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        private void UserControl_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
             ShowWait(false);
         }
 
         private void ClearSearchBox()
         {
-            if (txtSearch.Text == initialSearchText)
+            if (txtSearch.Text == InitialSearchText)
                 txtSearch.Text = string.Empty;
         }
 
-        private void txtSearch_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        private void txtSearch_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ClearSearchBox();
         }
+
+        #region Delegates
+
+        public delegate void CancelHandler(object sender);
+
+        public delegate void AddVarietyHandler(object sender);
+
+        #endregion
     }
 }

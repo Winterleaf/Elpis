@@ -17,41 +17,32 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Timers;
-
 namespace Elpis
 {
     /// <summary>
-    /// Interaction logic for MainBar.xaml
+    ///     Interaction logic for MainBar.xaml
     /// </summary>
-    public partial class MainBar : UserControl
+    public partial class MainBar
     {
-        #region Delegates
-
-        public delegate void MainBarHandler();
-
-        public delegate void VolumeChangedHandler(double vol);
-
-        public delegate void ErrorClickedHandler();
-
-        #endregion
-
-        private ContextMenu _errorMenu;
-        Timer volCloseTimer;
-
         public MainBar()
         {
             InitializeComponent();
 
-            _errorMenu = this.Resources["ErrorMenu"] as ContextMenu;
+            _errorMenu = Resources["ErrorMenu"] as System.Windows.Controls.ContextMenu;
+            System.Diagnostics.Debug.Assert(_errorMenu != null, "_errorMenu != null");
             _errorMenu.PlacementTarget = btnError;
-            volCloseTimer = new Timer(2000);
-            volCloseTimer.Elapsed += new ElapsedEventHandler(volCloseTimer_Elapsed);
+            _volCloseTimer = new System.Timers.Timer(2000);
+            _volCloseTimer.Elapsed += volCloseTimer_Elapsed;
         }
+
+        public double Volume
+        {
+            get { return sVolume.Value; }
+            set { sVolume.Value = value; }
+        }
+
+        private readonly System.Windows.Controls.ContextMenu _errorMenu;
+        private readonly System.Timers.Timer _volCloseTimer;
 
         public event MainBarHandler StationListClick;
         public event MainBarHandler CreateStationClick;
@@ -64,17 +55,127 @@ namespace Elpis
 
         public event ErrorClickedHandler ErrorClicked;
 
-        public double Volume
+        public void ShowError(string msg)
         {
-            get { return sVolume.Value; }
-            set { sVolume.Value = value; }
+            this.BeginDispatch(() =>
+            {
+                btnError.ToolTip = msg;
+                gridError.Visibility = System.Windows.Visibility.Visible;
+            });
         }
 
-        #region ItemStates
-        
-        private Visibility Vis(bool state)
+        private void btnStationList_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            return state ? Visibility.Visible : Visibility.Hidden;
+            StationListClick?.Invoke();
+        }
+
+        private void btnStationListClose_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            StationListClick?.Invoke();
+        }
+
+        private void btnPlayPause_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            PlayPauseClick?.Invoke();
+        }
+
+        private void btnNext_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            NextClick?.Invoke();
+        }
+
+        private void btnSettings_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            SettingsClick?.Invoke();
+        }
+
+        private void btnAbout_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            AboutClick?.Invoke();
+        }
+
+        private void btnCreateStation_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            CreateStationClick?.Invoke();
+        }
+
+        private void btnCreateStationClose_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            CreateStationClick?.Invoke();
+        }
+
+        private void btnError_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            _errorMenu.IsOpen = true;
+        }
+
+        private void ShowError_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            ErrorClicked?.Invoke();
+
+            gridError.Visibility = System.Windows.Visibility.Hidden;
+        }
+
+        private void DismissError_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            gridError.Visibility = System.Windows.Visibility.Hidden;
+        }
+
+        private void sVolume_VolumeChanged(object sender, System.Windows.RoutedPropertyChangedEventArgs<double> e)
+        {
+            VolumeChanged?.Invoke(e.NewValue);
+
+            if (System.Math.Abs(Volume) < .0001d)
+                imgVolume.Source =
+                    new System.Windows.Media.Imaging.BitmapImage(Resources["Image_Volume_0"] as System.Uri);
+            else if (Volume > 0 && Volume < 33)
+                imgVolume.Source =
+                    new System.Windows.Media.Imaging.BitmapImage(Resources["Image_Volume_33"] as System.Uri);
+            else if (Volume >= 33 && Volume < 66)
+                imgVolume.Source =
+                    new System.Windows.Media.Imaging.BitmapImage(Resources["Image_Volume_66"] as System.Uri);
+            else if (Volume >= 66)
+                imgVolume.Source =
+                    new System.Windows.Media.Imaging.BitmapImage(Resources["Image_Volume_100"] as System.Uri);
+        }
+
+        private void btnVolume_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            _volCloseTimer.Stop();
+            gridVolume.Visibility = System.Windows.Visibility.Visible;
+        }
+
+        private void volCloseTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            this.BeginDispatch(() => { gridVolume.Visibility = System.Windows.Visibility.Hidden; });
+        }
+
+        private void gridVolume_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            _volCloseTimer.Stop();
+            _volCloseTimer.Start();
+        }
+
+        private void gridVolume_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            _volCloseTimer.Stop();
+        }
+
+        #region Delegates
+
+        public delegate void MainBarHandler();
+
+        public delegate void VolumeChangedHandler(double vol);
+
+        public delegate void ErrorClickedHandler();
+
+        #endregion
+
+        #region ItemStates
+
+        private static System.Windows.Visibility Vis(bool state)
+        {
+            return state ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
         }
 
         private void ShowAbout(bool state)
@@ -128,7 +229,7 @@ namespace Elpis
         {
             ShowAbout(false);
             ShowSettings(false);
-            
+
             ShowStationList(false);
             ShowStationListClose(false);
             ShowCreateStation(false);
@@ -202,121 +303,7 @@ namespace Elpis
             ShowCreateStation(false);
             ShowCreateStationClose(false);
         }
+
         #endregion
-        public void ShowError(string msg)
-        {
-            this.BeginDispatch(() =>
-                                   {
-                                       btnError.ToolTip = msg;
-                                       gridError.Visibility = Visibility.Visible;
-                                   });
-        }
-
-        private void btnStationList_Click(object sender, RoutedEventArgs e)
-        {
-            if (StationListClick != null)
-                StationListClick();
-        }
-
-        private void btnStationListClose_Click(object sender, RoutedEventArgs e)
-        {
-            if (StationListClick != null)
-                StationListClick();
-        }
-
-        private void btnPlayPause_Click(object sender, RoutedEventArgs e)
-        {
-            if (PlayPauseClick != null)
-                PlayPauseClick();
-        }
-
-        private void btnNext_Click(object sender, RoutedEventArgs e)
-        {
-            if (NextClick != null)
-                NextClick();
-        }
-
-        private void btnSettings_Click(object sender, RoutedEventArgs e)
-        {
-            if (SettingsClick != null)
-                SettingsClick();
-        }
-
-        private void btnAbout_Click(object sender, RoutedEventArgs e)
-        {
-            if (AboutClick != null)
-                AboutClick();
-        }
-
-        private void btnCreateStation_Click(object sender, RoutedEventArgs e)
-        {
-            if (CreateStationClick != null)
-                CreateStationClick();
-        }
-
-        private void btnCreateStationClose_Click(object sender, RoutedEventArgs e)
-        {
-            if (CreateStationClick != null)
-                CreateStationClick();
-        }
-
-        private void btnError_Click(object sender, RoutedEventArgs e)
-        {
-            _errorMenu.IsOpen = true;
-        }
-
-        private void ShowError_Click(object sender, RoutedEventArgs e)
-        {
-            if (ErrorClicked != null)
-                ErrorClicked();
-
-            gridError.Visibility = Visibility.Hidden;
-        }
-
-        private void DismissError_Click(object sender, RoutedEventArgs e)
-        {
-            gridError.Visibility = Visibility.Hidden;
-        }
-
-        private void sVolume_VolumeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (VolumeChanged != null)
-                VolumeChanged(e.NewValue);
-
-            if (Volume == 0)
-                imgVolume.Source = new BitmapImage(Resources["Image_Volume_0"] as System.Uri);
-            else if (Volume > 0 && Volume < 33)
-                imgVolume.Source = new BitmapImage(Resources["Image_Volume_33"] as System.Uri);
-            else if(Volume >= 33 && Volume < 66)
-                imgVolume.Source = new BitmapImage(Resources["Image_Volume_66"] as System.Uri);
-            else if(Volume >= 66)
-                imgVolume.Source = new BitmapImage(Resources["Image_Volume_100"] as System.Uri);
-        }
-
-        private void btnVolume_Click(object sender, RoutedEventArgs e)
-        {
-            volCloseTimer.Stop();
-            gridVolume.Visibility = System.Windows.Visibility.Visible;
-        }
-
-        void volCloseTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            this.BeginDispatch(() =>
-            {
-                gridVolume.Visibility = System.Windows.Visibility.Hidden;
-            }); 
-        }
-
-        private void gridVolume_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            volCloseTimer.Stop();
-            volCloseTimer.Start();
-        }
-
-        private void gridVolume_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            volCloseTimer.Stop();
-        }
-
     }
 }

@@ -1,55 +1,47 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Kayak.Http
+﻿namespace Kayak.Http
 {
     public static class HttpServerExtensions
     {
-        public static IServer CreateHttp(this IServerFactory factory, IHttpRequestDelegate channel, IScheduler scheduler)
+        public static Net.IServer CreateHttp(this Net.IServerFactory factory, IHttpRequestDelegate channel, Net.IScheduler scheduler)
         {
-            var f = new HttpServerFactory(factory);
+            HttpServerFactory f = new HttpServerFactory(factory);
             return f.Create(channel, scheduler);
         }
     }
 
-    class HttpServerFactory : IHttpServerFactory
+    internal class HttpServerFactory : IHttpServerFactory
     {
-        IServerFactory serverFactory;
-
-        public HttpServerFactory(IServerFactory serverFactory)
+        public HttpServerFactory(Net.IServerFactory serverFactory)
         {
-            this.serverFactory = serverFactory;
+            _serverFactory = serverFactory;
         }
 
-        public IServer Create(IHttpRequestDelegate del, IScheduler scheduler)
+        private readonly Net.IServerFactory _serverFactory;
+
+        public Net.IServer Create(IHttpRequestDelegate del, Net.IScheduler scheduler)
         {
-            return serverFactory.Create(new HttpServerDelegate(del), scheduler);
+            return _serverFactory.Create(new HttpServerDelegate(del), scheduler);
         }
     }
 
-    class HttpServerDelegate : IServerDelegate
+    internal class HttpServerDelegate : Net.IServerDelegate
     {
-        IHttpRequestDelegate requestDelegate;
-
         public HttpServerDelegate(IHttpRequestDelegate requestDelegate)
         {
-            this.requestDelegate = requestDelegate;
+            _requestDelegate = requestDelegate;
         }
 
-        public ISocketDelegate OnConnection(IServer server, ISocket socket)
+        private readonly IHttpRequestDelegate _requestDelegate;
+
+        public Net.ISocketDelegate OnConnection(Net.IServer server, Net.ISocket socket)
         {
             // XXX freelist
-            var tx = new HttpServerTransaction(socket);
-            var txDel = new HttpServerTransactionDelegate(requestDelegate);
-            var socketDelegate = new HttpServerSocketDelegate(tx, txDel);
+            HttpServerTransaction tx = new HttpServerTransaction(socket);
+            HttpServerTransactionDelegate txDel = new HttpServerTransactionDelegate(_requestDelegate);
+            HttpServerSocketDelegate socketDelegate = new HttpServerSocketDelegate(tx, txDel);
             return socketDelegate;
         }
 
-        public void OnClose(IServer server)
-        {
-
-        }
+        public void OnClose(Net.IServer server) {}
     }
 }

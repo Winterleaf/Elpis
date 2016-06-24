@@ -1,74 +1,75 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows;
-using System.Windows.Input;
-using Microsoft.Shell;
-using NDesk.Options;
-using Util;
-using System.IO;
-
-namespace Elpis
+﻿namespace Elpis
 {
     /// <summary>
-    /// Interaction logic for App.xaml
+    ///     Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application, ISingleInstanceApp
+    public partial class App : System.Windows.Application, Microsoft.Shell.ISingleInstanceApp
     {
+        #region ISingleInstanceApp Members
 
-        [STAThread]
+        public bool SignalExternalCommandLineArgs(System.Collections.Generic.IList<string> args)
+        {
+            return HandleCommandLine(args);
+        }
+
+        #endregion
+
+        [System.STAThread]
         public static void Main()
         {
-            if (SingleInstance<App>.InitializeAsFirstInstance("ElpisInstance"))
-            {
-                var application = new App();
-                application.Init();
-                application.Run();
+            if (!Microsoft.Shell.SingleInstance<App>.InitializeAsFirstInstance("ElpisInstance")) return;
+            App application = new App();
+            application.Init();
+            application.Run();
 
-                // Allow single instance code to perform cleanup operations
-                SingleInstance<App>.Cleanup();
-            }
+            // Allow single instance code to perform cleanup operations
+            Microsoft.Shell.SingleInstance<App>.Cleanup();
         }
 
         public void Init()
         {
-            this.InitializeComponent();
+            InitializeComponent();
         }
 
-        protected override void OnStartup(StartupEventArgs e)
-        {       
+        protected override void OnStartup(System.Windows.StartupEventArgs e)
+        {
             base.OnStartup(e);
             HandleCommandLine(System.Environment.GetCommandLineArgs());
-            if(Elpis.MainWindow._clo.ShowHelp)
-                Application.Current.Shutdown();
+            if (Elpis.MainWindow.Clo.ShowHelp)
+                Current.Shutdown();
         }
 
-        private void ShowHelp(OptionSet optionSet, string msg = null)
+        private void ShowHelp(Util.OptionSet optionSet, string msg = null)
         {
-            StringWriter sw = new StringWriter();
+            System.IO.StringWriter sw = new System.IO.StringWriter();
             optionSet.WriteOptionDescriptions(sw);
             string output = sw.ToString();
-            if(msg != null)
+            if (msg != null)
                 output += "\r\n\r\n" + msg;
-            MessageBox.Show(output, "Elpis Options");
+            System.Windows.MessageBox.Show(output, "Elpis Options");
         }
 
-        public bool HandleCommandLine(IList<string> args)
+        public bool HandleCommandLine(System.Collections.Generic.IList<string> args)
         {
             CommandLineOptions clo = new CommandLineOptions();
-            OptionSet p = new OptionSet()
-               .Add("c|config=", "a {CONFIG} file to load ", delegate(string v) { clo.ConfigPath = v; })
-               .Add("h|?|help", "show this message and exit", delegate(string v) { clo.ShowHelp = v != null; })
-               .Add("playpause", "toggles playback", delegate(string v) { clo.TogglePlayPause = v != null; })
-               .Add("next", "skips current track", delegate(string v) { clo.SkipTrack = v != null; })
-               .Add("thumbsup", "rates the song as suitable for this station", delegate(string v) { clo.DoThumbsUp = v != null; })
-               .Add("thumbsdown", "rates the song as unsuitable for this station", delegate(string v) { clo.DoThumbsDown = v != null; })
-               .Add("s|station=", "starts station \"{STATIONNAME}\" - puts quotes around station names with spaces", delegate(string v) { clo.StationToLoad = v; });
+            Util.OptionSet p =
+                new Util.OptionSet().Add("c|config=", "a {CONFIG} file to load ",
+                    delegate(string v) { clo.ConfigPath = v; })
+                    .Add("h|?|help", "show this message and exit", delegate(string v) { clo.ShowHelp = v != null; })
+                    .Add("playpause", "toggles playback", delegate(string v) { clo.TogglePlayPause = v != null; })
+                    .Add("next", "skips current track", delegate(string v) { clo.SkipTrack = v != null; })
+                    .Add("thumbsup", "rates the song as suitable for this station",
+                        delegate(string v) { clo.DoThumbsUp = v != null; })
+                    .Add("thumbsdown", "rates the song as unsuitable for this station",
+                        delegate(string v) { clo.DoThumbsDown = v != null; })
+                    .Add("s|station=", "starts station \"{STATIONNAME}\" - puts quotes around station names with spaces",
+                        delegate(string v) { clo.StationToLoad = v; });
 
             try
             {
                 p.Parse(args);
             }
-            catch (OptionException e)
+            catch (Util.OptionException e)
             {
                 clo.ShowHelp = true;
                 Elpis.MainWindow.SetCommandLine(clo);
@@ -83,21 +84,10 @@ namespace Elpis
             }
             else
             {
-                if (MainWindow != null)
-                {
-                    ((Elpis.MainWindow)MainWindow).DoCommandLine();
-                }
+                ((MainWindow) MainWindow)?.DoCommandLine();
             }
 
             return true;
         }
-
-        #region ISingleInstanceApp Members
-        public bool SignalExternalCommandLineArgs(IList<string> args)
-        {
-            return HandleCommandLine(args);
-        }
-
-        #endregion
     }
 }

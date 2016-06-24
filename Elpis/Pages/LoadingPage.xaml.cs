@@ -17,14 +17,12 @@
  * along with Elpis. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Windows.Controls;
-
-namespace Elpis
+namespace Elpis.Pages
 {
     /// <summary>
-    /// Interaction logic for LoadingPage.xaml
+    ///     Interaction logic for LoadingPage.xaml
     /// </summary>
-    public partial class LoadingPage : UserControl
+    public partial class LoadingPage
     {
         public LoadingPage()
         {

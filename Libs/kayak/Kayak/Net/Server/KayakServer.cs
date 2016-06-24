@@ -1,147 +1,141 @@
-﻿using System;
-using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
-
-namespace Kayak
+﻿namespace Kayak.Net.Server
 {
-    class DefaultKayakServer : IServer
+    internal class DefaultKayakServer : IServer
     {
-        IServerDelegate del;
-
-        IScheduler scheduler;
-        KayakServerState state;
-        Socket listener;
-
         internal DefaultKayakServer(IServerDelegate del, IScheduler scheduler)
         {
             if (del == null)
-                throw new ArgumentNullException("del");
+                throw new System.ArgumentNullException(nameof(del));
 
             if (scheduler == null)
-                throw new ArgumentNullException("scheduler");
+                throw new System.ArgumentNullException(nameof(scheduler));
 
-            this.del = del;
-            this.scheduler = scheduler;
-            listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
-            state = new KayakServerState();
+            _del = del;
+            _scheduler = scheduler;
+            _listener = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork,
+                System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.IP);
+            _state = new KayakServerState();
         }
+
+        private readonly IServerDelegate _del;
+        private readonly System.Net.Sockets.Socket _listener;
+
+        private readonly IScheduler _scheduler;
+        private readonly KayakServerState _state;
 
         public void Dispose()
         {
-            state.SetDisposed();
+            _state.SetDisposed();
 
-            if (listener != null)
-            {
-                listener.Dispose();
-            }
+            _listener?.Dispose();
         }
 
-        public IDisposable Listen(IPEndPoint ep)
+        public System.IDisposable Listen(System.Net.IPEndPoint ep)
         {
-			if (ep == null)
-				throw new ArgumentNullException("ep");
-			
-            state.SetListening();
-            
-            Debug.WriteLine("KayakServer will bind to " + ep.ToString());
-            
-            listener.Bind(ep);
-            listener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 10000);
-            listener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 10000);
-            listener.Listen((int)SocketOptionName.MaxConnections);
-			
-            Debug.WriteLine("KayakServer bound to " + ep.ToString());
-			
+            if (ep == null)
+                throw new System.ArgumentNullException(nameof(ep));
+
+            _state.SetListening();
+
+            System.Diagnostics.Debug.WriteLine("KayakServer will bind to " + ep);
+
+            _listener.Bind(ep);
+            _listener.SetSocketOption(System.Net.Sockets.SocketOptionLevel.Socket,
+                System.Net.Sockets.SocketOptionName.ReceiveTimeout, 10000);
+            _listener.SetSocketOption(System.Net.Sockets.SocketOptionLevel.Socket,
+                System.Net.Sockets.SocketOptionName.SendTimeout, 10000);
+            _listener.Listen((int)System.Net.Sockets.SocketOptionName.MaxConnections);
+
+            System.Diagnostics.Debug.WriteLine("KayakServer bound to " + ep);
+
             AcceptNext();
-            return new Disposable(() => Close());
+            return new Disposable(Close);
         }
 
-        void Close()
+        private void Close()
         {
-            var closed = state.SetClosing();
-            
-            Debug.WriteLine("Closing listening socket.");
-            listener.Close();
+            bool closed = _state.SetClosing();
+
+            System.Diagnostics.Debug.WriteLine("Closing listening socket.");
+            _listener.Close();
 
             if (closed)
                 RaiseOnClose();
         }
 
-        internal void SocketClosed(DefaultKayakSocket socket)
+        internal void SocketClosed(Socket.DefaultKayakSocket socket)
         {
             //Debug.WriteLine("Connection " + socket.id + ": closed (" + connections + " active connections)");
-            if (state.DecrementConnections())
+            if (_state.DecrementConnections())
                 RaiseOnClose();
         }
 
-        void RaiseOnClose()
+        private void RaiseOnClose()
         {
-            del.OnClose(this);
+            _del.OnClose(this);
         }
 
-        void AcceptNext()
+        private void AcceptNext()
         {
             try
             {
-                Debug.WriteLine("KayakServer: accepting connection");
-                listener.BeginAccept(iasr =>
+                System.Diagnostics.Debug.WriteLine("KayakServer: accepting connection");
+                _listener.BeginAccept(iasr =>
                 {
-                    Debug.WriteLine("KayakServer: accepted connection callback");
-                    Socket socket = null;
-                    Exception error = null;
+                    System.Diagnostics.Debug.WriteLine("KayakServer: accepted connection callback");
+                    System.Net.Sockets.Socket socket = null;
+                    System.Exception error = null;
                     try
                     {
-                        socket = listener.EndAccept(iasr);
+                        if (_listener.Connected)
+                            socket = _listener.EndAccept(iasr);
                         AcceptNext();
                     }
-                    catch (Exception e)
+                    catch (System.Exception e)
                     {
                         error = e;
                     }
 
-                    if (error is ObjectDisposedException)
+                    if (error is System.ObjectDisposedException)
                         return;
 
-                    scheduler.Post(() =>
+                    _scheduler.Post(() =>
                     {
-                        Debug.WriteLine("KayakServer: accepted connection");
+                        System.Diagnostics.Debug.WriteLine("KayakServer: accepted connection");
                         if (error != null)
                             HandleAcceptError(error);
 
-                        var s = new DefaultKayakSocket(new SocketWrapper(socket), this.scheduler);
-                        state.IncrementConnections();
+                        Socket.DefaultKayakSocket s = new Socket.DefaultKayakSocket(new SocketWrapper(socket), _scheduler);
+                        _state.IncrementConnections();
 
-                        var socketDelegate = del.OnConnection(this, s);
-                        s.del = socketDelegate;
+                        ISocketDelegate socketDelegate = _del.OnConnection(this, s);
+                        s.Del = socketDelegate;
                         s.BeginRead();
                     });
-
                 }, null);
             }
-            catch (ObjectDisposedException)
-            {
-                return;
-            }
-            catch (Exception e)
+            catch (System.ObjectDisposedException) { }
+            catch (System.Exception e)
             {
                 HandleAcceptError(e);
             }
         }
 
-        void HandleAcceptError(Exception e)
+        private void HandleAcceptError(System.Exception e)
         {
-            state.SetError();
+            _state.SetError();
 
             try
             {
-                listener.Close();
+                _listener.Close();
             }
-            catch { }
+            catch
+            {
+                //todo
+            }
 
-            Debug.WriteLine("Error attempting to accept connection.");
-            Console.Error.WriteStackTrace(e);
+            System.Diagnostics.Debug.WriteLine("Error attempting to accept connection.");
+            Extensions.Extensions.WriteStackTrace(System.Console.Error, e);
 
             RaiseOnClose();
         }

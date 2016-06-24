@@ -1,98 +1,94 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-
-namespace Kayak
+﻿namespace Kayak
 {
     // need to be able to get underneath the KayakSocket class for testing purposes.
     // kinda hanky, but should be able to swap it for a raw socket in the release build
     // using preprocessor macros...
-    interface ISocketWrapper : IDisposable
+    internal interface ISocketWrapper : System.IDisposable
     {
-        IPEndPoint RemoteEndPoint { get; }
+        System.Net.IPEndPoint RemoteEndPoint { get; }
 
-        IAsyncResult BeginConnect(IPEndPoint ep, AsyncCallback callback);
-        void EndConnect(IAsyncResult iasr);
+        System.IAsyncResult BeginConnect(System.Net.IPEndPoint ep, System.AsyncCallback callback);
+        void EndConnect(System.IAsyncResult iasr);
 
-        IAsyncResult BeginReceive(byte[] buffer, int offset, int count, AsyncCallback callback);
-        int EndReceive(IAsyncResult iasr);
+        System.IAsyncResult BeginReceive(byte[] buffer, int offset, int count, System.AsyncCallback callback);
+        int EndReceive(System.IAsyncResult iasr);
 
-        IAsyncResult BeginSend(List<ArraySegment<byte>> data, AsyncCallback callback);
-        int EndSend(IAsyncResult iasr);
+        System.IAsyncResult BeginSend(System.Collections.Generic.List<System.ArraySegment<byte>> data,
+            System.AsyncCallback callback);
+
+        int EndSend(System.IAsyncResult iasr);
 
         void Shutdown();
     }
 
-    class SocketWrapper : ISocketWrapper
+    internal class SocketWrapper : ISocketWrapper
     {
-        Socket socket;
+        public SocketWrapper(System.Net.Sockets.AddressFamily af)
+            : this(
+                new System.Net.Sockets.Socket(af, System.Net.Sockets.SocketType.Stream,
+                    System.Net.Sockets.ProtocolType.Tcp)) {}
 
-        public IPEndPoint RemoteEndPoint { get { return (IPEndPoint)socket.RemoteEndPoint; } }
-        public SocketWrapper(AddressFamily af)
-            : this(new Socket(af, SocketType.Stream, ProtocolType.Tcp)) { }
-
-        public SocketWrapper(Socket socket)
+        public SocketWrapper(System.Net.Sockets.Socket socket)
         {
-            this.socket = socket;
+            _socket = socket;
         }
-
 
         // perhaps a bit heavy-handed but no mono that can compile 4.0 .net works right anyway
-        static bool syncConnect = Environment.OSVersion.Platform == PlatformID.Unix;
+        private static readonly bool SyncConnect = System.Environment.OSVersion.Platform == System.PlatformID.Unix;
 
-        Action<IPEndPoint> pendingConnect;
-        public IAsyncResult BeginConnect(IPEndPoint ep, AsyncCallback callback)
+        private System.Action<System.Net.IPEndPoint> _pendingConnect;
+        private readonly System.Net.Sockets.Socket _socket;
+
+        public System.Net.IPEndPoint RemoteEndPoint => (System.Net.IPEndPoint) _socket.RemoteEndPoint;
+
+        public System.IAsyncResult BeginConnect(System.Net.IPEndPoint ep, System.AsyncCallback callback)
         {
-            if (syncConnect)
+            if (!SyncConnect) return _socket.BeginConnect(ep, callback, null);
+            // voila, BeginConnect est borken avec mono 2.8-2.10. rad.
+            // whatever it's probably implemented on a native threadpool anyway.
+            _pendingConnect = _socket.Connect;
+            return _pendingConnect.BeginInvoke(ep, callback, null);
+        }
+
+        public void EndConnect(System.IAsyncResult iasr)
+        {
+            if (SyncConnect)
             {
-                // voila, BeginConnect est borken avec mono 2.8-2.10. rad.
-                // whatever it's probably implemented on a native threadpool anyway.
-                pendingConnect = socket.Connect;
-                return pendingConnect.BeginInvoke(ep, callback, null);
+                _pendingConnect.EndInvoke(iasr);
             }
             else
-                return socket.BeginConnect(ep, callback, null);
+                _socket.EndConnect(iasr);
         }
 
-        public void EndConnect(IAsyncResult iasr)
+        public System.IAsyncResult BeginReceive(byte[] buffer, int offset, int count, System.AsyncCallback callback)
         {
-            if (syncConnect)
-            {
-                pendingConnect.EndInvoke(iasr);
-            }
-            else
-                socket.EndConnect(iasr);
+            return _socket.BeginReceive(buffer, offset, count, System.Net.Sockets.SocketFlags.None, callback, null);
         }
 
-        public IAsyncResult BeginReceive(byte[] buffer, int offset, int count, AsyncCallback callback)
+        public int EndReceive(System.IAsyncResult iasr)
         {
-            return socket.BeginReceive(buffer, offset, count, SocketFlags.None, callback, null);
+            return _socket.EndReceive(iasr);
         }
 
-        public int EndReceive(IAsyncResult iasr)
+        public System.IAsyncResult BeginSend(System.Collections.Generic.List<System.ArraySegment<byte>> data,
+            System.AsyncCallback callback)
         {
-            return socket.EndReceive(iasr);
+            return _socket.BeginSend(data, System.Net.Sockets.SocketFlags.None, callback, null);
         }
 
-        public IAsyncResult BeginSend(List<ArraySegment<byte>> data, AsyncCallback callback)
+        public int EndSend(System.IAsyncResult iasr)
         {
-            return socket.BeginSend(data, SocketFlags.None, callback, null);
-        }
-
-        public int EndSend(IAsyncResult iasr)
-        {
-            return socket.EndSend(iasr);
+            return _socket.EndSend(iasr);
         }
 
         public void Shutdown()
         {
-            socket.Shutdown(SocketShutdown.Send);
+            _socket.Shutdown(System.Net.Sockets.SocketShutdown.Send);
         }
 
         public void Dispose()
         {
-            socket.Dispose();
+            _socket.Dispose();
         }
     }
 }

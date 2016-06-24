@@ -1,37 +1,33 @@
-﻿using System;
-using System.Net;
-
-namespace Kayak
+﻿namespace Kayak.Net
 {
     public interface ISchedulerFactory
     {
         IScheduler Create(ISchedulerDelegate del);
     }
 
-    public interface IScheduler : IDisposable
+    public interface IScheduler : System.IDisposable
     {
-        void Post(Action action);
+        void Post(System.Action action);
         void Start();
         void Stop();
     }
 
     public interface ISchedulerDelegate
     {
-        void OnException(IScheduler scheduler, Exception e);
+        void OnException(IScheduler scheduler, System.Exception e);
         void OnStop(IScheduler scheduler);
     }
 
     public static class KayakScheduler
     {
-        readonly static ISchedulerFactory factory = new DefaultKayakSchedulerFactory();
-        public static ISchedulerFactory Factory { get { return factory; } }
+        public static ISchedulerFactory Factory { get; } = new DefaultKayakSchedulerFactory();
     }
 
-    class DefaultKayakSchedulerFactory : ISchedulerFactory
+    internal class DefaultKayakSchedulerFactory : ISchedulerFactory
     {
         public IScheduler Create(ISchedulerDelegate del)
         {
-            return new DefaultKayakScheduler(del);
+            return new Net.DefaultKayakScheduler(del);
         }
     }
 
@@ -39,10 +35,10 @@ namespace Kayak
     {
         IServer Create(IServerDelegate del, IScheduler scheduler);
     }
-    
-    public interface IServer : IDisposable
+
+    public interface IServer : System.IDisposable
     {
-        IDisposable Listen(IPEndPoint ep);
+        System.IDisposable Listen(System.Net.IPEndPoint ep);
     }
 
     public interface IServerDelegate
@@ -53,15 +49,16 @@ namespace Kayak
 
     public static class KayakServer
     {
-        readonly static DefaultKayakServerFactory factory = new DefaultKayakServerFactory();
-        public static IServerFactory Factory { get { return factory; } }
+        private static readonly DefaultKayakServerFactory factory = new DefaultKayakServerFactory();
+
+        public static IServerFactory Factory => factory;
     }
 
-    class DefaultKayakServerFactory : IServerFactory
+    internal class DefaultKayakServerFactory : IServerFactory
     {
         public IServer Create(IServerDelegate del, IScheduler scheduler)
         {
-            return new DefaultKayakServer(del, scheduler);
+            return new Net.Server.DefaultKayakServer(del, scheduler);
         }
     }
 
@@ -73,43 +70,42 @@ namespace Kayak
     public interface ISocketDelegate
     {
         void OnConnected(ISocket socket);
-        bool OnData(ISocket socket, ArraySegment<byte> data, Action continuation);
+        bool OnData(ISocket socket, System.ArraySegment<byte> data, System.Action continuation);
         void OnEnd(ISocket socket);
-        void OnError(ISocket socket, Exception e);
+        void OnError(ISocket socket, System.Exception e);
         void OnClose(ISocket socket);
     }
 
-    public interface ISocket : IDisposable
+    public interface ISocket : System.IDisposable
     {
-        IPEndPoint RemoteEndPoint { get; }
-        void Connect(IPEndPoint ep);
-        bool Write(ArraySegment<byte> data, Action continuation);
+        System.Net.IPEndPoint RemoteEndPoint { get; }
+        void Connect(System.Net.IPEndPoint ep);
+        bool Write(System.ArraySegment<byte> data, System.Action continuation);
         void End();
     }
 
     public static class KayakSocket
     {
-        readonly static ISocketFactory factory = new DefaultKayakSocketFactory();
-        public static ISocketFactory Factory { get { return factory; } }
+        public static ISocketFactory Factory { get; } = new DefaultKayakSocketFactory();
     }
 
-    class DefaultKayakSocketFactory : ISocketFactory
+    internal class DefaultKayakSocketFactory : ISocketFactory
     {
         public ISocket Create(ISocketDelegate del, IScheduler scheduler)
         {
-            return new DefaultKayakSocket(del, scheduler);
+            return new Net.Socket.DefaultKayakSocket(del, scheduler);
         }
     }
 
     public interface IDataProducer
     {
-        IDisposable Connect(IDataConsumer channel);
+        System.IDisposable Connect(IDataConsumer channel);
     }
 
     public interface IDataConsumer
     {
-        void OnError(Exception e);
-        bool OnData(ArraySegment<byte> data, Action continuation);
+        void OnError(System.Exception e);
+        bool OnData(System.ArraySegment<byte> data, System.Action continuation);
         void OnEnd();
     }
 }
