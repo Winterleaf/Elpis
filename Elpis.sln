@@ -557,6 +557,7 @@ Global
 		{DF1A76F7-8E5D-462E-A692-BAE1FF232B3C}.Release|Mixed Platforms.ActiveCfg = Release
 		{DF1A76F7-8E5D-462E-A692-BAE1FF232B3C}.Release|x64.ActiveCfg = Release
 		{DF1A76F7-8E5D-462E-A692-BAE1FF232B3C}.Release|x86.ActiveCfg = Release
+		{DF1A76F7-8E5D-462E-A692-BAE1FF232B3C}.Release|x86.Build.0 = Release
 		{DF1A76F7-8E5D-462E-A692-BAE1FF232B3C}.SingleImage|Any CPU.ActiveCfg = Release
 		{DF1A76F7-8E5D-462E-A692-BAE1FF232B3C}.SingleImage|Mixed Platforms.ActiveCfg = Release
 		{DF1A76F7-8E5D-462E-A692-BAE1FF232B3C}.SingleImage|x64.ActiveCfg = Release

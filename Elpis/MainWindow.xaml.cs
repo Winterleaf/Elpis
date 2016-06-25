@@ -265,19 +265,17 @@ namespace Elpis.Wpf
 
         private void SetupLogging()
         {
-            if (_config.Fields.Debug_WriteLog)
-            {
-                _loadingPage.UpdateStatus("Initializing logging...");
-                string logFilename = "elpis{0}.log";
-                logFilename = string.Format(logFilename, _config.Fields.Debug_Timestamp ? System.DateTime.Now.ToString("_MMdd-hhmmss") : "");
+            if (!_config.Fields.Debug_WriteLog) return;
+            _loadingPage.UpdateStatus("Initializing logging...");
+            string logFilename = "elpis{0}.log";
+            logFilename = string.Format(logFilename, _config.Fields.Debug_Timestamp ? System.DateTime.Now.ToString("_MMdd-hhmmss") : "");
 
-                string path = System.IO.Path.Combine(_config.Fields.Debug_Logpath, logFilename);
+            string path = System.IO.Path.Combine(_config.Fields.Debug_Logpath, logFilename);
 
-                if (!System.IO.Directory.Exists(_config.Fields.Debug_Logpath))
-                    System.IO.Directory.CreateDirectory(_config.Fields.Debug_Logpath);
+            if (!System.IO.Directory.Exists(_config.Fields.Debug_Logpath))
+                System.IO.Directory.CreateDirectory(_config.Fields.Debug_Logpath);
 
-                Util.Log.SetLogPath(path);
-            }
+            Util.Log.SetLogPath(path);
         }
 
         private void CloseSettings()
@@ -820,29 +818,25 @@ namespace Elpis.Wpf
 
         private void setOutputDevice(string systemOutputDevice)
         {
-            if (!StringExtensions.IsNullOrEmpty(systemOutputDevice))
+            if (StringExtensions.IsNullOrEmpty(systemOutputDevice)) return;
+            string prevOutput = Player.OutputDevice;
+            try
             {
-                string prevOutput = Player.OutputDevice;
-                try
-                {
-                    Player.OutputDevice = systemOutputDevice;
-                }
-                catch (BassPlayer.BassException )
-                {
-                    Player.OutputDevice = prevOutput;
-                }
+                Player.OutputDevice = systemOutputDevice;
+            }
+            catch (BassPlayer.BassException )
+            {
+                Player.OutputDevice = prevOutput;
             }
         }
 
         private void StartWebServer()
         {
-            if (_config.Fields.Elpis_RemoteControlEnabled)
-            {
-                _webInterfaceObject = new WebInterface();
-                System.Threading.Thread webInterfaceThread = new System.Threading.Thread(_webInterfaceObject.StartInterface);
-                webInterfaceThread.Start();
-                _lastTimeSkipped = System.DateTime.Now;
-            }
+            if (!_config.Fields.Elpis_RemoteControlEnabled) return;
+            _webInterfaceObject = new WebInterface();
+            System.Threading.Thread webInterfaceThread = new System.Threading.Thread(_webInterfaceObject.StartInterface);
+            webInterfaceThread.Start();
+            _lastTimeSkipped = System.DateTime.Now;
         }
 
         private void StopWebServer()
@@ -855,17 +849,14 @@ namespace Elpis.Wpf
 
         public static bool Next()
         {
-            if ((System.DateTime.Now - _lastTimeSkipped).Seconds > 20)
+            if ((System.DateTime.Now - _lastTimeSkipped).Seconds <= 20) return false;
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
-                System.Windows.Application.Current.Dispatcher.Invoke((System.Action) (() =>
-                {
-                    _mainWindow.ShowBalloon(SKIP);
-                    Player.Next();
-                }));
-                _lastTimeSkipped = System.DateTime.Now;
-                return true;
-            }
-            return false;
+                _mainWindow.ShowBalloon(SKIP);
+                Player.Next();
+            });
+            _lastTimeSkipped = System.DateTime.Now;
+            return true;
         }
 
         public static void Pause()
@@ -1092,28 +1083,26 @@ namespace Elpis.Wpf
 
         private void ShowError(Util.ErrorCodes code, System.Exception ex, bool showLast = false)
         {
-            if (!Equals(transitionControl.CurrentPage, _errorPage))
+            if (Equals(transitionControl.CurrentPage, _errorPage)) return;
+            if (showLast && _lastError != Util.ErrorCodes.Success)
             {
-                if (showLast && _lastError != Util.ErrorCodes.Success)
+                ShowErrorPage(_lastError, _lastException);
+            }
+            else if (code != Util.ErrorCodes.Success && ex != null)
+            {
+                if (Util.Errors.IsHardFail(code))
                 {
-                    ShowErrorPage(_lastError, _lastException);
+                    ShowErrorPage(code, ex);
                 }
-                else if (code != Util.ErrorCodes.Success && ex != null)
+                else
                 {
-                    if (Util.Errors.IsHardFail(code))
-                    {
-                        ShowErrorPage(code, ex);
-                    }
-                    else
-                    {
-                        _lastError = code;
-                        _lastException = ex;
-                        mainBar.ShowError(Util.Errors.GetErrorMessage(code));
+                    _lastError = code;
+                    _lastException = ex;
+                    mainBar.ShowError(Util.Errors.GetErrorMessage(code));
 
-                        if (!Equals(transitionControl.CurrentPage, _loadingPage) || _lastFmAuth) return;
-                        _loginPage.LoginFailed = true;
-                        transitionControl.ShowPage(_loginPage);
-                    }
+                    if (!Equals(transitionControl.CurrentPage, _loadingPage) || _lastFmAuth) return;
+                    _loginPage.LoginFailed = true;
+                    transitionControl.ShowPage(_loginPage);
                 }
             }
         }

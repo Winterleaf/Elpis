@@ -30,9 +30,7 @@ namespace Elpis.Util
 {
     [System.Serializable]
     public class ObservableDictionary<TKey, TValue> : System.Collections.Generic.IDictionary<TKey, TValue>,
-        System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>,
-        System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>,
-        System.Collections.IDictionary, System.Collections.ICollection, System.Collections.IEnumerable,
+        System.Collections.IDictionary,
         System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback,
         System.Collections.Specialized.INotifyCollectionChanged, System.ComponentModel.INotifyPropertyChanged
     {
@@ -85,8 +83,7 @@ namespace Elpis.Util
 #pragma warning disable 693
         public struct Enumerator<TKey, TValue> :
 #pragma warning restore 693
-            System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>,
-            System.IDisposable, System.Collections.IDictionaryEnumerator, System.Collections.IEnumerator
+            System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IDictionaryEnumerator
         {
             #region constructors
 

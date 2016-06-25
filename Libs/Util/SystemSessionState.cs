@@ -1,4 +1,7 @@
-﻿namespace Elpis.Util
+﻿using System;
+using Microsoft.Win32;
+
+namespace Elpis.Util
 {
     public class SystemSessionState
     {
@@ -24,6 +27,22 @@
                 case Microsoft.Win32.SessionSwitchReason.SessionUnlock:
                     SystemUnlocked?.Invoke();
                     break;
+                case SessionSwitchReason.ConsoleConnect:
+                    break;
+                case SessionSwitchReason.ConsoleDisconnect:
+                    break;
+                case SessionSwitchReason.RemoteConnect:
+                    break;
+                case SessionSwitchReason.RemoteDisconnect:
+                    break;
+                case SessionSwitchReason.SessionLogon:
+                    break;
+                case SessionSwitchReason.SessionLogoff:
+                    break;
+                case SessionSwitchReason.SessionRemoteControl:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
     }

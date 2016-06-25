@@ -306,10 +306,8 @@ namespace Elpis.PandoraSharp
 
             if (QuickMixStationIDs.Count > 0)
             {
-                foreach (Station s in Stations)
-                {
-                    if (QuickMixStationIDs.Contains(s.Id))
-                        s.UseQuickMix = true;
+                foreach (Station s in Stations.Where(s => QuickMixStationIDs.Contains(s.Id))) {
+                    s.UseQuickMix = true;
                 }
             }
 
