@@ -150,7 +150,14 @@ namespace Elpis.PandoraSharpPlayer
 
         private static string CleanFileName(string fileName)
         {
-            char[] invalidChars = Path.GetInvalidFileNameChars();
+            var invalidChars = Path.GetInvalidFileNameChars().ToList();
+            invalidChars.Add('/');
+            invalidChars.Add('\\');
+            invalidChars.Add('(');
+            invalidChars.Add(')');
+            invalidChars.Add('!');
+            invalidChars.Add('?');
+            invalidChars.Add('-');
             return new string (fileName.Where(x => !invalidChars.Contains(x)).ToArray());
             
         }
@@ -160,6 +167,11 @@ namespace Elpis.PandoraSharpPlayer
             var invalidChars = Path.GetInvalidPathChars().ToList();
             invalidChars.Add('/');
             invalidChars.Add('\\');
+            invalidChars.Add('(');
+            invalidChars.Add(')');
+            invalidChars.Add('!');
+            invalidChars.Add('?');
+            invalidChars.Add('-');
             return new string(directoryName.Where(x => !invalidChars.Contains(x)).ToArray());
             
         }
